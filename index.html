@@ -34,6 +34,22 @@
   .btn.ghost{background:none;border:1px solid #d8d3c9;color:#333;}
   .status-msg{font-size:0.8rem;color:#888;}
 
+  .kpi-section{background:#fff;padding:18px 28px 22px;border-bottom:1px solid #e4e0d6;}
+  .kpi-section-title{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#888;font-weight:700;margin-bottom:12px;}
+  .kpi-wrap{display:flex;gap:22px;flex-wrap:wrap;}
+  .kpi-item{min-width:220px;flex:1;max-width:320px;}
+  .kpi-header{display:flex;justify-content:space-between;font-size:0.88rem;font-weight:700;margin-bottom:6px;color:#1c1c1c;}
+  .kpi-bar-track{background:#eee;border-radius:8px;height:14px;overflow:hidden;}
+  .kpi-bar-fill{height:100%;border-radius:8px;transition:width 0.4s ease;}
+
+  .toast-felicidades{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);
+    background:var(--verde);color:#fff;padding:16px 26px;border-radius:6px;
+    font-weight:700;font-size:0.95rem;box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    opacity:0;transition:all 0.35s ease;z-index:100;text-align:center;
+  }
+  .toast-felicidades.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
   .calendar-wrap{padding:20px 28px 60px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .cal-dow{text-align:center;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:8px;font-weight:600;}
@@ -101,6 +117,11 @@
   <button class="btn ghost" id="btn-refrescar">Refrescar</button>
   <button class="btn" id="btn-nueva" style="margin-left:auto;">+ Nueva tarjeta</button>
   <div class="status-msg" id="status-msg"></div>
+</div>
+
+<div class="kpi-section">
+  <div class="kpi-section-title">Objetivo de la semana — videos de Edición por editor</div>
+  <div class="kpi-wrap" id="kpi-wrap"></div>
 </div>
 
 <div class="calendar-wrap">
@@ -271,6 +292,85 @@ function getFiltradas(){
   );
 }
 
+// ============ KPIs semanales por editor (etapa Edición) ============
+let yaFelicitados = new Set();
+
+function inicioSemana(d){
+  const dt = new Date(d);
+  dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate() - dt.getDay()); // retrocede al domingo
+  return dt;
+}
+function finSemana(d){
+  const inicio = inicioSemana(d);
+  const fin = new Date(inicio);
+  fin.setDate(fin.getDate() + 6);
+  fin.setHours(23,59,59,999);
+  return fin;
+}
+
+function mostrarFelicitacion(nombre){
+  const toast = document.createElement('div');
+  toast.className = 'toast-felicidades';
+  toast.textContent = `🎉 ¡Felicidades ${nombre}! Completaste tu objetivo de la semana.`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+function renderKPIs(){
+  const cont = document.getElementById('kpi-wrap');
+  const ahora = new Date();
+  const ini = inicioSemana(ahora);
+  const fin = finSemana(ahora);
+  const semanaKey = ini.toISOString().slice(0,10);
+
+  const enEdicionSemana = TODAS.filter(r => {
+    if(r.Etapa !== 'Edición') return false;
+    const fRaw = (r.Fecha || '').toString().slice(0,10);
+    if(!fRaw) return false;
+    const f = new Date(fRaw + 'T12:00:00');
+    return f >= ini && f <= fin;
+  });
+
+  const porResp = {};
+  enEdicionSemana.forEach(r => {
+    const nombre = r.Responsable || 'Sin asignar';
+    if(!porResp[nombre]) porResp[nombre] = { total:0, listos:0 };
+    porResp[nombre].total++;
+    if(String(r.Listo).toUpperCase() === 'SI') porResp[nombre].listos++;
+  });
+
+  const nombres = Object.keys(porResp).sort();
+  if(nombres.length === 0){
+    cont.innerHTML = '<div style="color:#999;font-size:0.85rem;">No hay videos de Edición programados para esta semana.</div>';
+    return;
+  }
+
+  cont.innerHTML = nombres.map(nombre => {
+    const { total, listos } = porResp[nombre];
+    const pct = total ? Math.round((listos/total)*100) : 0;
+    const color = colorParaResponsable(nombre);
+    return `
+      <div class="kpi-item">
+        <div class="kpi-header"><span>${nombre}</span><span>${listos}/${total}</span></div>
+        <div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+      </div>`;
+  }).join('');
+
+  nombres.forEach(nombre => {
+    const { total, listos } = porResp[nombre];
+    const clave = nombre + '-' + semanaKey;
+    if(total > 0 && listos >= total && !yaFelicitados.has(clave)){
+      yaFelicitados.add(clave);
+      mostrarFelicitacion(nombre);
+    }
+  });
+}
+
 function render(){
   document.getElementById('month-label').textContent = `${MESES[viewMonth]} ${viewYear}`;
 
@@ -359,6 +459,8 @@ function render(){
   grid.querySelectorAll('.card').forEach(cardEl => {
     cardEl.addEventListener('click', () => abrirModalEdicion(cardEl.dataset.id));
   });
+
+  renderKPIs();
 }
 
 function abrirModalEdicion(id){
