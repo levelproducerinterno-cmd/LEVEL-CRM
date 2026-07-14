@@ -355,6 +355,26 @@ function render(){
       } catch(err){ console.error('No se pudo actualizar', err); }
     });
   });
+
+  grid.querySelectorAll('.card').forEach(cardEl => {
+    cardEl.addEventListener('click', () => abrirModalEdicion(cardEl.dataset.id));
+  });
+}
+
+function abrirModalEdicion(id){
+  const item = TODAS.find(r => String(r.ID) === String(id));
+  if(!item) return;
+  document.getElementById('modal-title').textContent = 'Editar tarjeta';
+  document.getElementById('m-id').value = item.ID;
+  document.getElementById('m-fecha').value = (item.Fecha || '').toString().slice(0,10);
+  document.getElementById('m-cliente').value = item.Cliente || '';
+  document.getElementById('m-emoji').value = item.Emoji || '';
+  document.getElementById('m-folio').value = item.Folio || '';
+  document.getElementById('m-etapa').value = item.Etapa || 'Guion';
+  document.getElementById('m-responsable').value = item.Responsable || '';
+  document.getElementById('m-listo').value = String(item.Listo).toUpperCase() === 'SI' ? 'SI' : 'NO';
+  renderChipsModal();
+  modalBg.classList.add('open');
 }
 
 document.getElementById('btn-prev').addEventListener('click', () => {
@@ -400,9 +420,8 @@ modalBg.addEventListener('click', (e) => { if(e.target === modalBg) modalBg.clas
 document.getElementById('btn-guardar').addEventListener('click', async () => {
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
-  const nuevoId = uuid();
-  const nueva = {
-    ID: nuevoId,
+  const idExistente = document.getElementById('m-id').value;
+  const datosForm = {
     Fecha: document.getElementById('m-fecha').value,
     Cliente: document.getElementById('m-cliente').value.trim(),
     Emoji: document.getElementById('m-emoji').value.trim(),
@@ -411,21 +430,44 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     Responsable: document.getElementById('m-responsable').value.trim(),
     Listo: document.getElementById('m-listo').value
   };
-  TODAS.push(nueva);
-  modalBg.classList.remove('open');
-  actualizaFiltros();
-  render();
-  try{
-    await fetch(SHEETS_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({
-        tipo:'produccion_crear',
-        id: nueva.ID, fecha: nueva.Fecha, cliente: nueva.Cliente, emoji: nueva.Emoji,
-        folio: nueva.Folio, etapa: nueva.Etapa, responsable: nueva.Responsable, listo: nueva.Listo
-      })
-    });
-  } catch(err){ console.error('No se pudo guardar', err); }
+
+  if(idExistente){
+    // ---- editar tarjeta existente ----
+    const item = TODAS.find(r => String(r.ID) === String(idExistente));
+    if(item) Object.assign(item, datosForm);
+    modalBg.classList.remove('open');
+    actualizaFiltros();
+    render();
+    try{
+      await fetch(SHEETS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({
+          tipo:'produccion_actualizar_completo',
+          id: idExistente, fecha: datosForm.Fecha, cliente: datosForm.Cliente, emoji: datosForm.Emoji,
+          folio: datosForm.Folio, etapa: datosForm.Etapa, responsable: datosForm.Responsable, listo: datosForm.Listo
+        })
+      });
+    } catch(err){ console.error('No se pudo actualizar', err); }
+  } else {
+    // ---- crear tarjeta nueva ----
+    const nueva = { ID: uuid(), ...datosForm };
+    TODAS.push(nueva);
+    modalBg.classList.remove('open');
+    actualizaFiltros();
+    render();
+    try{
+      await fetch(SHEETS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({
+          tipo:'produccion_crear',
+          id: nueva.ID, fecha: nueva.Fecha, cliente: nueva.Cliente, emoji: nueva.Emoji,
+          folio: nueva.Folio, etapa: nueva.Etapa, responsable: nueva.Responsable, listo: nueva.Listo
+        })
+      });
+    } catch(err){ console.error('No se pudo guardar', err); }
+  }
   btn.disabled = false;
 });
 
