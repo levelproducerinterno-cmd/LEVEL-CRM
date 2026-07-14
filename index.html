@@ -93,6 +93,60 @@
   .pick-chip{border:1.5px solid #d8d3c9;padding:6px 12px;border-radius:16px;cursor:pointer;font-size:0.8rem;background:#fbfaf7;user-select:none;}
   .pick-chip:hover{border-color:var(--rojo);}
   .pick-chip.selected{background:var(--negro);color:#fff;border-color:var(--negro);}
+
+  /* ============ CLIENTES ============ */
+  .clientes-grid-wrap{padding:24px 28px 60px;}
+  .clientes-grid{display:flex;flex-wrap:wrap;gap:20px;}
+  .cliente-pill{
+    width:200px;background:#fff;border-radius:10px;overflow:hidden;cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);border:1px solid #e4e0d6;
+  }
+  .cliente-pill .portada{
+    height:90px;background:linear-gradient(135deg,#1c1a17,#3a3530);
+    display:flex;align-items:center;justify-content:center;font-size:2.2rem;
+  }
+  .cliente-pill .nombre{padding:12px 14px;font-weight:700;font-size:0.95rem;text-align:center;color:#1c1c1c;}
+
+  .cliente-detalle-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:60;overflow-y:auto;}
+  .cliente-detalle-bg.open{display:block;}
+  .cliente-detalle{background:#f7f5f2;min-height:100vh;max-width:1100px;margin:0 auto;}
+  .cd-header{background:var(--negro);color:#fff;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+  .cd-header .cd-titulo{display:flex;align-items:center;gap:14px;font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:600;}
+  .cd-header .cd-acciones{display:flex;gap:10px;align-items:center;}
+  .cd-header a.btn-frame{background:#2b6ea8;color:#fff;text-decoration:none;padding:9px 16px;border-radius:2px;font-size:0.85rem;font-weight:600;}
+  .cd-header a.btn-frame.disabled{background:#555;pointer-events:none;opacity:0.6;}
+
+  .cd-subtabs{display:flex;gap:2px;background:#eae6dd;padding:0 32px;}
+  .cd-subtab-btn{background:none;border:none;padding:14px 20px;cursor:pointer;font-size:0.88rem;font-weight:600;color:#777;border-bottom:3px solid transparent;}
+  .cd-subtab-btn.active{color:var(--rojo);border-bottom-color:var(--rojo);}
+
+  .cd-content{padding:28px 32px 80px;}
+  .cd-panel{display:none;}
+  .cd-panel.active{display:block;}
+
+  .junta-seccion{margin-bottom:28px;}
+  .junta-seccion h3{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--rojo);border-bottom:1px solid #ddd8cc;padding-bottom:8px;margin-bottom:14px;}
+  .junta-pregunta{margin-bottom:16px;}
+  .junta-pregunta label{display:block;font-size:0.85rem;font-weight:600;color:#333;margin-bottom:6px;}
+  .junta-pregunta textarea{width:100%;padding:10px 12px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.88rem;min-height:60px;resize:vertical;}
+
+  .gate-box{max-width:340px;margin:60px auto;text-align:center;background:#fff;padding:32px 28px;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+  .gate-box p{font-size:0.88rem;color:#666;margin-bottom:16px;}
+  .gate-box input{width:100%;padding:10px 12px;border:1px solid #d8d3c9;border-radius:2px;text-align:center;font-size:1rem;letter-spacing:0.2em;margin-bottom:14px;}
+
+  .cuentas-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  .cuentas-table th{background:var(--negro);color:#fff;padding:8px 10px;font-size:0.75rem;text-transform:uppercase;text-align:left;}
+  .cuentas-table td{padding:8px 10px;border-bottom:1px solid #e4e0d6;font-size:0.85rem;}
+  .cuentas-table .del-btn{color:var(--rojo);cursor:pointer;font-size:0.8rem;font-weight:700;background:none;border:none;}
+
+  .guion-item{background:#fff;border:1px solid #e4e0d6;border-radius:4px;margin-bottom:12px;overflow:hidden;}
+  .guion-item .g-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:700;font-size:0.9rem;}
+  .guion-item .g-body{display:none;padding:0 16px 18px;}
+  .guion-item.open .g-body{display:block;}
+  .guion-item .g-body label{display:block;font-size:0.72rem;text-transform:uppercase;color:#666;font-weight:600;margin:12px 0 5px;}
+  .guion-item .g-body input, .guion-item .g-body textarea{width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.88rem;}
+  .guion-item .g-body textarea.guion-texto{min-height:220px;}
+  .guion-item .g-actions{display:flex;gap:10px;margin-top:14px;}
 </style>
 </head>
 <body>
@@ -105,12 +159,24 @@
 </div>
 
 <div class="tabs-switch">
-  <button class="tab-btn active" data-modo="edicion">🎬 Edición</button>
+  <button class="tab-btn active" data-modo="clientes">👤 Clientes</button>
+  <button class="tab-btn" data-modo="edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm">📱 Community Manager</button>
 </div>
 
+<!-- ============ PANEL: CLIENTES ============ -->
+<div class="modo-panel active" id="panel-clientes">
+  <div class="panel-header">
+    <div class="titulo-panel">Clientes</div>
+    <button class="btn" id="btn-nuevo-cliente">+ Nuevo cliente</button>
+  </div>
+  <div class="clientes-grid-wrap">
+    <div class="clientes-grid" id="clientes-grid"></div>
+  </div>
+</div>
+
 <!-- ============ PANEL: EDICIÓN ============ -->
-<div class="modo-panel active" id="panel-edicion">
+<div class="modo-panel" id="panel-edicion">
   <div class="panel-header">
     <div class="titulo-panel">Calendario de Edición</div>
     <div class="month-nav">
@@ -154,6 +220,7 @@
 
   <div class="toolbar">
     <div><label>Cliente</label><select id="cm-f-filtro-cliente"><option value="">Todos</option></select></div>
+    <div><label>Responsable</label><select id="cm-f-filtro-responsable"><option value="">Todos</option></select></div>
     <button class="btn ghost" data-accion="refrescar" data-modo="cm">Refrescar</button>
     <button class="btn" data-accion="nueva" data-modo="cm" style="margin-left:auto;">+ Nueva tarjeta</button>
     <div class="status-msg" id="cm-status-msg"></div>
@@ -167,6 +234,85 @@
   <div class="calendar-wrap">
     <div class="cal-grid" id="cm-cal-dow-row"></div>
     <div class="cal-grid" id="cm-cal-grid" style="margin-top:6px;"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: nuevo cliente ============ -->
+<div class="modal-bg" id="modal-cliente-bg">
+  <div class="modal">
+    <h2>Nuevo cliente</h2>
+    <div class="field">
+      <label>Nombre del cliente / marca</label>
+      <input type="text" id="nc-nombre" placeholder="Ej. Villa Bonita">
+    </div>
+    <div class="field">
+      <label>Emoji identificador</label>
+      <input type="text" id="nc-emoji" placeholder="Ej. 🏔️" maxlength="4">
+    </div>
+    <div class="field">
+      <label>Link a su carpeta de Frame.io</label>
+      <input type="text" id="nc-frame" placeholder="https://...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cancelar-cliente">Cancelar</button>
+      <button class="btn" id="btn-guardar-cliente">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OVERLAY: detalle del cliente ============ -->
+<div class="cliente-detalle-bg" id="cliente-detalle-bg">
+  <div class="cliente-detalle">
+    <div class="cd-header">
+      <div class="cd-titulo"><span id="cd-emoji"></span><span id="cd-nombre"></span></div>
+      <div class="cd-acciones">
+        <a href="#" target="_blank" class="btn-frame" id="cd-frame-link">📁 Carpeta Frame.io</a>
+        <button class="btn ghost" id="btn-cerrar-cliente" style="color:#fff;border-color:#666;">Cerrar</button>
+      </div>
+    </div>
+    <div class="cd-subtabs">
+      <button class="cd-subtab-btn active" data-sub="junta">Junta de Aterrizaje</button>
+      <button class="cd-subtab-btn" data-sub="cuentas">Cuentas y Contraseñas</button>
+      <button class="cd-subtab-btn" data-sub="guiones">Guiones</button>
+    </div>
+    <div class="cd-content">
+
+      <div class="cd-panel active" id="cd-panel-junta">
+        <div id="junta-form"></div>
+        <button class="btn" id="btn-guardar-junta">Guardar junta de aterrizaje</button>
+        <div class="status-msg" id="junta-status" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="cd-panel" id="cd-panel-cuentas">
+        <div id="cuentas-gate">
+          <div class="gate-box">
+            <p>Esta sección está protegida. Ingresa la contraseña para ver las cuentas y contraseñas de este cliente.</p>
+            <input type="password" id="gate-password" placeholder="Contraseña">
+            <button class="btn" id="btn-gate-entrar" style="width:100%;">Entrar</button>
+            <div class="status-msg" id="gate-status"></div>
+          </div>
+        </div>
+        <div id="cuentas-contenido" style="display:none;">
+          <table class="cuentas-table">
+            <thead><tr><th>Plataforma</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th></th></tr></thead>
+            <tbody id="cuentas-tbody"></tbody>
+          </table>
+          <div class="grid3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <input type="text" id="ct-plataforma" placeholder="Plataforma (ej. Instagram)">
+            <input type="text" id="ct-usuario" placeholder="Usuario / correo">
+            <input type="text" id="ct-password" placeholder="Contraseña">
+          </div>
+          <input type="text" id="ct-notas" placeholder="Notas (opcional)" style="margin-top:10px;width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;">
+          <button class="btn" id="btn-agregar-cuenta" style="margin-top:12px;">+ Agregar cuenta</button>
+        </div>
+      </div>
+
+      <div class="cd-panel" id="cd-panel-guiones">
+        <div id="guiones-lista"></div>
+        <button class="btn" id="btn-nuevo-guion">+ Nuevo guion</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -234,7 +380,7 @@ const MODOS = {
   cm: {
     key:'cm', prefix:'cm', hoja:'CM',
     tipoCrear:'cm_crear', tipoActualizar:'cm_actualizar', tipoActualizarCompleto:'cm_actualizar_completo',
-    tieneCopy:true, tieneResponsable:false, etapaFija:null, kpiPorPersona:false
+    tieneCopy:true, tieneResponsable:true, etapaFija:null, kpiPorPersona:true
   }
 };
 
@@ -679,7 +825,414 @@ document.querySelectorAll('[data-accion]').forEach(btn => {
 document.getElementById('ed-f-filtro-cliente').addEventListener('change', () => render('edicion'));
 document.getElementById('ed-f-filtro-responsable').addEventListener('change', () => render('edicion'));
 document.getElementById('cm-f-filtro-cliente').addEventListener('change', () => render('cm'));
+document.getElementById('cm-f-filtro-responsable').addEventListener('change', () => render('cm'));
 
+// ============================================================
+// ============ CLIENTES (junta de aterrizaje, cuentas, guiones) ============
+// ============================================================
+
+const GATE_PASSWORD = '2424';
+
+const PLANTILLA_JUNTA = [
+  { seccion: 'Datos Generales', pregunta: 'Nombre completo del cliente' },
+  { seccion: 'Datos Generales', pregunta: 'Fecha de cumpleaños' },
+  { seccion: 'Datos Generales', pregunta: 'Color favorito' },
+  { seccion: 'Datos Generales', pregunta: 'Actividad favorita' },
+  { seccion: 'Datos Generales', pregunta: 'Dulce / snack favorito' },
+  { seccion: 'Datos Generales', pregunta: 'Número de celular (personal / negocio)' },
+  { seccion: 'Datos Generales', pregunta: 'Dirección del negocio' },
+
+  { seccion: 'Historia de la Marca', pregunta: '¿Cómo surgió la marca? ¿Cuál es su origen y cuál fue la inspiración para crearla?' },
+  { seccion: 'Historia de la Marca', pregunta: '¿Qué hitos importantes han marcado su trayectoria hasta ahora?' },
+  { seccion: 'Historia de la Marca', pregunta: '¿Qué problema o necesidad específica querían resolver cuando la crearon?' },
+
+  { seccion: 'Visión y Misión', pregunta: '¿Cuál es la visión y misión de la marca?' },
+  { seccion: 'Visión y Misión', pregunta: '¿Qué objetivos a largo plazo tienen para la marca?' },
+  { seccion: 'Visión y Misión', pregunta: '¿Cuál es el "alma" de la marca? Si tu marca fuera una persona, ¿cómo la describirías en términos de personalidad, valores y creencias?' },
+  { seccion: 'Visión y Misión', pregunta: '¿Cómo quieren que la gente hable de la marca en el futuro?' },
+
+  { seccion: 'Valores de la Marca', pregunta: '¿Cuáles son los valores fundamentales que guían a la marca?' },
+  { seccion: 'Valores de la Marca', pregunta: '¿Cómo se reflejan estos valores en sus productos o servicios?' },
+
+  { seccion: 'Audiencia Objetivo', pregunta: '¿Quién es su audiencia principal? (Edad, género, ubicación, intereses, etc.)' },
+  { seccion: 'Audiencia Objetivo', pregunta: '¿Cuáles son las necesidades y deseos de esta audiencia?' },
+  { seccion: 'Audiencia Objetivo', pregunta: '¿Cómo suele interactuar la audiencia con la marca?' },
+  { seccion: 'Audiencia Objetivo', pregunta: '¿Cómo desean involucrar a sus clientes y seguidores en la evolución de la marca?' },
+
+  { seccion: 'Diferenciación', pregunta: '¿Qué creen que su marca ofrece que ninguna otra puede ofrecer de la misma manera?' },
+  { seccion: 'Diferenciación', pregunta: '¿Qué adjetivos quieren que los clientes asocien automáticamente con su marca?' },
+  { seccion: 'Diferenciación', pregunta: '¿Hay alguna manera en la que se aseguran de que sus productos o servicios sean diferentes respecto a la competencia?' },
+  { seccion: 'Diferenciación', pregunta: '¿Cómo justifican el precio de su producto o servicio frente a la competencia?' },
+
+  { seccion: 'Competencia', pregunta: '¿Quiénes son sus principales competidores?' },
+  { seccion: 'Competencia', pregunta: '¿Qué distingue a su marca de la competencia?' },
+  { seccion: 'Competencia', pregunta: '¿Hay algo que admiren de la competencia que les gustaría incorporar?' },
+
+  { seccion: 'Tono y Estilo de Comunicación', pregunta: '¿Cómo describirían el tono y estilo de comunicación de la marca? (Formal, informal, cercano, técnico, etc.)' },
+  { seccion: 'Tono y Estilo de Comunicación', pregunta: '¿Qué palabras, frases, o conceptos están prohibidos porque no reflejan la esencia de la marca?' },
+  { seccion: 'Tono y Estilo de Comunicación', pregunta: '¿Hay algún tipo de contenido específico que deseen priorizar? (Testimonios, demostraciones de productos, detrás de cámaras, etc.)' },
+
+  { seccion: 'Referencias y Inspiración', pregunta: '¿Qué otras marcas, dentro y fuera de su industria, admiran y por qué?' },
+  { seccion: 'Referencias y Inspiración', pregunta: '¿Qué elementos de esos ejemplos consideran cruciales para su propia marca?' },
+  { seccion: 'Referencias y Inspiración', pregunta: '¿Cuáles son los referentes culturales, artísticos o históricos que influyen en su marca?' },
+
+  { seccion: 'Objetivos y Desafíos', pregunta: '¿Cuáles son sus principales objetivos a corto y mediano plazo con la marca?' },
+  { seccion: 'Objetivos y Desafíos', pregunta: '¿Qué desafíos enfrentan actualmente que podrían afectar la efectividad del contenido?' },
+  { seccion: 'Objetivos y Desafíos', pregunta: '¿Qué miedos o preocupaciones tienen sobre el futuro de la marca?' },
+
+  { seccion: 'Estilo de Comunicación Personal', pregunta: 'Cuando el cliente habla con su audiencia o en contenido de redes, ¿cómo describe su tono? ¿Directo, pausado, reflexivo, humorístico, inspirador?' },
+  { seccion: 'Estilo de Comunicación Personal', pregunta: '¿Usa analogías o historias personales para conectar con el público?' },
+  { seccion: 'Estilo de Comunicación Personal', pregunta: '¿Tiene algún "lenguaje propio" o frases comunes que reflejen su forma de ver el mundo?' },
+
+  { seccion: 'Historia y Crecimiento Personal', pregunta: '¿Hay eventos en su vida que hayan moldeado su forma de ver el dinero y los negocios? ¿Experiencias, retos o fracasos que le hayan enseñado lecciones profundas?' },
+  { seccion: 'Historia y Crecimiento Personal', pregunta: '¿Cuál es su filosofía en cuanto a relaciones interpersonales y trabajo en equipo? ¿Prefiere el control absoluto o confía en su equipo?' },
+
+  { seccion: 'Motivación Personal y Propósito', pregunta: '¿Qué lo motiva a seguir trabajando en esta industria? ¿Es un deseo de trascendencia, de demostrar algo?' },
+  { seccion: 'Motivación Personal y Propósito', pregunta: '¿Hasta qué punto valora la transparencia? ¿Cuánto revela sobre su vida personal?' },
+
+  { seccion: 'Proceso de Venta', pregunta: '¿Cómo te contactan los clientes potenciales por primera vez?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué información suelen buscar o preguntar tus clientes al inicio del proceso?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué pasos sigues para calificar a un cliente potencial como una oportunidad real?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué herramientas o canales utilizas para comunicarte con tus prospectos durante el proceso?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Cómo presentas tu oferta o propuesta de valor al cliente?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué objeciones suelen surgir durante el proceso y cómo las manejas?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Cómo aseguras que el cliente tome una decisión?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué métodos de pago aceptas y cómo los gestionas?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Qué pasos sigues después de recibir el pago para cerrar el proceso de ventas?' },
+  { seccion: 'Proceso de Venta', pregunta: '¿Cuáles son tus servicios / productos y cuáles son sus costos?' }
+];
+
+let CLIENTES = [];
+let clienteActual = null;
+let RESPUESTAS_ACTUAL = {};
+let CUENTAS_ACTUAL = [];
+let GUIONES_ACTUAL = [];
+
+async function cargarClientes(){
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' });
+    CLIENTES = await resp.json();
+  } catch(err){ console.error('No se pudieron cargar los clientes', err); }
+  renderClientesGrid();
+}
+
+function renderClientesGrid(){
+  const grid = document.getElementById('clientes-grid');
+  if(CLIENTES.length === 0){
+    grid.innerHTML = '<div style="color:#999;">Aún no has dado de alta ningún cliente.</div>';
+    return;
+  }
+  grid.innerHTML = CLIENTES.map(c => `
+    <div class="cliente-pill" data-id="${c.ID}">
+      <div class="portada">${c.Emoji || '👤'}</div>
+      <div class="nombre">${c.Nombre || ''}</div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.cliente-pill').forEach(pill => {
+    pill.addEventListener('click', () => abrirClienteDetalle(pill.dataset.id));
+  });
+}
+
+// ---- Nuevo cliente ----
+const modalClienteBg = document.getElementById('modal-cliente-bg');
+document.getElementById('btn-nuevo-cliente').addEventListener('click', () => {
+  document.getElementById('nc-nombre').value = '';
+  document.getElementById('nc-emoji').value = '';
+  document.getElementById('nc-frame').value = '';
+  modalClienteBg.classList.add('open');
+});
+document.getElementById('btn-cancelar-cliente').addEventListener('click', () => modalClienteBg.classList.remove('open'));
+modalClienteBg.addEventListener('click', (e) => { if(e.target === modalClienteBg) modalClienteBg.classList.remove('open'); });
+
+document.getElementById('btn-guardar-cliente').addEventListener('click', async () => {
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  if(!nombre) return;
+  const nuevo = {
+    ID: uuid(),
+    Nombre: nombre,
+    Emoji: document.getElementById('nc-emoji').value.trim(),
+    FrameLink: document.getElementById('nc-frame').value.trim()
+  };
+  CLIENTES.push(nuevo);
+  modalClienteBg.classList.remove('open');
+  renderClientesGrid();
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'cliente_crear', id: nuevo.ID, nombre: nuevo.Nombre, emoji: nuevo.Emoji, frameLink: nuevo.FrameLink })
+    });
+  } catch(err){ console.error(err); }
+});
+
+// ---- Abrir detalle de cliente ----
+async function abrirClienteDetalle(id){
+  clienteActual = CLIENTES.find(c => String(c.ID) === String(id));
+  if(!clienteActual) return;
+
+  document.getElementById('cd-emoji').textContent = clienteActual.Emoji || '👤';
+  document.getElementById('cd-nombre').textContent = clienteActual.Nombre || '';
+  const frameBtn = document.getElementById('cd-frame-link');
+  if(clienteActual.FrameLink){
+    frameBtn.href = clienteActual.FrameLink;
+    frameBtn.classList.remove('disabled');
+  } else {
+    frameBtn.href = '#';
+    frameBtn.classList.add('disabled');
+  }
+
+  document.getElementById('cuentas-gate').style.display = 'block';
+  document.getElementById('cuentas-contenido').style.display = 'none';
+  document.getElementById('gate-password').value = '';
+  document.getElementById('gate-status').textContent = '';
+  document.querySelectorAll('.cd-subtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.cd-subtab-btn[data-sub="junta"]').classList.add('active');
+  document.querySelectorAll('.cd-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('cd-panel-junta').classList.add('active');
+
+  document.getElementById('cliente-detalle-bg').classList.add('open');
+
+  await Promise.all([cargarJunta(id), cargarCuentas(id), cargarGuiones(id)]);
+}
+
+document.getElementById('btn-cerrar-cliente').addEventListener('click', () => {
+  document.getElementById('cliente-detalle-bg').classList.remove('open');
+});
+
+document.querySelectorAll('.cd-subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cd-subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.cd-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('cd-panel-' + btn.dataset.sub).classList.add('active');
+  });
+});
+
+// ---- Junta de Aterrizaje ----
+async function cargarJunta(clienteId){
+  RESPUESTAS_ACTUAL = {};
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=JuntaAterrizaje&t=' + Date.now(), { cache:'no-store' });
+    const todas = await resp.json();
+    todas.filter(r => String(r.ClienteID) === String(clienteId)).forEach(r => {
+      RESPUESTAS_ACTUAL[r.Pregunta] = r.Respuesta;
+    });
+  } catch(err){ console.error(err); }
+  renderJuntaForm();
+}
+
+function renderJuntaForm(){
+  const cont = document.getElementById('junta-form');
+  const secciones = {};
+  PLANTILLA_JUNTA.forEach(item => {
+    if(!secciones[item.seccion]) secciones[item.seccion] = [];
+    secciones[item.seccion].push(item.pregunta);
+  });
+  let html = '';
+  Object.entries(secciones).forEach(([seccion, preguntas]) => {
+    html += `<div class="junta-seccion"><h3>${seccion}</h3>`;
+    preguntas.forEach(pregunta => {
+      const valor = RESPUESTAS_ACTUAL[pregunta] || '';
+      html += `
+        <div class="junta-pregunta">
+          <label>${pregunta}</label>
+          <textarea data-pregunta="${encodeURIComponent(pregunta)}" data-seccion="${encodeURIComponent(seccion)}">${valor}</textarea>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  cont.innerHTML = html;
+}
+
+document.getElementById('btn-guardar-junta').addEventListener('click', async () => {
+  const status = document.getElementById('junta-status');
+  status.textContent = 'Guardando...';
+  const respuestas = [];
+  document.querySelectorAll('#junta-form textarea').forEach(ta => {
+    respuestas.push({
+      seccion: decodeURIComponent(ta.dataset.seccion),
+      pregunta: decodeURIComponent(ta.dataset.pregunta),
+      respuesta: ta.value
+    });
+  });
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'junta_guardar', clienteId: clienteActual.ID, respuestas })
+    });
+    status.textContent = 'Guardado ✓';
+  } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
+});
+
+// ---- Cuentas y Contraseñas ----
+async function cargarCuentas(clienteId){
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=Cuentas&t=' + Date.now(), { cache:'no-store' });
+    const todas = await resp.json();
+    CUENTAS_ACTUAL = todas.filter(r => String(r.ClienteID) === String(clienteId));
+  } catch(err){ console.error(err); CUENTAS_ACTUAL = []; }
+  renderCuentasTabla();
+}
+
+function renderCuentasTabla(){
+  const tbody = document.getElementById('cuentas-tbody');
+  tbody.innerHTML = CUENTAS_ACTUAL.map(c => `
+    <tr data-id="${c.ID}">
+      <td>${c.Plataforma || ''}</td>
+      <td>${c.Usuario || ''}</td>
+      <td>${c.Contraseña || ''}</td>
+      <td>${c.Notas || ''}</td>
+      <td><button class="del-btn" data-del-cuenta="${c.ID}">Eliminar</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-del-cuenta]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.delCuenta;
+      CUENTAS_ACTUAL = CUENTAS_ACTUAL.filter(c => String(c.ID) !== String(id));
+      renderCuentasTabla();
+      try{
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'cuenta_eliminar', id })
+        });
+      } catch(err){ console.error(err); }
+    });
+  });
+}
+
+document.getElementById('btn-gate-entrar').addEventListener('click', () => {
+  const pass = document.getElementById('gate-password').value;
+  if(pass === GATE_PASSWORD){
+    document.getElementById('cuentas-gate').style.display = 'none';
+    document.getElementById('cuentas-contenido').style.display = 'block';
+  } else {
+    document.getElementById('gate-status').textContent = 'Contraseña incorrecta.';
+  }
+});
+
+document.getElementById('btn-agregar-cuenta').addEventListener('click', async () => {
+  const plataforma = document.getElementById('ct-plataforma').value.trim();
+  const usuario = document.getElementById('ct-usuario').value.trim();
+  const password = document.getElementById('ct-password').value.trim();
+  const notas = document.getElementById('ct-notas').value.trim();
+  if(!plataforma) return;
+  const nueva = { ID: uuid(), ClienteID: clienteActual.ID, Plataforma: plataforma, Usuario: usuario, Contraseña: password, Notas: notas };
+  CUENTAS_ACTUAL.push(nueva);
+  renderCuentasTabla();
+  document.getElementById('ct-plataforma').value = '';
+  document.getElementById('ct-usuario').value = '';
+  document.getElementById('ct-password').value = '';
+  document.getElementById('ct-notas').value = '';
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'cuenta_crear', id: nueva.ID, clienteId: nueva.ClienteID, plataforma: nueva.Plataforma, usuario: nueva.Usuario, password: nueva.Contraseña, notas: nueva.Notas })
+    });
+  } catch(err){ console.error(err); }
+});
+
+// ---- Guiones ----
+async function cargarGuiones(clienteId){
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' });
+    const todas = await resp.json();
+    GUIONES_ACTUAL = todas.filter(r => String(r.ClienteID) === String(clienteId));
+  } catch(err){ console.error(err); GUIONES_ACTUAL = []; }
+  renderGuionesLista();
+}
+
+function renderGuionesLista(){
+  const cont = document.getElementById('guiones-lista');
+  if(GUIONES_ACTUAL.length === 0){
+    cont.innerHTML = '<div style="color:#999;margin-bottom:16px;">Aún no hay guiones para este cliente.</div>';
+    return;
+  }
+  cont.innerHTML = GUIONES_ACTUAL.map(g => `
+    <div class="guion-item" data-id="${g.ID}">
+      <div class="g-head">
+        <span>${g.Folio ? g.Folio + ' — ' : ''}${g.Titulo || '(sin título)'}</span>
+        <span>▾</span>
+      </div>
+      <div class="g-body">
+        <label>Folio</label>
+        <input type="text" class="gi-folio" value="${g.Folio || ''}">
+        <label>Título</label>
+        <input type="text" class="gi-titulo" value="${g.Titulo || ''}">
+        <label>Guion</label>
+        <textarea class="guion-texto gi-texto">${g.Guion || ''}</textarea>
+        <label>Referencia musical</label>
+        <input type="text" class="gi-musica" value="${g.Musica || ''}" placeholder="Link o descripción">
+        <label>Notas</label>
+        <textarea class="gi-notas">${g.Notas || ''}</textarea>
+        <label>Estatus</label>
+        <select class="gi-estatus">
+          <option value="Borrador" ${g.Estatus === 'Borrador' ? 'selected' : ''}>Borrador</option>
+          <option value="Aprobado" ${g.Estatus === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
+          <option value="Grabado" ${g.Estatus === 'Grabado' ? 'selected' : ''}>Grabado</option>
+        </select>
+        <div class="g-actions">
+          <button class="btn ghost" data-eliminar-guion="${g.ID}">Eliminar</button>
+          <button class="btn" data-guardar-guion="${g.ID}">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  cont.querySelectorAll('.g-head').forEach(head => {
+    head.addEventListener('click', () => head.closest('.guion-item').classList.toggle('open'));
+  });
+
+  cont.querySelectorAll('[data-guardar-guion]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const item = btn.closest('.guion-item');
+      const id = btn.dataset.guardarGuion;
+      const folio = item.querySelector('.gi-folio').value.trim();
+      const titulo = item.querySelector('.gi-titulo').value.trim();
+      const texto = item.querySelector('.gi-texto').value;
+      const musica = item.querySelector('.gi-musica').value.trim();
+      const notas = item.querySelector('.gi-notas').value;
+      const estatus = item.querySelector('.gi-estatus').value;
+      const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
+      if(g){ Object.assign(g, { Folio:folio, Titulo:titulo, Guion:texto, Musica:musica, Notas:notas, Estatus:estatus }); }
+      try{
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'guion_actualizar', id, folio, titulo, guion:texto, musica, notas, estatus })
+        });
+      } catch(err){ console.error(err); }
+      renderGuionesLista();
+    });
+  });
+
+  cont.querySelectorAll('[data-eliminar-guion]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.eliminarGuion;
+      GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => String(g.ID) !== String(id));
+      renderGuionesLista();
+      try{
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'guion_eliminar', id })
+        });
+      } catch(err){ console.error(err); }
+    });
+  });
+}
+
+document.getElementById('btn-nuevo-guion').addEventListener('click', async () => {
+  const nuevo = { ID: uuid(), ClienteID: clienteActual.ID, Folio:'', Titulo:'Nuevo guion', Guion:'', Musica:'', Notas:'', Estatus:'Borrador' };
+  GUIONES_ACTUAL.push(nuevo);
+  renderGuionesLista();
+  const el = document.querySelector(`.guion-item[data-id="${nuevo.ID}"]`);
+  if(el) el.classList.add('open');
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'guion_crear', id: nuevo.ID, clienteId: nuevo.ClienteID, folio:nuevo.Folio, titulo:nuevo.Titulo, guion:nuevo.Guion, musica:nuevo.Musica, notas:nuevo.Notas, estatus:nuevo.Estatus })
+    });
+  } catch(err){ console.error(err); }
+});
+
+cargarClientes();
 cargarDatos('edicion');
 cargarDatos('cm');
 </script>
