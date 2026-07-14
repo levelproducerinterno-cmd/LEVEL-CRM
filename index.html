@@ -1032,11 +1032,20 @@ function renderJuntaForm(){
     html += `<div class="junta-seccion"><h3>${seccion}</h3>`;
     preguntas.forEach(pregunta => {
       const valor = RESPUESTAS_ACTUAL[pregunta] || '';
-      html += `
-        <div class="junta-pregunta">
-          <label>${pregunta}</label>
-          <textarea data-pregunta="${encodeURIComponent(pregunta)}" data-seccion="${encodeURIComponent(seccion)}">${valor}</textarea>
-        </div>`;
+      const esFecha = pregunta === 'Fecha de cumpleaños';
+      if(esFecha){
+        html += `
+          <div class="junta-pregunta">
+            <label>${pregunta} 🎂 (se agenda solo en tu Google Calendar cada año)</label>
+            <input type="date" data-pregunta="${encodeURIComponent(pregunta)}" data-seccion="${encodeURIComponent(seccion)}" value="${valor}">
+          </div>`;
+      } else {
+        html += `
+          <div class="junta-pregunta">
+            <label>${pregunta}</label>
+            <textarea data-pregunta="${encodeURIComponent(pregunta)}" data-seccion="${encodeURIComponent(seccion)}">${valor}</textarea>
+          </div>`;
+      }
     });
     html += `</div>`;
   });
@@ -1047,11 +1056,11 @@ document.getElementById('btn-guardar-junta').addEventListener('click', async () 
   const status = document.getElementById('junta-status');
   status.textContent = 'Guardando...';
   const respuestas = [];
-  document.querySelectorAll('#junta-form textarea').forEach(ta => {
+  document.querySelectorAll('#junta-form textarea, #junta-form input[data-pregunta]').forEach(el => {
     respuestas.push({
-      seccion: decodeURIComponent(ta.dataset.seccion),
-      pregunta: decodeURIComponent(ta.dataset.pregunta),
-      respuesta: ta.value
+      seccion: decodeURIComponent(el.dataset.seccion),
+      pregunta: decodeURIComponent(el.dataset.pregunta),
+      respuesta: el.value
     });
   });
   try{
@@ -1059,7 +1068,7 @@ document.getElementById('btn-guardar-junta').addEventListener('click', async () 
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({ tipo:'junta_guardar', clienteId: clienteActual.ID, respuestas })
     });
-    status.textContent = 'Guardado ✓';
+    status.textContent = 'Guardado ✓ (si pusiste su cumpleaños, ya quedó agendado cada año en tu Google Calendar)';
   } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
 });
 
