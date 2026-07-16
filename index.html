@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
     --negro:#0a0908;
@@ -150,23 +151,41 @@
   .guion-item .g-body textarea.guion-texto{min-height:220px;}
   .guion-item .g-actions{display:flex;gap:10px;margin-top:14px;}
 
+  /* ============ EXPEDIENTE / INFORME — panel con fondo oscuro (como el standalone) ============ */
+  /* Cuando el panel de Expediente o Informe está activo, el fondo del cd-content se vuelve oscuro */
+  #cd-panel-expediente.active, #cd-panel-informe.active{
+    background:linear-gradient(180deg,#141312,#0a0908 60%);
+    color:var(--hueso);
+    margin:-28px -32px -80px;
+    padding:40px 40px 80px;
+  }
+
   /* ============ EXPEDIENTE — cards, prompts, listado de PDFs (visible en el CRM) ============ */
-  .exp-guia-card{background:var(--negro);color:#f0ede6;border-radius:4px;padding:28px 30px;margin-bottom:24px;}
-  .exp-guia-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;border-bottom:1px solid var(--rojo);padding-bottom:12px;color:#fff;}
-  .exp-guia-card ol{margin:0 0 20px;padding-left:22px;font-size:0.88rem;line-height:1.65;color:#d0ccc2;}
+  .exp-guia-card{background:var(--negro);color:#f0ede6;border-radius:4px;padding:32px 36px;margin-bottom:26px;border:1px solid #2a2825;}
+  .exp-guia-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.2rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 18px;border-bottom:1px solid var(--rojo);padding-bottom:14px;color:#fff;}
+  .exp-guia-card ol{margin:0 0 22px;padding-left:22px;font-size:0.9rem;line-height:1.7;color:#d0ccc2;}
   .exp-guia-card ol strong{color:#fff;}
-  .exp-btn-claude{display:inline-block;background:var(--rojo);color:#fff;text-decoration:none;padding:12px 22px;border-radius:2px;font-size:0.85rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;}
+  .exp-guia-card ol li{margin-bottom:6px;}
+  .exp-btn-claude{display:inline-block;background:var(--rojo);color:#fff;text-decoration:none;padding:13px 26px;border-radius:2px;font-size:0.88rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;}
   .exp-btn-claude:hover{filter:brightness(1.15);}
-  .exp-prompt-block{border:1px solid #2a2825;border-radius:2px;margin-top:18px;overflow:hidden;background:#fbfaf7;}
-  .exp-prompt-header{background:#1a1817;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;font-weight:700;letter-spacing:0.03em;}
-  .exp-copy-prompt-btn{background:none;border:1px solid #666;color:#fff;padding:5px 12px;border-radius:2px;cursor:pointer;font-size:0.75rem;}
+  .exp-prompt-block{border:1px solid #2a2825;border-radius:2px;margin-top:20px;overflow:hidden;background:#fbfaf7;}
+  .exp-prompt-header{background:#1a1817;color:#fff;padding:13px 18px;display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;font-weight:700;letter-spacing:0.03em;}
+  .exp-copy-prompt-btn{background:none;border:1px solid #666;color:#fff;padding:6px 14px;border-radius:2px;cursor:pointer;font-size:0.76rem;}
   .exp-copy-prompt-btn:hover{border-color:#fff;}
   .exp-copy-prompt-btn.copied{background:#1a8f4c;border-color:#1a8f4c;}
-  .exp-prompt-block pre{margin:0;padding:16px;white-space:pre-wrap;font-family:'Montserrat',sans-serif;font-size:0.78rem;line-height:1.55;color:#2a2a2a;background:#fbfaf7;max-height:240px;overflow-y:auto;}
-  .exp-prompt-hint{padding:10px 16px;font-size:0.72rem;color:#8a8578;background:#fbfaf7;border-top:1px solid #eae5d8;}
+  .exp-prompt-block pre{margin:0;padding:18px;white-space:pre-wrap;font-family:'Montserrat',sans-serif;font-size:0.8rem;line-height:1.6;color:#2a2a2a;background:#fbfaf7;max-height:250px;overflow-y:auto;}
+  .exp-prompt-hint{padding:11px 18px;font-size:0.74rem;color:#8a8578;background:#fbfaf7;border-top:1px solid #eae5d8;}
 
-  .exp-form-card{background:var(--hueso);color:var(--negro);border-radius:4px;padding:28px 30px;margin-bottom:24px;box-shadow:0 6px 24px rgba(0,0,0,0.08);}
-  .exp-form-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.1rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;border-bottom:1px solid var(--rojo);padding-bottom:10px;}
+  .exp-form-card{background:var(--hueso);color:var(--negro);border-radius:4px;padding:36px 40px;margin-bottom:26px;box-shadow:0 20px 60px rgba(0,0,0,0.35);}
+  .exp-form-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.2rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 20px;border-bottom:1px solid var(--rojo);padding-bottom:12px;}
+  .exp-form-card label{display:block;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:#555;margin-bottom:6px;font-weight:600;}
+  .exp-form-card .hint{font-size:0.76rem;color:#8a8578;margin-top:5px;}
+  .exp-form-card input[type=text], .exp-form-card input[type=number], .exp-form-card select, .exp-form-card textarea{width:100%;font-family:'Montserrat',sans-serif;font-size:0.92rem;padding:11px 13px;border:1px solid #d8d3c9;border-radius:2px;background:#fff;color:var(--negro);}
+  .exp-form-card textarea{min-height:70px;resize:vertical;line-height:1.5;}
+  .exp-form-card .field{margin-bottom:18px;}
+  .exp-form-card .btn{padding:14px 22px;font-size:0.88rem;letter-spacing:0.05em;text-transform:uppercase;font-weight:700;border-radius:2px;}
+  .exp-form-card .btn:not(.ghost){background:var(--rojo);}
+  .exp-form-card .btn.ghost{background:#fff;color:var(--negro);border:1.5px solid #d8d3c9;}
 
   .exp-pdfs-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
   .exp-pdf-card{background:#fff;border:1px solid #e4e0d6;border-radius:4px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px;position:relative;transition:box-shadow 0.15s,border-color 0.15s;}
@@ -178,6 +197,37 @@
   .exp-pdf-card .pdf-del{position:absolute;top:6px;right:8px;background:none;border:none;color:#c0bcae;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;}
   .exp-pdf-card .pdf-del:hover{color:var(--rojo);}
   .exp-pdfs-vacio{padding:24px;text-align:center;color:#8a8578;font-size:0.85rem;background:#fbfaf7;border:1px dashed #d8d3c9;border-radius:2px;}
+
+  /* Filas de subida de imagen (redes en Expediente, Top y Honor en Informe) — preview chiquito */
+  .net-upload-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#fff;border:1px solid #e4e0d6;border-radius:2px;margin-bottom:8px;}
+  .net-upload-row .net-upload-label{font-size:0.82rem;font-weight:700;min-width:90px;color:var(--negro);}
+  .net-upload-row input[type=file]{font-size:0.78rem;flex:1;color:#555;min-width:0;}
+  .net-upload-row .thumb-preview{width:44px !important;height:44px !important;max-width:44px !important;max-height:44px !important;object-fit:cover;border-radius:4px;border:1px solid #d8d3c9;display:none;flex-shrink:0;}
+
+  /* ============ INFORME — tablas mensuales, toggle, chips (formulario) ============ */
+  .inf-toggle-row{display:flex;gap:10px;}
+  .inf-toggle-btn{flex:1;border:1.5px solid #d8d3c9;padding:10px;text-align:center;cursor:pointer;border-radius:2px;font-size:0.88rem;background:#fff;color:var(--negro);user-select:none;}
+  .inf-toggle-btn.active{border-color:var(--rojo);background:#fbeae6;font-weight:600;color:var(--rojo);}
+  .inf-net-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:0.82rem;}
+  .inf-net-table th{background:var(--negro);color:#fff;padding:8px 6px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;}
+  .inf-net-table td{border:1px solid #e4e0d6;padding:0;}
+  .inf-net-table td.mes-cell{background:#f2efe9;padding:8px 10px;font-weight:600;text-align:center;color:var(--negro);}
+  .inf-net-table td.mes-cell.mes-actual{background:#fbeae6;color:var(--rojo);}
+  .inf-net-table input{border:none;padding:8px 10px;font-size:0.82rem;border-radius:0;width:100%;background:#fff;color:var(--negro);}
+  .inf-net-table input:focus{outline:2px solid var(--rojo);outline-offset:-2px;}
+  .inf-net-block{margin-bottom:22px;}
+  .inf-net-block h3{font-family:'Cormorant Garamond',serif;font-size:1.15rem;margin:0 0 12px;color:var(--negro);}
+  .inf-net-block h3 .inf-net-mini{font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--rojo);margin-left:10px;vertical-align:middle;}
+  .inf-mes-actual-info{display:inline-block;background:var(--rojo);color:#fff;padding:5px 14px;border-radius:20px;font-size:0.74rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-left:12px;vertical-align:middle;}
+  .inf-img-upload-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  .inf-img-upload-item{background:#fff;border:1px solid #e4e0d6;border-radius:2px;padding:14px;}
+  .inf-img-upload-item label{margin-bottom:8px;}
+  .inf-img-upload-item input[type=file]{font-size:0.78rem;color:#555;width:100%;}
+  .inf-img-upload-item .inf-thumb{margin-top:10px;width:100%;height:110px;object-fit:cover;border-radius:2px;border:1px solid #d8d3c9;display:none;background:#fbfaf7;}
+  .inf-img-upload-item .inf-thumb.visible{display:block;}
+  .inf-honor-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .inf-honor-grid .inf-img-upload-item{padding:10px;}
+  .inf-honor-grid .inf-img-upload-item .inf-thumb{height:90px;}
 
   /* ============ EXPEDIENTE — slides offscreen para el PDF ============ */
   #exp-render-root{position:fixed;top:0;left:-99999px;width:1600px;}
@@ -235,6 +285,35 @@
 
   .exp-valores-list{list-style:none;margin:0 auto;padding:0;max-width:700px;}
   .exp-valores-list li{font-size:24px;line-height:1.7;color:#1c1c1c;text-align:left;padding-left:6px;}
+
+  /* ============ INFORME — slides offscreen para el PDF (reutilizan .exp-page para el fondo) ============ */
+  #inf-render-root{position:fixed;top:0;left:-99999px;width:1600px;}
+  /* Tarjetas de "Puntos clave" y "Conclusión" del informe */
+  .inf-card-grid{display:flex;gap:30px;justify-content:center;align-items:stretch;width:100%;}
+  .inf-black-card{width:400px;border-radius:14px;overflow:hidden;background:#111;display:flex;flex-direction:column;}
+  .inf-black-card .c-title{background:#111;color:#fff;text-align:center;padding:22px 16px 14px;font-weight:700;font-size:16px;letter-spacing:0.04em;text-transform:uppercase;font-family:'Cormorant Garamond',serif;}
+  .inf-black-card .c-body{background:#f7f5f2;border-radius:0 0 14px 14px;padding:26px 24px;color:#1c1c1c;text-align:center;font-size:14.5px;line-height:1.55;flex:1;}
+  .inf-black-card .c-body strong{color:var(--rojo);}
+  /* Podio Top Performance */
+  .inf-podio-wrap{position:relative;width:1100px;height:560px;margin:0 auto;}
+  .inf-podio-step{position:absolute;bottom:0;background:#c9c9c9;border-radius:6px 6px 0 0;}
+  .inf-podio-item{position:absolute;text-align:center;}
+  .inf-podio-item .badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .inf-podio-item .badge .num{width:32px;height:32px;border-radius:50%;background:#111;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;}
+  .inf-podio-item .badge .lbl{font-size:20px;color:#333;}
+  .inf-podio-item img{display:block;margin:0 auto;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,0.2);object-fit:contain;background:#fff;}
+  /* Cuadro de honor */
+  .inf-honor-row{display:flex;gap:24px;justify-content:center;align-items:flex-end;}
+  .inf-honor-row img{width:190px;height:340px;object-fit:cover;border-radius:4px;}
+  .inf-honor-callout{text-align:center;margin-top:20px;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:22px;color:#111;}
+  /* Tabla del tracker en PDF */
+  .inf-rep-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .inf-rep-table th{background:#111;color:#fff;padding:8px 4px;text-transform:uppercase;font-size:11px;}
+  .inf-rep-table td{border:1px solid #ddd8cc;padding:6px 4px;text-align:center;background:#f9f7f3;}
+  .inf-rep-tables-row{display:flex;gap:24px;width:100%;}
+  .inf-rep-tables-row .net-title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:16px;margin-bottom:8px;text-align:center;}
+  /* Chart */
+  .inf-chart-wrap{width:1300px;height:640px;position:relative;margin:0 auto;}
 </style>
 </head>
 <body>
@@ -361,6 +440,7 @@
     <div class="cd-subtabs">
       <button class="cd-subtab-btn active" data-sub="junta">Junta de Aterrizaje</button>
       <button class="cd-subtab-btn" data-sub="expediente">Expediente</button>
+      <button class="cd-subtab-btn" data-sub="informe">Informe Mensual</button>
       <button class="cd-subtab-btn" data-sub="cuentas">Cuentas y Contraseñas</button>
       <button class="cd-subtab-btn" data-sub="guiones">Guiones</button>
     </div>
@@ -538,8 +618,7 @@ Nombre cliente:
         <!-- CARD 3: Formulario editable -->
         <div class="exp-form-card">
           <h2>2. Revisa y ajusta los campos</h2>
-          <div class="hint" style="margin-bottom:14px;">Los campos marcados con 🔄 se autocompletan también desde la Junta de Aterrizaje.</div>
-          <button class="btn ghost" id="btn-actualizar-desde-junta" style="margin-bottom:20px;">🔄 Actualizar desde la Junta de Aterrizaje</button>
+          <div class="hint" style="margin-bottom:14px;">Los campos vienen del texto que pegaste arriba (Prompt 04). Revísalos antes de generar el PDF.</div>
 
           <div class="field">
             <label>Expediente de: (subtítulo, ej. "Restaurante y Cabañas")</label>
@@ -575,11 +654,11 @@ Nombre cliente:
           </div>
 
           <div class="field">
-            <label>🔄 Historia y contexto</label>
+            <label>Historia y contexto</label>
             <textarea id="exp-historia" style="min-height:110px;"></textarea>
           </div>
           <div class="field">
-            <label>🔄 Objetivos aspiracionales (negocio) — uno por línea</label>
+            <label>Objetivos aspiracionales (negocio) — uno por línea</label>
             <textarea id="exp-obj-negocio"></textarea>
           </div>
           <div class="field">
@@ -587,15 +666,15 @@ Nombre cliente:
             <textarea id="exp-obj-personal"></textarea>
           </div>
           <div class="field">
-            <label>🔄 Tono y estilo de comunicación</label>
+            <label>Tono y estilo de comunicación</label>
             <textarea id="exp-tono"></textarea>
           </div>
           <div class="field">
-            <label>🔄 Valores y creencias — uno por línea</label>
+            <label>Valores y creencias — uno por línea</label>
             <textarea id="exp-valores"></textarea>
           </div>
           <div class="field">
-            <label>🔄 Desafíos actuales — formato: Nombre corto | Descripción breve (uno por línea, hasta 4)</label>
+            <label>Desafíos actuales — formato: Nombre corto | Descripción breve (uno por línea, hasta 4)</label>
             <textarea id="exp-desafios" style="min-height:100px;"></textarea>
           </div>
           <div class="field">
@@ -615,6 +694,121 @@ Nombre cliente:
           <h2>Expedientes generados</h2>
           <div class="hint" style="margin-bottom:14px;">Cada PDF se guarda en Drive y queda aquí como vista previa. Da clic en cualquiera para verlo.</div>
           <div id="exp-pdfs-lista" class="exp-pdfs-lista"></div>
+        </div>
+
+      </div>
+
+      <!-- ============ PANEL: INFORME MENSUAL ============ -->
+      <div class="cd-panel" id="cd-panel-informe">
+
+        <!-- CARD 1: Datos generales -->
+        <div class="exp-form-card">
+          <h2>1. Mes del informe</h2>
+          <div class="hint" style="margin-bottom:8px;">Al generar el PDF, se guarda automáticamente como informe del mes actual. Si generas dos veces en el mismo mes, se reemplaza.</div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;">
+            <label style="display:inline;margin:0;">Mes actual:</label>
+            <span class="inf-mes-actual-info" id="inf-mes-actual-info">—</span>
+          </div>
+        </div>
+
+        <!-- CARD 2: Puntos clave -->
+        <div class="exp-form-card">
+          <h2>2. Puntos clave del mes</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div class="field">
+              <label>Fecha en que inició el cliente</label>
+              <input type="text" id="inf-fecha-inicio" placeholder="Ej. Enero 2026">
+            </div>
+            <div class="field">
+              <label>Barrera de views alcanzada este mes</label>
+              <input type="text" id="inf-barrera-views" placeholder="Ej. 500,000 views">
+            </div>
+            <div class="field">
+              <label>Formato ganador del mes</label>
+              <select id="inf-formato-ganador">
+                <option value="Talking Head">Talking Head</option>
+                <option value="Broll">Broll</option>
+                <option value="Voz en off">Voz en off</option>
+                <option value="__otro__">Otro (especificar)</option>
+              </select>
+              <input type="text" id="inf-formato-otro" placeholder="Escribe el formato" style="margin-top:8px;display:none;">
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: Top Performance del mes -->
+        <div class="exp-form-card">
+          <h2>3. Top Performance del mes</h2>
+          <div class="hint" style="margin-bottom:14px;">Sube la captura de cada video del podio (mostrando views). Se resetea cada mes.</div>
+          <div class="inf-img-upload-grid">
+            <div class="inf-img-upload-item">
+              <label>Top 1</label>
+              <input type="file" accept="image/*" data-inf-top="1">
+              <img class="inf-thumb" data-inf-top-preview="1">
+            </div>
+            <div class="inf-img-upload-item">
+              <label>Top 2</label>
+              <input type="file" accept="image/*" data-inf-top="2">
+              <img class="inf-thumb" data-inf-top-preview="2">
+            </div>
+            <div class="inf-img-upload-item">
+              <label>Top 3</label>
+              <input type="file" accept="image/*" data-inf-top="3">
+              <img class="inf-thumb" data-inf-top-preview="3">
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: Cuadro de Honor -->
+        <div class="exp-form-card">
+          <h2>4. Cuadro de Honor Histórico</h2>
+          <div class="hint" style="margin-bottom:14px;">Hasta 5 mejores videos históricos del cliente. Se re-suben cada mes.</div>
+          <div class="inf-honor-grid" id="inf-honor-upload-grid"></div>
+          <div class="field" style="margin-top:16px;">
+            <label>Texto de llamada (opcional)</label>
+            <input type="text" id="inf-honor-callout" placeholder='Ej. ¡X2 HITS!'>
+          </div>
+        </div>
+
+        <!-- CARD 5: Seguimiento mensual (tabla acumulativa) -->
+        <div class="exp-form-card">
+          <h2>5. Seguimiento mensual de seguidores y views</h2>
+          <div class="field">
+            <label>Redes que le llevamos a este cliente</label>
+            <div class="net-chip-row" id="inf-net-chip-row">
+              <div class="net-chip active" data-red="Instagram">Instagram</div>
+              <div class="net-chip active" data-red="Facebook">Facebook</div>
+              <div class="net-chip" data-red="TikTok">TikTok</div>
+              <div class="net-chip" data-red="YouTube">YouTube</div>
+            </div>
+            <div class="hint" style="margin-top:8px;">Solo las redes activas aparecen en el informe. Puedes cambiar esto por cliente.</div>
+          </div>
+          <div class="field">
+            <label>¿Es el primer mes del cliente?</label>
+            <div class="inf-toggle-row">
+              <div class="inf-toggle-btn" data-primer="si">Sí</div>
+              <div class="inf-toggle-btn active" data-primer="no">No</div>
+            </div>
+            <div class="hint">Los datos de meses anteriores se guardan y se cargan solos cada vez que abres al cliente.</div>
+          </div>
+          <div id="inf-tablas-redes"></div>
+        </div>
+
+        <!-- CARD 6: Guardar + Generar -->
+        <div class="exp-form-card">
+          <h2>6. Guardar y generar</h2>
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button class="btn ghost" id="btn-guardar-informe">Guardar datos</button>
+            <button class="btn" id="btn-generar-informe-pdf">Generar Informe PDF</button>
+          </div>
+          <div class="status-msg" id="inf-status" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- CARD 7: Historial -->
+        <div class="exp-form-card">
+          <h2>Informes generados</h2>
+          <div class="hint" style="margin-bottom:14px;">Cada informe mensual se guarda en Drive y queda aquí como vista previa. Da clic en cualquiera para verlo.</div>
+          <div id="inf-pdfs-lista" class="exp-pdfs-lista"></div>
         </div>
 
       </div>
@@ -740,6 +934,116 @@ Nombre cliente:
 
   <div class="exp-page closing" id="exp-p-cierre">
     <div class="titulo" id="exp-r-nombre-cierre">Nombre Cliente</div>
+    <div class="subtitulo">¡GRACIAS!</div>
+  </div>
+
+</div>
+
+<!-- ============ OFFSCREEN: 9 slides del Informe Mensual PDF ============ -->
+<div id="inf-render-root">
+
+  <div class="exp-page cover" id="inf-p-cover">
+    <div class="titulo" id="inf-r-nombre-cover">Nombre Cliente</div>
+    <div class="subtitulo" id="inf-r-mes-cover">Informe del mes</div>
+  </div>
+
+  <div class="exp-page" id="inf-p-puntos">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Puntos Clave</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado">
+      <div class="inf-card-grid">
+        <div class="inf-black-card">
+          <div class="c-title">Nuevo Formato</div>
+          <div class="c-body">En <strong id="inf-r-fecha-inicio">[FECHA]</strong> comenzamos a registrar las visualizaciones en este nuevo formato para que puedas ver cómo crece tu marca y qué tipo de videos podemos implementar.</div>
+        </div>
+        <div class="inf-black-card">
+          <div class="c-title">Barrera de los <span id="inf-r-barrera-title">[VIEWS]</span></div>
+          <div class="c-body">Este mes logramos superar la barrera de las <strong id="inf-r-barrera-inline">[VIEWS]</strong>. Con esto, debemos comprometernos a lograr videos virales porque nuestra audiencia base está creciendo.</div>
+        </div>
+        <div class="inf-black-card">
+          <div class="c-title">Formato Ganador</div>
+          <div class="c-body">Por ahora predomina el formato <strong id="inf-r-formato-inline">[FORMATO]</strong>, debemos probar otros formatos y diagnosticar cuál es el mejor para la marca.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-top">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Top Performance del Mes</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado">
+      <div class="inf-podio-wrap">
+        <div class="inf-podio-step" style="left:400px;width:300px;height:100px;background:#c9a54a;"></div>
+        <div class="inf-podio-step" style="left:120px;width:260px;height:70px;background:#b0b0b0;"></div>
+        <div class="inf-podio-step" style="left:720px;width:260px;height:50px;background:#c98c4a;"></div>
+        <div class="inf-podio-item" style="left:400px;width:300px;bottom:100px;">
+          <div class="badge"><span class="num">1</span><span class="lbl">1er lugar</span></div>
+          <img id="inf-r-top1" style="width:300px;height:340px;">
+        </div>
+        <div class="inf-podio-item" style="left:120px;width:260px;bottom:70px;">
+          <div class="badge"><span class="num">2</span><span class="lbl">2do lugar</span></div>
+          <img id="inf-r-top2" style="width:260px;height:310px;">
+        </div>
+        <div class="inf-podio-item" style="left:720px;width:260px;bottom:50px;">
+          <div class="badge"><span class="num">3</span><span class="lbl">3er lugar</span></div>
+          <img id="inf-r-top3" style="width:270px;height:280px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-honor">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Cuadro de Honor Histórico</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado-col">
+      <div class="inf-honor-row" id="inf-r-honor-row"></div>
+      <div class="inf-honor-callout" id="inf-r-honor-callout"></div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-tracker">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle" id="inf-r-tracker-title">Nombre Cliente</div></div>
+    <div class="header-line"></div>
+    <div class="body-area">
+      <div class="inf-rep-tables-row" id="inf-r-tracker-tables"></div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-chart-seguidores">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle" id="inf-r-chart-seg-title">Nombre Cliente - Seguidores</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado">
+      <div class="inf-chart-wrap"><canvas id="inf-chart-seguidores" width="1300" height="640"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-chart-views">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle" id="inf-r-chart-views-title">Nombre Cliente - Views</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado">
+      <div class="inf-chart-wrap"><canvas id="inf-chart-views" width="1300" height="640"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-page" id="inf-p-conclusion">
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Conclusión</div></div>
+    <div class="header-line"></div>
+    <div class="body-area centrado">
+      <div class="inf-card-grid">
+        <div class="inf-black-card">
+          <div class="c-title">Colaboración Constante</div>
+          <div class="c-body">Hasta el momento, la colaboración entre <strong id="inf-r-concl-nombre1">[NOMBRE CLIENTE]</strong> y Level Producer ha permitido generar piezas de contenido de manera constante.<br><br>Para mantener estos resultados y asegurar la calidad del contenido, es importante que las ideas se entreguen completas y desarrolladas, lo que permitirá optimizar la producción y publicar en tiempo y forma.</div>
+        </div>
+        <div class="inf-black-card">
+          <div class="c-title">Repetir Formato</div>
+          <div class="c-body">El formato <strong id="inf-r-concl-formato">[FORMATO GANADOR]</strong> se posicionó como el de mejor rendimiento, destacando por su capacidad para educar a la audiencia y transmitir información de valor.<br><br>Es importante definir con mayor claridad si este es el enfoque que se desea mantener. A partir de ello, se podrán explorar nuevos formatos que complementen la estrategia y ayuden a diversificar el contenido.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="exp-page closing" id="inf-p-cierre">
+    <div class="titulo" id="inf-r-nombre-cierre">Nombre Cliente</div>
     <div class="subtitulo">¡GRACIAS!</div>
   </div>
 
@@ -1422,7 +1726,7 @@ async function abrirClienteDetalle(id){
   document.getElementById('cliente-detalle-bg').classList.add('open');
 
   await cargarJunta(id); // debe ir primero: el autocompletado del Expediente lee RESPUESTAS_ACTUAL
-  await Promise.all([cargarExpediente(id), cargarCuentas(id), cargarGuiones(id)]);
+  await Promise.all([cargarExpediente(id), cargarInforme(id), cargarCuentas(id), cargarGuiones(id)]);
 }
 
 document.getElementById('btn-cerrar-cliente').addEventListener('click', () => {
@@ -1692,29 +1996,10 @@ function textoDePregunta(pregunta){
 }
 
 function autocompletarExpedienteDesdeJunta(){
-  const historiaPartes = [
-    textoDePregunta('¿Cómo surgió la marca? ¿Cuál es su origen y cuál fue la inspiración para crearla?'),
-    textoDePregunta('¿Qué hitos importantes han marcado su trayectoria hasta ahora?'),
-    textoDePregunta('¿Qué problema o necesidad específica querían resolver cuando la crearon?')
-  ].filter(Boolean);
-  document.getElementById('exp-historia').value = historiaPartes.join('\n\n');
-
-  document.getElementById('exp-tono').value = textoDePregunta('¿Cómo describirían el tono y estilo de comunicación de la marca? (Formal, informal, cercano, técnico, etc.)');
-
-  const valores = textoDePregunta('¿Cuáles son los valores fundamentales que guían a la marca?');
-  document.getElementById('exp-valores').value = valores;
-
-  const objNegocio = textoDePregunta('¿Cuáles son sus principales objetivos a corto y mediano plazo con la marca?');
-  document.getElementById('exp-obj-negocio').value = objNegocio;
-
-  const desafio = textoDePregunta('¿Qué desafíos enfrentan actualmente que podrían afectar la efectividad del contenido?');
-  document.getElementById('exp-desafios').value = desafio ? `Desafío principal | ${desafio}` : '';
+  // (Función mantenida por compatibilidad pero ya no se llama automáticamente —
+  // el flujo obligatorio ahora es siempre pasar por Claude con los 4 prompts.)
+  return;
 }
-
-document.getElementById('btn-actualizar-desde-junta').addEventListener('click', () => {
-  autocompletarExpedienteDesdeJunta();
-  document.getElementById('expediente-status').textContent = 'Campos actualizados desde la Junta de Aterrizaje (no olvides guardar).';
-});
 
 async function cargarExpediente(clienteId){
   EXP_NET_IMAGES = {};
@@ -1768,8 +2053,8 @@ async function cargarExpediente(clienteId){
     document.getElementById('exp-desafios').value = '';
     document.querySelector('#exp-net-chip-row .net-chip[data-red="Instagram"]').classList.add('active');
     document.querySelector('#exp-net-chip-row .net-chip[data-red="Facebook"]').classList.add('active');
-    // Primera vez: autocompletamos automáticamente desde la Junta
-    autocompletarExpedienteDesdeJunta();
+    // Nota: intencionalmente NO auto-rellenamos desde la Junta. El flujo obligatorio es
+    // pasar por Claude (Prompts 01-04) y pegar el resultado del Prompt 04 abajo.
   }
 
   renderExpNetUploads();
@@ -2049,6 +2334,517 @@ function renderExpPDFsLista(){
           body: JSON.stringify({ tipo:'expediente_pdf_eliminar', id: pdf.ID, fileId: pdf.FileId })
         });
         await cargarPDFsDelCliente(clienteActual.ID);
+      } catch(err) { console.error(err); alert('No se pudo eliminar.'); }
+    });
+    lista.appendChild(card);
+  });
+}
+
+// ============================================================
+// ============ INFORME MENSUAL (dentro de cada cliente) ============
+// ============================================================
+
+const INF_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const INF_REDES = ['Instagram','Facebook','TikTok','YouTube'];
+const INF_REDES_COLOR = { Facebook:'#4267B2', Instagram:'#a86bd8', TikTok:'#111111', YouTube:'#d32f2f' };
+let INF_TRACKER = {}; // { "Instagram": { "2026-07": { seguidores: 1234, views: 5678 }, ... }, ... }
+let INF_TOP_IMAGES = {};
+let INF_HONOR_IMAGES = {};
+let INF_PDFS_LISTA = [];
+let INF_CHART_SEG = null;
+let INF_CHART_VIEWS = null;
+
+function infMesActualKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function infMesActualLegible(){
+  const d = new Date();
+  return INF_MESES[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+// Devuelve el key "2026-07" -> año 2026, idxMes 6 (0-based) para acceso a INF_MESES
+function infParseKey(key){
+  const partes = String(key).split('-');
+  return { year: parseInt(partes[0], 10), idxMes: parseInt(partes[1], 10) - 1 };
+}
+
+// Ordena las keys de tracker cronológicamente
+function infOrdenarKeys(keys){
+  return keys.slice().sort((a, b) => a.localeCompare(b));
+}
+
+async function cargarInforme(clienteId){
+  INF_TOP_IMAGES = {};
+  INF_HONOR_IMAGES = {};
+  INF_TRACKER = {};
+  document.getElementById('inf-mes-actual-info').textContent = infMesActualLegible();
+  document.getElementById('inf-fecha-inicio').value = '';
+  document.getElementById('inf-barrera-views').value = '';
+  document.getElementById('inf-formato-ganador').value = 'Talking Head';
+  document.getElementById('inf-formato-otro').value = '';
+  document.getElementById('inf-formato-otro').style.display = 'none';
+  document.getElementById('inf-honor-callout').value = '';
+  document.getElementById('inf-status').textContent = '';
+
+  let existente = null;
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=Informes&t=' + Date.now(), { cache:'no-store' });
+    const todos = await resp.json();
+    existente = todos.find(r => String(r.ClienteID) === String(clienteId));
+  } catch(err){ console.error(err); }
+
+  // Redes activas: default
+  document.querySelectorAll('#inf-net-chip-row .net-chip').forEach(c => c.classList.remove('active'));
+
+  if(existente){
+    document.getElementById('inf-fecha-inicio').value = existente.FechaInicio || '';
+    document.getElementById('inf-barrera-views').value = existente.BarreraViews || '';
+    const fmt = existente.FormatoGanador || 'Talking Head';
+    const fmtSelect = document.getElementById('inf-formato-ganador');
+    const opciones = Array.from(fmtSelect.options).map(o => o.value);
+    if(opciones.includes(fmt)){
+      fmtSelect.value = fmt;
+    } else {
+      fmtSelect.value = '__otro__';
+      document.getElementById('inf-formato-otro').value = fmt;
+      document.getElementById('inf-formato-otro').style.display = 'block';
+    }
+    document.getElementById('inf-honor-callout').value = existente.HonorCallout || '';
+    (existente.RedesActivas || '').split(',').map(s => s.trim()).filter(Boolean).forEach(red => {
+      const chip = document.querySelector(`#inf-net-chip-row .net-chip[data-red="${red}"]`);
+      if(chip) chip.classList.add('active');
+    });
+    try {
+      INF_TRACKER = JSON.parse(existente.Tracker || '{}');
+    } catch(err) { INF_TRACKER = {}; }
+  } else {
+    // Nuevo cliente: activar Instagram y Facebook por defecto
+    document.querySelector('#inf-net-chip-row .net-chip[data-red="Instagram"]').classList.add('active');
+    document.querySelector('#inf-net-chip-row .net-chip[data-red="Facebook"]').classList.add('active');
+  }
+
+  renderInfHonorUploads();
+  renderInfTablasForm();
+  await cargarInformePDFsDelCliente(clienteId);
+}
+
+// ---- Chips de redes: al cambiar, re-renderiza tablas ----
+document.querySelectorAll('#inf-net-chip-row .net-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    renderInfTablasForm();
+  });
+});
+
+// ---- Toggle "primer mes" ----
+document.querySelectorAll('#cd-panel-informe .inf-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cd-panel-informe .inf-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderInfTablasForm();
+  });
+});
+
+// ---- Formato ganador: mostrar campo "otro" ----
+document.getElementById('inf-formato-ganador').addEventListener('change', () => {
+  const otro = document.getElementById('inf-formato-otro');
+  otro.style.display = document.getElementById('inf-formato-ganador').value === '__otro__' ? 'block' : 'none';
+});
+function infGetFormatoGanador(){
+  const sel = document.getElementById('inf-formato-ganador');
+  return sel.value === '__otro__' ? (document.getElementById('inf-formato-otro').value.trim() || 'Otro formato') : sel.value;
+}
+
+// ---- Top Performance: 3 imágenes ----
+document.querySelectorAll('input[data-inf-top]').forEach(input => {
+  input.addEventListener('change', (e) => {
+    const n = e.target.dataset.infTop;
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      INF_TOP_IMAGES[n] = ev.target.result;
+      const preview = document.querySelector(`[data-inf-top-preview="${n}"]`);
+      preview.src = ev.target.result;
+      preview.classList.add('visible');
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// ---- Cuadro de Honor: hasta 5 imágenes ----
+function renderInfHonorUploads(){
+  const container = document.getElementById('inf-honor-upload-grid');
+  container.innerHTML = '';
+  for(let i = 1; i <= 5; i++){
+    const item = document.createElement('div');
+    item.className = 'inf-img-upload-item';
+    item.innerHTML = `
+      <label>Video ${i}</label>
+      <input type="file" accept="image/*" data-inf-honor="${i}">
+      <img class="inf-thumb" data-inf-honor-preview="${i}">
+    `;
+    container.appendChild(item);
+  }
+  container.querySelectorAll('input[data-inf-honor]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const n = e.target.dataset.infHonor;
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        INF_HONOR_IMAGES[n] = ev.target.result;
+        const preview = document.querySelector(`[data-inf-honor-preview="${n}"]`);
+        preview.src = ev.target.result;
+        preview.classList.add('visible');
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+// ---- Tabla de seguimiento mensual (acumulativa por mes) ----
+function renderInfTablasForm(){
+  const container = document.getElementById('inf-tablas-redes');
+  container.innerHTML = '';
+  const redesActivas = Array.from(document.querySelectorAll('#inf-net-chip-row .net-chip.active')).map(c => c.dataset.red);
+  const primerMes = document.querySelector('#cd-panel-informe .inf-toggle-btn.active').dataset.primer === 'si';
+  const mesActualKey = infMesActualKey();
+
+  redesActivas.forEach(red => {
+    // Reunimos todos los meses que aparecen en el tracker de esta red + el mes actual
+    const trackerRed = INF_TRACKER[red] || {};
+    let keys = Object.keys(trackerRed);
+    if(!keys.includes(mesActualKey)) keys.push(mesActualKey);
+    // Si es primer mes: solo mostramos el mes actual (aunque haya datos viejos)
+    if(primerMes) keys = [mesActualKey];
+    keys = infOrdenarKeys(keys);
+
+    const block = document.createElement('div');
+    block.className = 'inf-net-block';
+    let filas = '';
+    keys.forEach(key => {
+      const parseado = infParseKey(key);
+      const nombreMes = INF_MESES[parseado.idxMes] + ' ' + parseado.year;
+      const esActual = key === mesActualKey;
+      const datos = trackerRed[key] || { seguidores: '', views: '' };
+      const sVal = datos.seguidores === null || datos.seguidores === undefined ? '' : datos.seguidores;
+      const vVal = datos.views === null || datos.views === undefined ? '' : datos.views;
+      filas += `
+        <tr>
+          <td class="mes-cell${esActual ? ' mes-actual' : ''}">${nombreMes}${esActual ? ' (actual)' : ''}</td>
+          <td><input type="number" data-inf-red="${red}" data-inf-key="${key}" data-inf-campo="seguidores" value="${sVal}" placeholder="0"></td>
+          <td><input type="number" data-inf-red="${red}" data-inf-key="${key}" data-inf-campo="views" value="${vVal}" placeholder="0"></td>
+        </tr>`;
+    });
+    block.innerHTML = `
+      <h3>${red}<span class="inf-net-mini">${primerMes ? 'primer mes' : 'histórico completo'}</span></h3>
+      <table class="inf-net-table">
+        <thead><tr><th>Mes</th><th>Seguidores</th><th>Views</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    `;
+    container.appendChild(block);
+  });
+}
+
+// Toma los valores del formulario y los mete al INF_TRACKER en memoria
+function infRecolectaTrackerDelForm(){
+  const redesActivas = Array.from(document.querySelectorAll('#inf-net-chip-row .net-chip.active')).map(c => c.dataset.red);
+  const nuevoTracker = {};
+  redesActivas.forEach(red => {
+    // Preservamos datos que ya existían por si el usuario tiene meses viejos ocultos por el toggle "primer mes"
+    const existentesRed = INF_TRACKER[red] || {};
+    nuevoTracker[red] = Object.assign({}, existentesRed);
+    document.querySelectorAll(`input[data-inf-red="${red}"]`).forEach(inp => {
+      const key = inp.dataset.infKey;
+      const campo = inp.dataset.infCampo;
+      const val = inp.value;
+      if(!nuevoTracker[red][key]) nuevoTracker[red][key] = { seguidores: null, views: null };
+      nuevoTracker[red][key][campo] = val === '' ? null : parseInt(val, 10);
+    });
+  });
+  INF_TRACKER = nuevoTracker;
+  return INF_TRACKER;
+}
+
+function infRecolectaFormulario(){
+  const redesActivas = Array.from(document.querySelectorAll('#inf-net-chip-row .net-chip.active')).map(c => c.dataset.red);
+  infRecolectaTrackerDelForm();
+  return {
+    FechaInicio: document.getElementById('inf-fecha-inicio').value.trim(),
+    BarreraViews: document.getElementById('inf-barrera-views').value.trim(),
+    FormatoGanador: infGetFormatoGanador(),
+    HonorCallout: document.getElementById('inf-honor-callout').value.trim(),
+    RedesActivas: redesActivas.join(','),
+    Tracker: JSON.stringify(INF_TRACKER)
+  };
+}
+
+// ---- Guardar datos del informe (sin generar PDF) ----
+document.getElementById('btn-guardar-informe').addEventListener('click', async () => {
+  const status = document.getElementById('inf-status');
+  status.textContent = 'Guardando...';
+  const datos = infRecolectaFormulario();
+  try {
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(Object.assign({ tipo:'informe_guardar', clienteId: clienteActual.ID }, datos))
+    });
+    status.textContent = 'Guardado ✓';
+  } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
+});
+
+// ---- Chart de línea para PDF ----
+function infConstruyeChart(canvasId, metrica, redesActivas, keysOrdenadas){
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  // Etiquetas: nombre de cada mes cronológico
+  const labels = keysOrdenadas.map(k => {
+    const p = infParseKey(k);
+    return INF_MESES[p.idxMes].substring(0, 3) + '.' + String(p.year).substring(2);
+  });
+  const datasets = redesActivas.map(red => {
+    const trackerRed = INF_TRACKER[red] || {};
+    const datos = keysOrdenadas.map(k => {
+      const v = trackerRed[k];
+      if(!v) return null;
+      return v[metrica] === null || v[metrica] === undefined ? null : v[metrica];
+    });
+    return {
+      label: red,
+      data: datos,
+      borderColor: INF_REDES_COLOR[red],
+      backgroundColor: INF_REDES_COLOR[red],
+      spanGaps: true,
+      tension: 0.3,
+      pointRadius: 4
+    };
+  });
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: false, animation: false,
+      plugins: { legend: { position: 'top', labels: { color:'#333', font:{ family:'Montserrat', size:14 } } } },
+      scales: {
+        x: { ticks:{ color:'#333', font:{ family:'Montserrat', size:12 } }, grid:{ color:'#e4e0d6' } },
+        y: { beginAtZero:true, ticks:{ color:'#333', font:{ family:'Montserrat', size:12 } }, grid:{ color:'#e4e0d6' } }
+      }
+    }
+  });
+}
+
+async function esperarFuentesInforme(){
+  const combos = [
+    '600 17px "Cormorant Garamond"','500 66px "Cormorant Garamond"',
+    '700 16px "Cormorant Garamond"','700 20px "Cormorant Garamond"',
+    '400 14.5px "Montserrat"','700 14.5px "Montserrat"','700 15px "Montserrat"','600 11px "Montserrat"'
+  ];
+  try{ await Promise.all(combos.map(f => document.fonts.load(f))); } catch(e){}
+  if(document.fonts && document.fonts.ready){ await document.fonts.ready; }
+}
+
+async function renderInfPageToImage(id){
+  const node = document.getElementById(id);
+  const canvas = await html2canvas(node, {scale:2, backgroundColor:'#f2efe9', useCORS:true, width:1600, height:900});
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+// ---- Generar el PDF del informe ----
+document.getElementById('btn-generar-informe-pdf').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-generar-informe-pdf');
+  const status = document.getElementById('inf-status');
+  btn.disabled = true;
+  status.textContent = 'Preparando contenido...';
+
+  const nombre = clienteActual.Nombre || 'Nombre Cliente';
+  const datos = infRecolectaFormulario();
+  const mesActualLegible = infMesActualLegible();
+
+  // --- Guardado del tracker en el sheet, ANTES de generar el PDF ---
+  try {
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(Object.assign({ tipo:'informe_guardar', clienteId: clienteActual.ID }, datos))
+    });
+  } catch(err){ console.error(err); }
+
+  // --- Poblar slides ---
+  document.getElementById('inf-r-nombre-cover').textContent = nombre;
+  document.getElementById('inf-r-mes-cover').textContent = 'Informe ' + mesActualLegible;
+  document.getElementById('inf-r-nombre-cierre').textContent = nombre;
+
+  document.getElementById('inf-r-fecha-inicio').textContent = datos.FechaInicio || '[fecha]';
+  document.getElementById('inf-r-barrera-title').textContent = datos.BarreraViews || '[views]';
+  document.getElementById('inf-r-barrera-inline').textContent = datos.BarreraViews || '[views]';
+  document.getElementById('inf-r-formato-inline').textContent = datos.FormatoGanador;
+
+  // Top performance
+  ['1','2','3'].forEach(n => {
+    const img = document.getElementById(`inf-r-top${n}`);
+    img.src = INF_TOP_IMAGES[n] || '';
+    img.style.display = INF_TOP_IMAGES[n] ? 'block' : 'none';
+  });
+
+  // Cuadro de honor
+  const honorRow = document.getElementById('inf-r-honor-row');
+  honorRow.innerHTML = '';
+  for(let i = 1; i <= 5; i++){
+    if(INF_HONOR_IMAGES[i]){
+      const img = document.createElement('img');
+      img.src = INF_HONOR_IMAGES[i];
+      honorRow.appendChild(img);
+    }
+  }
+  document.getElementById('inf-r-honor-callout').textContent = datos.HonorCallout;
+
+  // Tracker: tablas del PDF
+  document.getElementById('inf-r-tracker-title').textContent = nombre + ' - Seguimiento';
+  const redesActivas = datos.RedesActivas ? datos.RedesActivas.split(',').filter(Boolean) : [];
+
+  // Reunir todas las keys de todas las redes activas para tener el histórico común
+  const setKeys = new Set();
+  redesActivas.forEach(red => {
+    Object.keys(INF_TRACKER[red] || {}).forEach(k => setKeys.add(k));
+  });
+  // Aseguramos incluir el mes actual
+  setKeys.add(infMesActualKey());
+  const keysOrdenadas = infOrdenarKeys(Array.from(setKeys));
+
+  const tablasContainer = document.getElementById('inf-r-tracker-tables');
+  tablasContainer.innerHTML = '';
+  if(redesActivas.length === 0){
+    tablasContainer.innerHTML = '<div style="text-align:center;width:100%;font-size:20px;color:#666;">Activa al menos una red en el formulario</div>';
+  }
+  redesActivas.forEach(red => {
+    const col = document.createElement('div');
+    col.style.flex = '1';
+    const trackerRed = INF_TRACKER[red] || {};
+    let filas = '';
+    keysOrdenadas.forEach(k => {
+      const p = infParseKey(k);
+      const nombreMes = INF_MESES[p.idxMes] + ' ' + p.year;
+      const datos = trackerRed[k];
+      const s = datos && datos.seguidores !== null && datos.seguidores !== undefined ? datos.seguidores.toLocaleString('es-MX') : '';
+      const v = datos && datos.views !== null && datos.views !== undefined ? datos.views.toLocaleString('es-MX') : '';
+      filas += `<tr><td>${nombreMes}</td><td>${s}</td><td>${v}</td></tr>`;
+    });
+    col.innerHTML = `
+      <div class="net-title">${red}</div>
+      <table class="inf-rep-table">
+        <thead><tr><th>Mes</th><th>Seguidores</th><th>Views</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    `;
+    tablasContainer.appendChild(col);
+  });
+
+  // Gráficas
+  document.getElementById('inf-r-chart-seg-title').textContent = nombre + ' - Seguidores';
+  document.getElementById('inf-r-chart-views-title').textContent = nombre + ' - Views';
+  if(INF_CHART_SEG) INF_CHART_SEG.destroy();
+  if(INF_CHART_VIEWS) INF_CHART_VIEWS.destroy();
+  INF_CHART_SEG = infConstruyeChart('inf-chart-seguidores', 'seguidores', redesActivas, keysOrdenadas);
+  INF_CHART_VIEWS = infConstruyeChart('inf-chart-views', 'views', redesActivas, keysOrdenadas);
+
+  // Conclusión
+  document.getElementById('inf-r-concl-nombre1').textContent = nombre;
+  document.getElementById('inf-r-concl-formato').textContent = datos.FormatoGanador;
+
+  await esperarFuentesInforme();
+  await new Promise(r => setTimeout(r, 150));
+
+  status.textContent = 'Renderizando slides...';
+  const pageIds = [
+    'inf-p-cover','inf-p-puntos','inf-p-top','inf-p-honor','inf-p-tracker',
+    'inf-p-chart-seguidores','inf-p-chart-views','inf-p-conclusion','inf-p-cierre'
+  ];
+  const images = [];
+  for(const id of pageIds){ images.push(await renderInfPageToImage(id)); }
+
+  status.textContent = 'Armando PDF...';
+  const pdf = new jsPDF({orientation:'landscape', unit:'px', format:[1600,900]});
+  images.forEach((img, i) => {
+    if(i > 0) pdf.addPage([1600,900], 'landscape');
+    pdf.addImage(img, 'JPEG', 0, 0, 1600, 900);
+  });
+  const nombreSafe = nombre.replace(/[^a-zA-Z0-9]+/g, '_');
+  const mesSafe = mesActualLegible.replace(/\s+/g, '_');
+
+  // 1) Descarga local
+  pdf.save(`Informe_${nombreSafe}_${mesSafe}.pdf`);
+
+  // 2) Subida a Drive
+  status.textContent = 'Guardando copia en Drive...';
+  try {
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    const resp = await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        tipo: 'informe_pdf_guardar',
+        clienteId: clienteActual.ID,
+        clienteNombre: nombre + ' - ' + mesActualLegible,
+        pdfBase64: pdfBase64
+      })
+    });
+    const respJson = await resp.json();
+    if(respJson.status === 'ok'){
+      status.textContent = '✓ Informe descargado y guardado en Drive. Ya aparece abajo.';
+      await cargarInformePDFsDelCliente(clienteActual.ID);
+    } else {
+      status.textContent = '⚠ Se descargó, pero no se pudo guardar en Drive. ' + (respJson.mensaje || '');
+    }
+  } catch(err) {
+    console.error(err);
+    status.textContent = '⚠ Se descargó, pero no se pudo guardar en Drive (revisa tu conexión).';
+  }
+
+  btn.disabled = false;
+});
+
+// ---- Historial de PDFs de informe por cliente ----
+async function cargarInformePDFsDelCliente(clienteId){
+  const lista = document.getElementById('inf-pdfs-lista');
+  lista.innerHTML = '<div class="exp-pdfs-vacio">Cargando...</div>';
+  try {
+    const resp = await fetch(SHEETS_URL + '?hoja=InformesPDFs&t=' + Date.now(), { cache:'no-store' });
+    const todos = await resp.json();
+    INF_PDFS_LISTA = todos
+      .filter(r => String(r.ClienteID) === String(clienteId))
+      .sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO)));
+  } catch(err) {
+    console.error(err);
+    INF_PDFS_LISTA = [];
+  }
+  renderInfPDFsLista();
+}
+
+function renderInfPDFsLista(){
+  const lista = document.getElementById('inf-pdfs-lista');
+  if(INF_PDFS_LISTA.length === 0){
+    lista.innerHTML = '<div class="exp-pdfs-vacio">Todavía no has generado ningún informe para este cliente.</div>';
+    return;
+  }
+  lista.innerHTML = '';
+  INF_PDFS_LISTA.forEach(pdf => {
+    const card = document.createElement('div');
+    card.className = 'exp-pdf-card';
+    card.innerHTML = `
+      <button class="pdf-del" title="Eliminar" data-id="${pdf.ID}" data-fileid="${pdf.FileId}">×</button>
+      <a class="pdf-thumb" href="${pdf.PreviewURL}" target="_blank" rel="noopener">📊</a>
+      <a class="pdf-nombre" href="${pdf.PreviewURL}" target="_blank" rel="noopener">${pdf.NombreArchivo || 'Informe.pdf'}</a>
+      <div class="pdf-fecha">${pdf.FechaLegible || ''}</div>
+    `;
+    card.querySelector('.pdf-del').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if(!confirm('¿Eliminar este informe PDF? (se mueve a la papelera de Drive)')) return;
+      try {
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'informe_pdf_eliminar', id: pdf.ID, fileId: pdf.FileId })
+        });
+        await cargarInformePDFsDelCliente(clienteActual.ID);
       } catch(err) { console.error(err); alert('No se pudo eliminar.'); }
     });
     lista.appendChild(card);
