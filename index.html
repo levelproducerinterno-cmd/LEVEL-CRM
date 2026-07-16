@@ -150,6 +150,35 @@
   .guion-item .g-body textarea.guion-texto{min-height:220px;}
   .guion-item .g-actions{display:flex;gap:10px;margin-top:14px;}
 
+  /* ============ EXPEDIENTE — cards, prompts, listado de PDFs (visible en el CRM) ============ */
+  .exp-guia-card{background:var(--negro);color:#f0ede6;border-radius:4px;padding:28px 30px;margin-bottom:24px;}
+  .exp-guia-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;border-bottom:1px solid var(--rojo);padding-bottom:12px;color:#fff;}
+  .exp-guia-card ol{margin:0 0 20px;padding-left:22px;font-size:0.88rem;line-height:1.65;color:#d0ccc2;}
+  .exp-guia-card ol strong{color:#fff;}
+  .exp-btn-claude{display:inline-block;background:var(--rojo);color:#fff;text-decoration:none;padding:12px 22px;border-radius:2px;font-size:0.85rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;}
+  .exp-btn-claude:hover{filter:brightness(1.15);}
+  .exp-prompt-block{border:1px solid #2a2825;border-radius:2px;margin-top:18px;overflow:hidden;background:#fbfaf7;}
+  .exp-prompt-header{background:#1a1817;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;font-weight:700;letter-spacing:0.03em;}
+  .exp-copy-prompt-btn{background:none;border:1px solid #666;color:#fff;padding:5px 12px;border-radius:2px;cursor:pointer;font-size:0.75rem;}
+  .exp-copy-prompt-btn:hover{border-color:#fff;}
+  .exp-copy-prompt-btn.copied{background:#1a8f4c;border-color:#1a8f4c;}
+  .exp-prompt-block pre{margin:0;padding:16px;white-space:pre-wrap;font-family:'Montserrat',sans-serif;font-size:0.78rem;line-height:1.55;color:#2a2a2a;background:#fbfaf7;max-height:240px;overflow-y:auto;}
+  .exp-prompt-hint{padding:10px 16px;font-size:0.72rem;color:#8a8578;background:#fbfaf7;border-top:1px solid #eae5d8;}
+
+  .exp-form-card{background:var(--hueso);color:var(--negro);border-radius:4px;padding:28px 30px;margin-bottom:24px;box-shadow:0 6px 24px rgba(0,0,0,0.08);}
+  .exp-form-card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.1rem;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;border-bottom:1px solid var(--rojo);padding-bottom:10px;}
+
+  .exp-pdfs-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .exp-pdf-card{background:#fff;border:1px solid #e4e0d6;border-radius:4px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px;position:relative;transition:box-shadow 0.15s,border-color 0.15s;}
+  .exp-pdf-card:hover{border-color:var(--rojo);box-shadow:0 4px 14px rgba(0,0,0,0.08);}
+  .exp-pdf-card .pdf-thumb{display:flex;align-items:center;justify-content:center;height:70px;background:linear-gradient(180deg,#f7f5f2,#eae5d8);border-radius:2px;font-size:32px;color:var(--rojo);margin-bottom:8px;}
+  .exp-pdf-card .pdf-nombre{font-size:0.82rem;font-weight:700;color:var(--negro);text-decoration:none;line-height:1.35;word-break:break-word;}
+  .exp-pdf-card .pdf-nombre:hover{color:var(--rojo);}
+  .exp-pdf-card .pdf-fecha{font-size:0.72rem;color:#8a8578;letter-spacing:0.02em;}
+  .exp-pdf-card .pdf-del{position:absolute;top:6px;right:8px;background:none;border:none;color:#c0bcae;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;}
+  .exp-pdf-card .pdf-del:hover{color:var(--rojo);}
+  .exp-pdfs-vacio{padding:24px;text-align:center;color:#8a8578;font-size:0.85rem;background:#fbfaf7;border:1px dashed #d8d3c9;border-radius:2px;}
+
   /* ============ EXPEDIENTE — slides offscreen para el PDF ============ */
   #exp-render-root{position:fixed;top:0;left:-99999px;width:1600px;}
   .exp-page{
@@ -175,12 +204,16 @@
   .exp-text-block{display:flex;align-items:center;justify-content:center;height:100%;}
   .exp-text-block p{font-size:22px;line-height:1.6;color:#232323;text-align:center;max-width:1150px;margin:0 0 18px;}
 
-  .exp-arq-wrap{position:relative;width:600px;height:508px;margin:0 auto;}
-  .exp-arq-triangle-img{width:100%;height:100%;display:block;}
-  .exp-arq-label{position:absolute;font-family:'Montserrat',sans-serif;font-weight:700;font-size:20px;letter-spacing:0.1em;color:#111;text-transform:uppercase;white-space:nowrap;}
-  .exp-arq-label.exp-arq-top{top:-14px;left:50%;transform:translateX(-50%);}
-  .exp-arq-label.exp-arq-left{bottom:58px;left:15.6%;transform:translateX(calc(-100% - 22px));}
-  .exp-arq-label.exp-arq-right{bottom:58px;left:84.4%;transform:translateX(22px);}
+  .exp-arq-content{display:flex;flex-direction:column;height:100%;position:relative;}
+  .exp-arq-triangle-mark{position:absolute;top:-10px;right:4px;width:92px;height:78px;opacity:0.16;}
+  .exp-arq-eyebrow{font-size:14px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--rojo);margin-bottom:10px;}
+  .exp-arq-pilar{text-align:center;padding:0 40px;margin-bottom:26px;}
+  .exp-arq-pilar .exp-arq-nombre{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:42px;letter-spacing:0.02em;color:#111;margin-bottom:12px;}
+  .exp-arq-pilar .exp-arq-desc{font-size:19px;line-height:1.55;color:#2a2a2a;max-width:1180px;margin:0 auto;max-height:150px;overflow:hidden;}
+  .exp-arq-secundarios{display:flex;gap:36px;justify-content:center;align-items:stretch;flex:1;}
+  .exp-arq-sec-card{width:520px;background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:24px 30px;text-align:center;display:flex;flex-direction:column;}
+  .exp-arq-sec-card .exp-arq-nombre{font-family:'Montserrat',sans-serif;font-weight:700;font-size:21px;letter-spacing:0.06em;text-transform:uppercase;color:#111;margin-bottom:10px;}
+  .exp-arq-sec-card .exp-arq-desc{font-size:16px;line-height:1.55;color:#333;max-height:190px;overflow:hidden;}
 
   .exp-phones-row{display:flex;justify-content:center;gap:60px;height:100%;align-items:center;}
   .exp-phone{width:190px;height:390px;border:6px solid #111;border-radius:36px;position:relative;background:#f2efe9;overflow:hidden;}
@@ -335,72 +368,255 @@
 
       <div class="cd-panel active" id="cd-panel-junta">
         <div id="junta-form"></div>
-        <button class="btn" id="btn-guardar-junta">Guardar junta de aterrizaje</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn" id="btn-guardar-junta">Guardar junta de aterrizaje</button>
+          <button class="btn ghost" id="btn-copiar-junta">📋 Copiar toda la junta para pegar en Claude</button>
+        </div>
         <div class="status-msg" id="junta-status" style="margin-top:10px;"></div>
       </div>
 
       <div class="cd-panel" id="cd-panel-expediente">
-        <div class="hint" style="margin-bottom:18px;">Los campos marcados con 🔄 se autocompletan desde la Junta de Aterrizaje. Puedes editarlos libremente antes de generar el PDF.</div>
-        <button class="btn ghost" id="btn-actualizar-desde-junta" style="margin-bottom:20px;">🔄 Actualizar desde la Junta de Aterrizaje</button>
 
-        <div class="field">
-          <label>Expediente de: (subtítulo, ej. "Restaurante y Cabañas")</label>
-          <input type="text" id="exp-subtitulo" placeholder="Ej. Restaurante y Cabañas">
-        </div>
+        <!-- CARD 1: Instrucciones + 4 prompts -->
+        <div class="exp-guia-card">
+          <h2>Cómo generar el expediente en Claude</h2>
+          <ol>
+            <li>Antes de este paso, ve a la <strong>Junta de Aterrizaje</strong> y usa el botón "📋 Copiar toda la junta" para tener el contexto del cliente en tu portapapeles.</li>
+            <li>Abre un chat nuevo en Claude con el botón de abajo y pega ahí la junta como primer mensaje (contexto inicial).</li>
+            <li>Luego corre los 4 prompts en orden, uno tras otro, en ese mismo chat.</li>
+            <li>Copia el resultado completo del <strong>Prompt 04</strong> y pégalo abajo, en el paso 1.</li>
+          </ol>
+          <a class="exp-btn-claude" href="https://claude.ai/new" target="_blank" rel="noopener">🔗 Abrir chat nuevo en Claude</a>
 
-        <label style="margin-top:6px;">Arquetipos (1 pilar + hasta 2 secundarios)</label>
-        <div class="grid3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
-          <input type="text" id="exp-arq1" placeholder="Vértice superior (pilar)">
-          <input type="text" id="exp-arq2" placeholder="Vértice inferior izquierdo">
-          <input type="text" id="exp-arq3" placeholder="Vértice inferior derecho">
-        </div>
+          <div class="exp-prompt-block">
+            <div class="exp-prompt-header"><span>Prompt 01 — Contexto Inicial</span><button class="exp-copy-prompt-btn" data-target="exp-prompt-01">Copiar</button></div>
+            <pre id="exp-prompt-01">Hola Claude, quiero que analices y aprendas todo sobre [NOMBRE DE LA MARCA] a partir de la informacion detallada que te proporcionare a continuacion.
 
-        <div class="field">
-          <label>Redes sociales activas</label>
-          <div class="net-chip-row" id="exp-net-chip-row">
-            <div class="net-chip active" data-red="Instagram">Instagram</div>
-            <div class="net-chip active" data-red="Facebook">Facebook</div>
-            <div class="net-chip" data-red="TikTok">TikTok</div>
-            <div class="net-chip" data-red="YouTube">YouTube</div>
+Tu tarea es sumergirte en el mundo de esta marca, entender su esencia, historia, valores, tono y aspiraciones, para que puedas apoyarme en la creacion de contenido, estrategias y comunicacion.
+
+Considera lo siguiente:
+
+1. Estudia con detalle cada informacion proporcionada.
+2. Identifica los aspectos clave que definen a la marca.
+3. Manten siempre un enfoque coherente con su tono y estilo comunicacional.
+4. Establece conexiones logicas entre los datos, para poder desarrollar propuestas alineadas a la vision y objetivos de la marca.
+
+Cuando termines, quiero que confirmes con un breve resumen que has comprendido correctamente todos los puntos clave. A partir de ahi, comenzaremos a trabajar juntos en proyectos creativos y estrategicos.
+
+Aqui esta la informacion:
+
+[Aqui pegas todo el brief / onboarding del cliente]</pre>
+            <div class="exp-prompt-hint">Empieza el chat con este prompt + la junta de aterrizaje pegada abajo.</div>
           </div>
-          <div class="hint" style="margin-top:10px;">Sube una captura de pantalla del perfil de cada red activa (opcional, se acomoda dentro del mockup del celular).</div>
-          <div id="exp-net-uploads" style="margin-top:12px;"></div>
+
+          <div class="exp-prompt-block">
+            <div class="exp-prompt-header"><span>Prompt 02 — Brief de Esencia</span><button class="exp-copy-prompt-btn" data-target="exp-prompt-02">Copiar</button></div>
+            <pre id="exp-prompt-02">Ahora que te he proporcionado toda la informacion de [NOMBRE DE LA MARCA], quiero que realices un brief con los puntos clave. Este resumen debe incluir:
+
+1. Historia y contexto: sintesis de los eventos importantes que han definido la marca.
+2. Objetivos y aspiraciones: metas principales a corto y largo plazo.
+3. Tono y estilo de comunicacion: como se comunica la marca.
+4. Valores y creencias: que la motiva y sus principios fundamentales.
+5. Audiencia clave: a quien dirige su mensaje.
+6. Desafios actuales: barreras o problemas que enfrenta hoy.
+7. Intereses y pasiones: lo que inspira a la marca.
+8. Arquetipo de contenido: basandote en todo lo anterior, identifica cual o cuales de los siguientes arquetipos define mejor la forma en que esta marca comunica y debe comunicar:
+
+— BUFON: entretenimiento puro, viralidad, sketch, POV, retos. Casual, sin tecnica.
+— AMANTE: atraccion y seduccion, despierta vanidad. Bailes, outfits, trend sounds. Provocador.
+— SACERDOTE: guia moral y etica, dicta lo que esta bien o mal. Reflexiones, podcast, service.
+— MAGO: invita a un mundo desconocido, mistico y oculto. Reflexiones, escritos, lenguaje mistico.
+— GLADIADOR: rompe lo establecido, genera polemica. Reacciones, reviews, polariza.
+— ARTISTA: crea aspiracion, impone estilo y cultura. Vlogs, making off, estetica premium, effortless.
+— SABIO: voz de la experiencia, guia a los que no han recorrido el camino. Podcast, step by step, lenguaje tecnico.
+
+Indica el arquetipo PILAR y hasta 2 arquetipos secundarios. Justifica brevemente por que cada uno.
+
+El objetivo es confirmar que has comprendido correctamente la esencia de [NOMBRE DE LA MARCA]. Si algo no coincide, te lo hare saber para corregirlo.</pre>
+            <div class="exp-prompt-hint">Ejecutar en el mismo chat, inmediatamente después del Prompt 01. Revisa y valida antes de continuar.</div>
+          </div>
+
+          <div class="exp-prompt-block">
+            <div class="exp-prompt-header"><span>Prompt 03 — Biografía Poderosa</span><button class="exp-copy-prompt-btn" data-target="exp-prompt-03">Copiar</button></div>
+            <pre id="exp-prompt-03">No te veo al 100% y eso no es lo que necesitamos ahora. Quiero toda tu energia, creatividad y capacidad al maximo. Este es el proyecto de nuestras vidas, y para lograrlo te necesito completamente comprometido, inspirado y listo para brillar. Este es tu momento de entrar a la cancha y hacerlo epico!
+
+Genera una biografia poderosa para [NOMBRE DEL CLIENTE / MARCA]. Quiero que te sumerjas en su mundo, que entiendas quien es, que lo mueve, sus objetivos, desafios y todo lo que lo hace unico/a. Quiero sentir que estas en su piel, que lo comprendes a un nivel tan profundo que puedes comunicarlo de manera perfecta y autentica.
+
+Vamos con todo! Quiero precision, emocion y toda tu excelencia. Hazlo memorable. Hazlo increible.
+
+(No importa si hacemos la biografia por partes — necesito que sea extensa y con bastante conexion emocional)</pre>
+            <div class="exp-prompt-hint">Ejecutar solo después de validar el brief del Prompt 02. Mismo chat.</div>
+          </div>
+
+          <div class="exp-prompt-block">
+            <div class="exp-prompt-header"><span>Prompt 04 — Expediente Completo</span><button class="exp-copy-prompt-btn" data-target="exp-prompt-04">Copiar</button></div>
+            <pre id="exp-prompt-04">Ahora genera el contenido completo del expediente de [NOMBRE DEL CLIENTE / MARCA] listo para copiar y pegar. Usa todo lo que ya sabes de esta marca. Respeta el formato exacto, sin agregar texto extra fuera de los campos:
+
+---
+SLIDE 1 — PORTADA
+Nombre cliente:
+Expediente de:
+
+---
+SLIDE 2 — ARQUETIPOS Y DESCRIPCIÓN
+Vértice superior (pilar): [Nombre del arquetipo] — [Descripción breve: qué es y por qué aplica a esta marca]
+Vértice inferior izquierdo: [Nombre del arquetipo] — [Descripción breve: por qué aplica]
+Vértice inferior derecho: [Nombre del arquetipo] — [Descripción breve: por qué aplica]
+
+---
+SLIDE 3 — REDES SOCIALES
+(Esta slide es visual. Solo indica las plataformas activas del cliente y su usuario)
+Instagram:
+Facebook:
+TikTok:
+YouTube:
+
+---
+SLIDE 4 — HISTORIA Y CONTEXTO (parte 1 — origen)
+[Párrafo corto: por que nacio la marca, desde donde viene]
+
+---
+SLIDE 5 — HISTORIA Y CONTEXTO (parte 2 — quiebre)
+[Párrafo corto: momento de transformacion o crisis que cambio el rumbo]
+
+---
+SLIDE 6 — HISTORIA Y CONTEXTO (parte 3 — hoy)
+[Párrafo corto: donde esta hoy la marca y hacia donde va]
+
+---
+SLIDE 7 — OBJETIVOS ASPIRACIONALES (negocio)
+-
+-
+-
+
+---
+SLIDE 8 — OBJETIVOS PERSONALES
+-
+-
+-
+
+---
+SLIDE 9 — TONO Y ESTILO DE COMUNICACION
+[Párrafo descriptivo: tono, estilo, referencias visuales y lo que NO es su comunicacion]
+
+---
+SLIDE 10 — VALORES Y CREENCIAS
+- Valor 1:
+- Valor 2:
+- Valor 3:
+- Valor 4:
+
+---
+SLIDE 11 — DESAFIOS ACTUALES
+- DESAFIO 1: [nombre corto] — [descripcion breve]
+- DESAFIO 2: [nombre corto] — [descripcion breve]
+- DESAFIO 3: [nombre corto] — [descripcion breve]
+- DESAFIO 4: [nombre corto] — [descripcion breve]
+
+---
+SLIDE 12 — ESENCIA DE LA MARCA
+[2-3 oraciones poderosas que capturen exactamente lo que es esta marca. Sin adornos, sin venta. Pura esencia.]
+
+---
+SLIDE 13 — CIERRE
+Nombre cliente:
+¡GRACIAS!</pre>
+            <div class="exp-prompt-hint">Ejecutar después de validar la biografía del Prompt 03. El resultado se pega directo en el paso 1 de abajo.</div>
+          </div>
         </div>
 
-        <div class="field">
-          <label>🔄 Historia y contexto</label>
-          <textarea id="exp-historia" style="min-height:110px;"></textarea>
-        </div>
-        <div class="field">
-          <label>🔄 Objetivos aspiracionales (negocio) — uno por línea</label>
-          <textarea id="exp-obj-negocio"></textarea>
-        </div>
-        <div class="field">
-          <label>Objetivos personales — uno por línea</label>
-          <textarea id="exp-obj-personal"></textarea>
-        </div>
-        <div class="field">
-          <label>🔄 Tono y estilo de comunicación</label>
-          <textarea id="exp-tono"></textarea>
-        </div>
-        <div class="field">
-          <label>🔄 Valores y creencias — uno por línea</label>
-          <textarea id="exp-valores"></textarea>
-        </div>
-        <div class="field">
-          <label>🔄 Desafíos actuales — formato: Nombre corto | Descripción breve (uno por línea, hasta 4)</label>
-          <textarea id="exp-desafios" style="min-height:100px;"></textarea>
-        </div>
-        <div class="field">
-          <label>Esencia de la marca (2-3 oraciones)</label>
-          <textarea id="exp-esencia"></textarea>
+        <!-- CARD 2: Pegar el texto del Prompt 04 + extraer -->
+        <div class="exp-form-card">
+          <h2>1. Pega aquí el "Expediente completo" del Prompt 04</h2>
+          <div class="field">
+            <textarea id="exp-paste" style="min-height:200px;font-size:0.82rem;" placeholder="Pega aquí todo el texto que te dio Claude en el Prompt 04, desde 'SLIDE 1 — PORTADA' hasta 'SLIDE 13 — CIERRE'..."></textarea>
+          </div>
+          <button class="btn ghost" id="exp-btn-parsear" style="width:100%;">Extraer campos automáticamente</button>
+          <div class="status-msg" id="exp-status-parse" style="text-align:center;margin-top:10px;"></div>
         </div>
 
-        <div style="display:flex;gap:10px;">
-          <button class="btn ghost" id="btn-guardar-expediente">Guardar expediente</button>
-          <button class="btn" id="btn-generar-expediente-pdf">Generar Expediente PDF</button>
+        <!-- CARD 3: Formulario editable -->
+        <div class="exp-form-card">
+          <h2>2. Revisa y ajusta los campos</h2>
+          <div class="hint" style="margin-bottom:14px;">Los campos marcados con 🔄 se autocompletan también desde la Junta de Aterrizaje.</div>
+          <button class="btn ghost" id="btn-actualizar-desde-junta" style="margin-bottom:20px;">🔄 Actualizar desde la Junta de Aterrizaje</button>
+
+          <div class="field">
+            <label>Expediente de: (subtítulo, ej. "Restaurante y Cabañas")</label>
+            <input type="text" id="exp-subtitulo" placeholder="Ej. Restaurante y Cabañas">
+          </div>
+
+          <label style="margin-top:6px;">Arquetipos y descripción (1 pilar + hasta 2 secundarios)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
+            <div>
+              <input type="text" id="exp-arq1" placeholder="Vértice superior (pilar)">
+              <textarea id="exp-arq1-desc" placeholder="Descripción / por qué aplica" style="margin-top:8px;min-height:80px;"></textarea>
+            </div>
+            <div>
+              <input type="text" id="exp-arq2" placeholder="Vértice inferior izquierdo">
+              <textarea id="exp-arq2-desc" placeholder="Descripción / por qué aplica" style="margin-top:8px;min-height:80px;"></textarea>
+            </div>
+            <div>
+              <input type="text" id="exp-arq3" placeholder="Vértice inferior derecho">
+              <textarea id="exp-arq3-desc" placeholder="Descripción / por qué aplica" style="margin-top:8px;min-height:80px;"></textarea>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Redes sociales activas</label>
+            <div class="net-chip-row" id="exp-net-chip-row">
+              <div class="net-chip active" data-red="Instagram">Instagram</div>
+              <div class="net-chip active" data-red="Facebook">Facebook</div>
+              <div class="net-chip" data-red="TikTok">TikTok</div>
+              <div class="net-chip" data-red="YouTube">YouTube</div>
+            </div>
+            <div class="hint" style="margin-top:10px;">Sube una captura de pantalla del perfil de cada red activa (opcional, se acomoda dentro del mockup del celular).</div>
+            <div id="exp-net-uploads" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="field">
+            <label>🔄 Historia y contexto</label>
+            <textarea id="exp-historia" style="min-height:110px;"></textarea>
+          </div>
+          <div class="field">
+            <label>🔄 Objetivos aspiracionales (negocio) — uno por línea</label>
+            <textarea id="exp-obj-negocio"></textarea>
+          </div>
+          <div class="field">
+            <label>Objetivos personales — uno por línea</label>
+            <textarea id="exp-obj-personal"></textarea>
+          </div>
+          <div class="field">
+            <label>🔄 Tono y estilo de comunicación</label>
+            <textarea id="exp-tono"></textarea>
+          </div>
+          <div class="field">
+            <label>🔄 Valores y creencias — uno por línea</label>
+            <textarea id="exp-valores"></textarea>
+          </div>
+          <div class="field">
+            <label>🔄 Desafíos actuales — formato: Nombre corto | Descripción breve (uno por línea, hasta 4)</label>
+            <textarea id="exp-desafios" style="min-height:100px;"></textarea>
+          </div>
+          <div class="field">
+            <label>Esencia de la marca (2-3 oraciones)</label>
+            <textarea id="exp-esencia"></textarea>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:6px;">
+            <button class="btn ghost" id="btn-guardar-expediente">Guardar campos</button>
+            <button class="btn" id="btn-generar-expediente-pdf">Generar Expediente PDF</button>
+          </div>
+          <div class="status-msg" id="expediente-status" style="margin-top:10px;"></div>
         </div>
-        <div class="status-msg" id="expediente-status" style="margin-top:10px;"></div>
+
+        <!-- CARD 4: Historial de PDFs generados -->
+        <div class="exp-form-card">
+          <h2>Expedientes generados</h2>
+          <div class="hint" style="margin-bottom:14px;">Cada PDF se guarda en Drive y queda aquí como vista previa. Da clic en cualquiera para verlo.</div>
+          <div id="exp-pdfs-lista" class="exp-pdfs-lista"></div>
+        </div>
+
       </div>
 
       <div class="cd-panel" id="cd-panel-cuentas">
@@ -445,14 +661,28 @@
   </div>
 
   <div class="exp-page" id="exp-p-arquetipos">
-    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Arquetipos</div></div>
+    <div class="header-bar"><div class="brandmark"><strong>LEVEL</strong> PRODUCER</div><div class="slidetitle">Arquetipos y Descripción</div></div>
     <div class="header-line"></div>
-    <div class="body-area centrado">
-      <div class="exp-arq-wrap">
-        <img class="exp-arq-triangle-img" src="data:image/png;base64,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">
-        <div class="exp-arq-label exp-arq-top" id="exp-r-arq1-txt">ARQUETIPO 1</div>
-        <div class="exp-arq-label exp-arq-left" id="exp-r-arq2-txt">ARQUETIPO 2</div>
-        <div class="exp-arq-label exp-arq-right" id="exp-r-arq3-txt">ARQUETIPO 3</div>
+    <div class="body-area">
+      <div class="exp-arq-content">
+        <img class="exp-arq-triangle-mark" src="data:image/png;base64,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">
+        <div class="exp-arq-pilar">
+          <div class="exp-arq-eyebrow">Arquetipo Pilar</div>
+          <div class="exp-arq-nombre" id="exp-r-arq1-txt">ARQUETIPO 1</div>
+          <div class="exp-arq-desc" id="exp-r-arq1-desc"></div>
+        </div>
+        <div class="exp-arq-secundarios">
+          <div class="exp-arq-sec-card">
+            <div class="exp-arq-eyebrow">Arquetipo Secundario</div>
+            <div class="exp-arq-nombre" id="exp-r-arq2-txt">ARQUETIPO 2</div>
+            <div class="exp-arq-desc" id="exp-r-arq2-desc"></div>
+          </div>
+          <div class="exp-arq-sec-card">
+            <div class="exp-arq-eyebrow">Arquetipo Secundario</div>
+            <div class="exp-arq-nombre" id="exp-r-arq3-txt">ARQUETIPO 3</div>
+            <div class="exp-arq-desc" id="exp-r-arq3-desc"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1273,12 +1503,189 @@ document.getElementById('btn-guardar-junta').addEventListener('click', async () 
   } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
 });
 
+// ---- Copiar toda la junta al portapapeles (para pegar como contexto en Claude) ----
+document.getElementById('btn-copiar-junta').addEventListener('click', async () => {
+  const status = document.getElementById('junta-status');
+  if(!clienteActual){ status.textContent = 'Abre un cliente primero.'; return; }
+  const nombreMarca = clienteActual.Nombre || 'la marca';
+  const secciones = {};
+  PLANTILLA_JUNTA.forEach(item => {
+    const respuesta = (RESPUESTAS_ACTUAL[item.pregunta] || '').trim();
+    if(!respuesta) return; // omitir preguntas sin respuesta para no ensuciar el contexto
+    if(!secciones[item.seccion]) secciones[item.seccion] = [];
+    secciones[item.seccion].push({ pregunta: item.pregunta, respuesta });
+  });
+  let texto = `INFORMACIÓN DE ${nombreMarca.toUpperCase()} — JUNTA DE ATERRIZAJE\n`;
+  texto += `============================================================\n\n`;
+  Object.entries(secciones).forEach(([seccion, items]) => {
+    texto += `## ${seccion}\n\n`;
+    items.forEach(({ pregunta, respuesta }) => {
+      texto += `• ${pregunta}\n${respuesta}\n\n`;
+    });
+  });
+  if(Object.keys(secciones).length === 0){
+    texto += `(Esta junta aún no tiene respuestas. Llena la junta y guarda antes de copiar.)\n`;
+  }
+  try {
+    await navigator.clipboard.writeText(texto);
+    status.textContent = '📋 Junta copiada al portapapeles. Ábrela en Claude y pégala junto con el Prompt 01.';
+  } catch(err) {
+    console.error(err);
+    status.textContent = 'No se pudo copiar automáticamente. Selecciona todo en el formulario y copia manualmente.';
+  }
+});
+
 // ============================================================
 // ============ EXPEDIENTE (dentro de cada cliente) ============
 // ============================================================
 
 let EXPEDIENTE_ACTUAL = null;
 let EXP_NET_IMAGES = {};
+let EXP_PDFS_LISTA = [];
+
+// ---- Copiar cada Prompt al portapapeles ----
+document.querySelectorAll('.exp-copy-prompt-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const target = document.getElementById(btn.dataset.target);
+    if(!target) return;
+    try {
+      await navigator.clipboard.writeText(target.textContent);
+      const original = btn.textContent;
+      btn.textContent = '¡Copiado!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+    } catch(err) {
+      console.error(err);
+      alert('No se pudo copiar. Selecciona el texto manualmente.');
+    }
+  });
+});
+
+// ---- Parser del texto del Prompt 04 ----
+function escapaRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function extraeBloque(texto, tituloExacto, siguienteMarcador){
+  const re = new RegExp(escapaRegex(tituloExacto) + '\\s*([\\s\\S]*?)(?=' + (siguienteMarcador ? escapaRegex(siguienteMarcador) : '$') + '|$)', 'i');
+  const m = texto.match(re);
+  return m ? m[1] : '';
+}
+
+function parseCamposSecuenciales(bloque, campos){
+  const resultado = {};
+  for(let i = 0; i < campos.length; i++){
+    const { key, patron } = campos[i];
+    const restantes = campos.slice(i + 1).map(c => c.patron);
+    const limite = restantes.length ? '(?:' + restantes.join('|') + ')|$' : '$';
+    const re = new RegExp(patron + '[^:\\n]*:\\s*([\\s\\S]*?)(?=' + limite + ')', 'i');
+    const m = bloque.match(re);
+    let valor = m ? m[1].trim() : '';
+    valor = valor.replace(/[\s-]*---+[\s-]*$/,'').trim();
+    resultado[key] = valor;
+  }
+  return resultado;
+}
+
+function limpiaLineas(bloque){
+  return bloque.split('\n').map(l => l.replace(/^[-*•\s]+/, '').trim()).filter(l => l && l !== '---');
+}
+
+function limpiaParrafo(bloque){
+  return bloque.split('\n').map(l => l.trim()).filter(l => l && l !== '---').join(' ').replace(/\[.*?\]/g, '').trim();
+}
+
+function splitNombreDesc(valor){
+  const v = (valor || '').trim();
+  const m = v.match(/^(.*?)\s*[—-]\s*([\s\S]*)$/);
+  if(m && m[2].trim()) return { nombre: m[1].trim(), desc: m[2].trim() };
+  return { nombre: v, desc: '' };
+}
+
+document.getElementById('exp-btn-parsear').addEventListener('click', () => {
+  const status = document.getElementById('exp-status-parse');
+  const texto = document.getElementById('exp-paste').value;
+  if(!texto.trim()){ status.textContent = 'Pega primero el texto del Prompt 04.'; return; }
+
+  try {
+    // Portada
+    const bPortada = extraeBloque(texto, 'SLIDE 1 — PORTADA', 'SLIDE 2');
+    const campPortada = parseCamposSecuenciales(bPortada, [
+      { key:'nombre', patron:'Nombre cliente' },
+      { key:'expdiente', patron:'Expediente de' }
+    ]);
+    if(campPortada.expdiente) document.getElementById('exp-subtitulo').value = campPortada.expdiente;
+
+    // Arquetipos con descripción
+    let bArq = extraeBloque(texto, 'SLIDE 2 — ARQUETIPOS Y DESCRIPCIÓN', 'SLIDE 3');
+    if(!bArq.trim()) bArq = extraeBloque(texto, 'SLIDE 2 — ARQUETIPOS', 'SLIDE 3');
+    const campArq = parseCamposSecuenciales(bArq, [
+      { key:'arq1', patron:'V[eé]rtice superior' },
+      { key:'arq2', patron:'V[eé]rtice inferior izquierdo' },
+      { key:'arq3', patron:'V[eé]rtice inferior derecho' }
+    ]);
+    const arq1S = splitNombreDesc(campArq.arq1);
+    const arq2S = splitNombreDesc(campArq.arq2);
+    const arq3S = splitNombreDesc(campArq.arq3);
+    document.getElementById('exp-arq1').value = arq1S.nombre;
+    document.getElementById('exp-arq1-desc').value = arq1S.desc;
+    document.getElementById('exp-arq2').value = arq2S.nombre;
+    document.getElementById('exp-arq2-desc').value = arq2S.desc;
+    document.getElementById('exp-arq3').value = arq3S.nombre;
+    document.getElementById('exp-arq3-desc').value = arq3S.desc;
+
+    // Redes (chips)
+    const bRedes = extraeBloque(texto, 'SLIDE 3 — REDES SOCIALES', 'SLIDE 4');
+    const campRedes = parseCamposSecuenciales(bRedes, [
+      { key:'Instagram', patron:'Instagram' },
+      { key:'Facebook',  patron:'Facebook'  },
+      { key:'TikTok',    patron:'TikTok'    },
+      { key:'YouTube',   patron:'YouTube'   }
+    ]);
+    document.querySelectorAll('#exp-net-chip-row .net-chip').forEach(chip => {
+      const val = campRedes[chip.dataset.red] || '';
+      const activo = val && !/sin\s+(cuenta|canal)/i.test(val);
+      chip.classList.toggle('active', !!activo);
+    });
+    renderExpNetUploads();
+
+    // Historia (3 partes concatenadas)
+    const h1 = extraeBloque(texto, 'SLIDE 4 — HISTORIA Y CONTEXTO (parte 1 — origen)', 'SLIDE 5');
+    const h2 = extraeBloque(texto, 'SLIDE 5 — HISTORIA Y CONTEXTO (parte 2 — quiebre)', 'SLIDE 6');
+    const h3 = extraeBloque(texto, 'SLIDE 6 — HISTORIA Y CONTEXTO (parte 3 — hoy)', 'SLIDE 7');
+    document.getElementById('exp-historia').value = [h1, h2, h3].map(limpiaParrafo).filter(Boolean).join('\n\n');
+
+    // Objetivos negocio + personales
+    const bObjNeg = extraeBloque(texto, 'SLIDE 7 — OBJETIVOS ASPIRACIONALES (negocio)', 'SLIDE 8');
+    document.getElementById('exp-obj-negocio').value = limpiaLineas(bObjNeg).join('\n');
+    const bObjPer = extraeBloque(texto, 'SLIDE 8 — OBJETIVOS PERSONALES', 'SLIDE 9');
+    document.getElementById('exp-obj-personal').value = limpiaLineas(bObjPer).join('\n');
+
+    // Tono
+    const bTono = extraeBloque(texto, 'SLIDE 9 — TONO Y ESTILO DE COMUNICACION', 'SLIDE 10');
+    document.getElementById('exp-tono').value = limpiaParrafo(bTono);
+
+    // Valores
+    const bValores = extraeBloque(texto, 'SLIDE 10 — VALORES Y CREENCIAS', 'SLIDE 11');
+    document.getElementById('exp-valores').value = limpiaLineas(bValores).map(l => l.replace(/^Valor\s*\d+\s*:?\s*/i,'')).join('\n');
+
+    // Desafíos (formato "Nombre | Descripción")
+    const bDesafios = extraeBloque(texto, 'SLIDE 11 — DESAFIOS ACTUALES', 'SLIDE 12');
+    const desafiosLineas = limpiaLineas(bDesafios).map(l => {
+      const m2 = l.match(/DESAFIO\s*\d+\s*:?\s*(.*?)\s*[—-]\s*(.*)/i);
+      if(m2) return `${m2[1].trim()} | ${m2[2].trim()}`;
+      return l;
+    }).filter(l => { const p = l.split('|'); return p.length > 1 && p[1].trim().length > 0; });
+    document.getElementById('exp-desafios').value = desafiosLineas.join('\n');
+
+    // Esencia
+    const bEsencia = extraeBloque(texto, 'SLIDE 12 — ESENCIA DE LA MARCA', 'SLIDE 13');
+    document.getElementById('exp-esencia').value = limpiaParrafo(bEsencia);
+
+    status.textContent = 'Listo. Revisa cada campo abajo antes de generar el PDF.';
+  } catch(err) {
+    console.error(err);
+    status.textContent = 'Hubo un problema al extraer — revisa y llena los campos manualmente.';
+  }
+});
 
 function textoDePregunta(pregunta){
   return (RESPUESTAS_ACTUAL[pregunta] || '').trim();
@@ -1311,10 +1718,15 @@ document.getElementById('btn-actualizar-desde-junta').addEventListener('click', 
 
 async function cargarExpediente(clienteId){
   EXP_NET_IMAGES = {};
+  document.getElementById('exp-paste').value = '';
+  document.getElementById('exp-status-parse').textContent = '';
   document.getElementById('exp-subtitulo').value = '';
   document.getElementById('exp-arq1').value = '';
+  document.getElementById('exp-arq1-desc').value = '';
   document.getElementById('exp-arq2').value = '';
+  document.getElementById('exp-arq2-desc').value = '';
   document.getElementById('exp-arq3').value = '';
+  document.getElementById('exp-arq3-desc').value = '';
   document.getElementById('exp-obj-personal').value = '';
   document.getElementById('exp-esencia').value = '';
   document.querySelectorAll('#exp-net-chip-row .net-chip').forEach(c => c.classList.remove('active'));
@@ -1331,8 +1743,11 @@ async function cargarExpediente(clienteId){
     EXPEDIENTE_ACTUAL = existente;
     document.getElementById('exp-subtitulo').value = existente.Subtitulo || '';
     document.getElementById('exp-arq1').value = existente.Arq1 || '';
+    document.getElementById('exp-arq1-desc').value = existente.Arq1Desc || '';
     document.getElementById('exp-arq2').value = existente.Arq2 || '';
+    document.getElementById('exp-arq2-desc').value = existente.Arq2Desc || '';
     document.getElementById('exp-arq3').value = existente.Arq3 || '';
+    document.getElementById('exp-arq3-desc').value = existente.Arq3Desc || '';
     document.getElementById('exp-historia').value = existente.Historia || '';
     document.getElementById('exp-obj-negocio').value = existente.ObjNegocio || '';
     document.getElementById('exp-obj-personal').value = existente.ObjPersonal || '';
@@ -1358,6 +1773,7 @@ async function cargarExpediente(clienteId){
   }
 
   renderExpNetUploads();
+  await cargarPDFsDelCliente(clienteId);
 }
 
 document.querySelectorAll('#exp-net-chip-row .net-chip').forEach(chip => {
@@ -1405,8 +1821,11 @@ function recolectaExpedienteForm(){
   return {
     Subtitulo: document.getElementById('exp-subtitulo').value.trim(),
     Arq1: document.getElementById('exp-arq1').value.trim(),
+    Arq1Desc: document.getElementById('exp-arq1-desc').value.trim(),
     Arq2: document.getElementById('exp-arq2').value.trim(),
+    Arq2Desc: document.getElementById('exp-arq2-desc').value.trim(),
     Arq3: document.getElementById('exp-arq3').value.trim(),
+    Arq3Desc: document.getElementById('exp-arq3-desc').value.trim(),
     RedesActivas: redesActivas.join(','),
     Historia: document.getElementById('exp-historia').value,
     ObjNegocio: document.getElementById('exp-obj-negocio').value,
@@ -1441,6 +1860,17 @@ async function esperarFuentesExpediente(){
   if(document.fonts && document.fonts.ready){ await document.fonts.ready; }
 }
 
+// Reduce el tamaño de fuente de un elemento hasta que su contenido quepa
+// dentro de su propia caja (evita que la descripción del arquetipo se corte).
+function ajustaTextoAlContenedor(elemento, tamMax, tamMin){
+  let tam = tamMax;
+  elemento.style.fontSize = tam + 'px';
+  while(elemento.scrollHeight > elemento.clientHeight + 1 && tam > tamMin){
+    tam -= 1;
+    elemento.style.fontSize = tam + 'px';
+  }
+}
+
 async function renderExpPageToImage(id){
   const node = document.getElementById(id);
   const canvas = await html2canvas(node, {scale:2, backgroundColor:'#f2efe9', useCORS:true, width:1600, height:900});
@@ -1461,8 +1891,11 @@ document.getElementById('btn-generar-expediente-pdf').addEventListener('click', 
   document.getElementById('exp-r-nombre-cierre').textContent = nombre;
 
   document.getElementById('exp-r-arq1-txt').textContent = (datos.Arq1 || 'Arquetipo 1').toUpperCase();
+  document.getElementById('exp-r-arq1-desc').textContent = datos.Arq1Desc || '';
   document.getElementById('exp-r-arq2-txt').textContent = (datos.Arq2 || 'Arquetipo 2').toUpperCase();
+  document.getElementById('exp-r-arq2-desc').textContent = datos.Arq2Desc || '';
   document.getElementById('exp-r-arq3-txt').textContent = (datos.Arq3 || 'Arquetipo 3').toUpperCase();
+  document.getElementById('exp-r-arq3-desc').textContent = datos.Arq3Desc || '';
 
   const redesActivas = datos.RedesActivas ? datos.RedesActivas.split(',').filter(Boolean) : [];
   const phonesRow = document.getElementById('exp-r-phones-row');
@@ -1521,6 +1954,11 @@ document.getElementById('btn-generar-expediente-pdf').addEventListener('click', 
   await esperarFuentesExpediente();
   await new Promise(r => setTimeout(r, 100));
 
+  // Auto-ajuste de las descripciones de arquetipos para que no se corten.
+  ajustaTextoAlContenedor(document.getElementById('exp-r-arq1-desc'), 19, 13);
+  ajustaTextoAlContenedor(document.getElementById('exp-r-arq2-desc'), 16, 12);
+  ajustaTextoAlContenedor(document.getElementById('exp-r-arq3-desc'), 16, 12);
+
   status.textContent = 'Renderizando slides...';
   const pageIds = [
     'exp-p-cover','exp-p-arquetipos','exp-p-redes','exp-p-historia',
@@ -1537,11 +1975,85 @@ document.getElementById('btn-generar-expediente-pdf').addEventListener('click', 
     pdf.addImage(img, 'JPEG', 0, 0, 1600, 900);
   });
   const nombreSafe = nombre.replace(/[^a-zA-Z0-9]+/g, '_');
+
+  // 1) Descarga en la compu (como siempre).
   pdf.save(`Expediente_${nombreSafe}.pdf`);
 
-  status.textContent = 'Listo. Se descargó el expediente en PDF.';
+  // 2) Sube a la carpeta de Drive vía Apps Script para que quede en el historial del CRM.
+  status.textContent = 'Guardando copia en Drive...';
+  try {
+    const pdfBase64 = pdf.output('datauristring').split(',')[1]; // sin el prefijo "data:...;base64,"
+    const resp = await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        tipo: 'expediente_pdf_guardar',
+        clienteId: clienteActual.ID,
+        clienteNombre: nombre,
+        pdfBase64: pdfBase64
+      })
+    });
+    const respJson = await resp.json();
+    if(respJson.status === 'ok'){
+      status.textContent = '✓ Expediente descargado y guardado en Drive. Ya aparece abajo.';
+      await cargarPDFsDelCliente(clienteActual.ID);
+    } else {
+      status.textContent = '⚠ Se descargó, pero no se pudo guardar en Drive. ' + (respJson.mensaje || '');
+    }
+  } catch(err) {
+    console.error(err);
+    status.textContent = '⚠ Se descargó, pero no se pudo guardar en Drive (revisa tu conexión).';
+  }
+
   btn.disabled = false;
 });
+
+// ---- Historial de PDFs por cliente ----
+async function cargarPDFsDelCliente(clienteId){
+  const lista = document.getElementById('exp-pdfs-lista');
+  lista.innerHTML = '<div class="exp-pdfs-vacio">Cargando...</div>';
+  try {
+    const resp = await fetch(SHEETS_URL + '?hoja=ExpedientesPDFs&t=' + Date.now(), { cache:'no-store' });
+    const todos = await resp.json();
+    EXP_PDFS_LISTA = todos
+      .filter(r => String(r.ClienteID) === String(clienteId))
+      .sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO))); // más reciente primero
+  } catch(err) {
+    console.error(err);
+    EXP_PDFS_LISTA = [];
+  }
+  renderExpPDFsLista();
+}
+
+function renderExpPDFsLista(){
+  const lista = document.getElementById('exp-pdfs-lista');
+  if(EXP_PDFS_LISTA.length === 0){
+    lista.innerHTML = '<div class="exp-pdfs-vacio">Todavía no has generado ningún expediente para este cliente.</div>';
+    return;
+  }
+  lista.innerHTML = '';
+  EXP_PDFS_LISTA.forEach(pdf => {
+    const card = document.createElement('div');
+    card.className = 'exp-pdf-card';
+    card.innerHTML = `
+      <button class="pdf-del" title="Eliminar" data-id="${pdf.ID}" data-fileid="${pdf.FileId}">×</button>
+      <a class="pdf-thumb" href="${pdf.PreviewURL}" target="_blank" rel="noopener">📄</a>
+      <a class="pdf-nombre" href="${pdf.PreviewURL}" target="_blank" rel="noopener">${pdf.NombreArchivo || 'Expediente.pdf'}</a>
+      <div class="pdf-fecha">${pdf.FechaLegible || ''}</div>
+    `;
+    card.querySelector('.pdf-del').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if(!confirm('¿Eliminar este expediente PDF? (se mueve a la papelera de Drive)')) return;
+      try {
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'expediente_pdf_eliminar', id: pdf.ID, fileId: pdf.FileId })
+        });
+        await cargarPDFsDelCliente(clienteActual.ID);
+      } catch(err) { console.error(err); alert('No se pudo eliminar.'); }
+    });
+    lista.appendChild(card);
+  });
+}
 
 // ---- Cuentas y Contraseñas ----
 async function cargarCuentas(clienteId){
