@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --negro:#0a0908;
@@ -54,6 +55,12 @@
   .kpi-header{display:flex;justify-content:space-between;font-size:0.88rem;font-weight:700;margin-bottom:6px;color:#1c1c1c;}
   .kpi-bar-track{background:#eee;border-radius:8px;height:14px;overflow:hidden;}
   .kpi-bar-fill{height:100%;border-radius:8px;transition:width 0.4s ease;}
+
+  /* ============ DIRECCIÓN ============ */
+  .direccion-board{display:flex;gap:20px;padding:20px 28px 60px;align-items:flex-start;flex-wrap:wrap;}
+  .direccion-col{flex:1;min-width:240px;background:#fff;border-radius:6px;border:1px solid #e4e0d6;padding:14px;}
+  .direccion-col-title{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;color:#888;font-weight:700;margin-bottom:10px;}
+  .direccion-col-cards .status-msg{padding:6px 0;}
 
   .toast-felicidades{
     position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);
@@ -214,13 +221,47 @@
 </div>
 
 <div class="tabs-switch">
-  <button class="tab-btn active" data-modo="clientes">👤 Clientes</button>
+  <button class="tab-btn active" data-modo="direccion">📊 Dirección</button>
+  <button class="tab-btn" data-modo="clientes">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm">📱 Community Manager</button>
 </div>
 
+<!-- ============ PANEL: DIRECCIÓN ============ -->
+<div class="modo-panel active" id="panel-direccion">
+  <div class="panel-header">
+    <div class="titulo-panel">Dirección — Ventas</div>
+    <button class="btn" id="btn-nueva-cotizacion">+ Nueva cotización</button>
+  </div>
+
+  <div class="kpi-section">
+    <div class="kpi-section-title">Este mes</div>
+    <div class="kpi-wrap" id="dir-kpi-wrap"></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="status-msg" id="dir-status-msg"></div>
+    <button class="btn ghost" data-accion="refrescar-direccion" style="margin-left:auto;">Refrescar</button>
+  </div>
+
+  <div class="direccion-board">
+    <div class="direccion-col">
+      <div class="direccion-col-title">Pendiente</div>
+      <div class="direccion-col-cards" id="dir-col-pendiente"></div>
+    </div>
+    <div class="direccion-col">
+      <div class="direccion-col-title">Cerrada</div>
+      <div class="direccion-col-cards" id="dir-col-cerrada"></div>
+    </div>
+    <div class="direccion-col">
+      <div class="direccion-col-title">Perdida</div>
+      <div class="direccion-col-cards" id="dir-col-perdida"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ PANEL: CLIENTES ============ -->
-<div class="modo-panel active" id="panel-clientes">
+<div class="modo-panel" id="panel-clientes">
   <div class="panel-header">
     <div class="titulo-panel">Clientes</div>
     <button class="btn" id="btn-nuevo-cliente">+ Nuevo cliente</button>
@@ -289,6 +330,56 @@
   <div class="calendar-wrap">
     <div class="cal-grid" id="cm-cal-dow-row"></div>
     <div class="cal-grid" id="cm-cal-grid" style="margin-top:6px;"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: cotización ============ -->
+<div class="modal-bg" id="modal-cotizacion-bg">
+  <div class="modal">
+    <h2>Cotización</h2>
+    <div class="field"><label>Prospecto / Cliente</label><input type="text" id="cot-nombre"></div>
+    <div class="field"><label>Contacto</label><input type="text" id="cot-contacto"></div>
+    <div class="field"><label>Servicio</label><input type="text" id="cot-servicio"></div>
+    <div class="field"><label>Monto (MXN)</label><input type="text" id="cot-monto" inputmode="decimal"></div>
+    <div class="field"><label>Fecha de envío</label><input type="date" id="cot-fecha-envio"></div>
+    <div class="field">
+      <label>Estado</label>
+      <select id="cot-estado">
+        <option value="pendiente">Pendiente</option>
+        <option value="cerrada">Cerrada</option>
+        <option value="perdida">Perdida</option>
+      </select>
+    </div>
+    <div class="field" id="cot-motivo-wrap" style="display:none;">
+      <label>Motivo de pérdida</label>
+      <input type="text" id="cot-motivo-perdida">
+    </div>
+    <div class="field"><label>Notas</label><textarea id="cot-notas"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cancelar-cotizacion">Cancelar</button>
+      <button class="btn secondary" id="btn-eliminar-cotizacion" style="display:none;">Eliminar</button>
+      <button class="btn" id="btn-guardar-cotizacion">Guardar</button>
+    </div>
+    <div class="modal-actions" id="cot-crear-contrato-wrap" style="display:none;">
+      <button class="btn" id="btn-crear-contrato-desde-cotizacion" style="flex:1;background:var(--verde);">Crear contrato para esta cotización →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: contrato ============ -->
+<div class="modal-bg" id="modal-contrato-bg">
+  <div class="modal">
+    <h2>Contrato</h2>
+    <div class="field"><label>Cliente</label><input type="text" id="con-nombre-cliente"></div>
+    <div class="field"><label>Monto mensual (MXN)</label><input type="text" id="con-monto-mensual" inputmode="decimal"></div>
+    <div class="field"><label>Fecha de firma</label><input type="date" id="con-fecha-firma"></div>
+    <div class="field"><label>Duración (meses)</label><input type="text" id="con-duracion" inputmode="numeric"></div>
+    <div class="field"><label>Servicios contratados</label><textarea id="con-servicios"></textarea></div>
+    <div class="field"><label>Notas</label><textarea id="con-notas"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cancelar-contrato">Cancelar</button>
+      <button class="btn" id="btn-guardar-contrato">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -622,6 +713,126 @@ function mostrarFelicitacion(mensaje){
   document.body.appendChild(toast);
   requestAnimationFrame(() => toast.classList.add('show'));
   setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 5000);
+}
+
+// ============ DIRECCIÓN (Supabase) ============
+// Reemplaza estos dos valores por los de tu proyecto de Supabase (Settings → API).
+const SUPABASE_URL = 'TU_SUPABASE_URL_AQUI';
+const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY_AQUI';
+const supa = (typeof supabase !== 'undefined' && SUPABASE_URL.startsWith('http'))
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const direccionState = { cotizaciones: [], contratos: [], editandoCotId: null, editandoContratoId: null };
+
+function fmtMoney(n){
+  n = Number(n) || 0;
+  return n.toLocaleString('es-MX', { style:'currency', currency:'MXN', maximumFractionDigits:0 });
+}
+
+async function cargarDireccion(){
+  const statusEl = document.getElementById('dir-status-msg');
+  if(!supa){
+    statusEl.textContent = 'Falta configurar Supabase (SUPABASE_URL / SUPABASE_ANON_KEY en el código).';
+    return;
+  }
+  statusEl.textContent = 'Cargando...';
+  try{
+    const [cotRes, conRes] = await Promise.all([
+      supa.from('cotizaciones').select('*').order('created_at', { ascending:false }),
+      supa.from('contratos').select('*').order('created_at', { ascending:false })
+    ]);
+    if(cotRes.error) throw cotRes.error;
+    if(conRes.error) throw conRes.error;
+    direccionState.cotizaciones = cotRes.data || [];
+    direccionState.contratos = conRes.data || [];
+    statusEl.textContent = `Actualizado — ${direccionState.cotizaciones.length} cotización(es).`;
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = 'No se pudo cargar (revisa la consola / las claves de Supabase).';
+  }
+  renderDireccionKpis();
+  renderDireccionBoard();
+}
+
+function renderDireccionKpis(){
+  const hoyD = new Date();
+  const esteMes = direccionState.cotizaciones.filter(c => {
+    if(!c.fecha_envio) return false;
+    const d = new Date(c.fecha_envio + 'T00:00:00');
+    return d.getFullYear() === hoyD.getFullYear() && d.getMonth() === hoyD.getMonth();
+  });
+  const cerradas = esteMes.filter(c => c.estado === 'cerrada');
+  const perdidas = esteMes.filter(c => c.estado === 'perdida');
+  const resueltas = cerradas.length + perdidas.length;
+  const tasaCierre = resueltas ? Math.round((cerradas.length / resueltas) * 100) : 0;
+  const dineroPerdido = perdidas.reduce((s,c) => s + (Number(c.monto) || 0), 0);
+  const montoCerrado = cerradas.reduce((s,c) => s + (Number(c.monto) || 0), 0);
+
+  const items = [
+    { label:'Cotizaciones enviadas (mes)', value: String(esteMes.length), pct:null },
+    { label:'Tasa de cierre', value: tasaCierre + '%', pct: tasaCierre, color:'var(--verde)' },
+    { label:'Monto cerrado (mes)', value: fmtMoney(montoCerrado), pct:null },
+    { label:'Dinero perdido (mes)', value: fmtMoney(dineroPerdido), pct:null, color:'var(--rojo)' }
+  ];
+  document.getElementById('dir-kpi-wrap').innerHTML = items.map(it => `
+    <div class="kpi-item">
+      <div class="kpi-header"><span>${it.label}</span><span>${it.value}</span></div>
+      ${it.pct !== null ? `<div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:${it.pct}%;background:${it.color};"></div></div>` : ''}
+    </div>`).join('');
+}
+
+function renderDireccionBoard(){
+  const colores = { pendiente:'var(--amarillo)', cerrada:'var(--verde)', perdida:'var(--rojo)' };
+  ['pendiente','cerrada','perdida'].forEach(est => {
+    const col = document.getElementById('dir-col-' + est);
+    const filas = direccionState.cotizaciones.filter(c => c.estado === est);
+    col.innerHTML = filas.map(c => `
+      <div class="card" data-id="${c.id}" style="border-left-color:${colores[est]};">
+        <div class="c-top">${c.nombre_prospecto || ''}</div>
+        <div class="c-copy">${c.servicio || ''}</div>
+        <div class="c-resp">${fmtMoney(c.monto)}${c.fecha_envio ? ' · ' + c.fecha_envio : ''}</div>
+      </div>`).join('') || '<div class="status-msg">Sin cotizaciones.</div>';
+  });
+  document.querySelectorAll('#panel-direccion .direccion-col-cards .card').forEach(card => {
+    card.addEventListener('click', () => abrirModalCotizacion(card.dataset.id));
+  });
+}
+
+function abrirModalCotizacion(id){
+  direccionState.editandoCotId = id || null;
+  const c = id ? direccionState.cotizaciones.find(x => String(x.id) === String(id)) : null;
+  document.getElementById('cot-nombre').value = c?.nombre_prospecto || '';
+  document.getElementById('cot-contacto').value = c?.contacto || '';
+  document.getElementById('cot-servicio').value = c?.servicio || '';
+  document.getElementById('cot-monto').value = c?.monto ?? '';
+  document.getElementById('cot-fecha-envio').value = c?.fecha_envio || new Date().toISOString().slice(0,10);
+  document.getElementById('cot-estado').value = c?.estado || 'pendiente';
+  document.getElementById('cot-motivo-perdida').value = c?.motivo_perdida || '';
+  document.getElementById('cot-notas').value = c?.notas || '';
+  document.getElementById('btn-eliminar-cotizacion').style.display = id ? 'inline-block' : 'none';
+  actualizaVisibilidadModalCotizacion();
+  document.getElementById('modal-cotizacion-bg').classList.add('open');
+}
+
+function actualizaVisibilidadModalCotizacion(){
+  const estado = document.getElementById('cot-estado').value;
+  document.getElementById('cot-motivo-wrap').style.display = estado === 'perdida' ? 'block' : 'none';
+  const c = direccionState.editandoCotId ? direccionState.cotizaciones.find(x => String(x.id) === String(direccionState.editandoCotId)) : null;
+  const yaTieneContrato = c && direccionState.contratos.some(ct => String(ct.cotizacion_id) === String(c.id));
+  document.getElementById('cot-crear-contrato-wrap').style.display = (estado === 'cerrada' && c && !yaTieneContrato) ? 'flex' : 'none';
+}
+
+function abrirModalContrato(cotizacion){
+  direccionState.editandoContratoId = null;
+  document.getElementById('con-nombre-cliente').value = cotizacion?.nombre_prospecto || '';
+  document.getElementById('con-monto-mensual').value = cotizacion?.monto ?? '';
+  document.getElementById('con-fecha-firma').value = new Date().toISOString().slice(0,10);
+  document.getElementById('con-duracion').value = '';
+  document.getElementById('con-servicios').value = cotizacion?.servicio || '';
+  document.getElementById('con-notas').value = '';
+  document.getElementById('modal-contrato-bg').dataset.cotizacionId = cotizacion?.id || '';
+  document.getElementById('modal-contrato-bg').classList.add('open');
 }
 
 // ============ Cargar datos desde Sheets ============
@@ -1712,6 +1923,88 @@ document.getElementById('btn-nuevo-guion').addEventListener('click', async () =>
   } catch(err){ console.error(err); }
 });
 
+// ============ Dirección: eventos ============
+document.getElementById('btn-nueva-cotizacion').addEventListener('click', () => abrirModalCotizacion(null));
+document.querySelector('[data-accion="refrescar-direccion"]').addEventListener('click', cargarDireccion);
+document.getElementById('cot-estado').addEventListener('change', actualizaVisibilidadModalCotizacion);
+document.getElementById('btn-cancelar-cotizacion').addEventListener('click', () => {
+  document.getElementById('modal-cotizacion-bg').classList.remove('open');
+});
+document.getElementById('btn-cancelar-contrato').addEventListener('click', () => {
+  document.getElementById('modal-contrato-bg').classList.remove('open');
+});
+
+document.getElementById('btn-guardar-cotizacion').addEventListener('click', async (ev) => {
+  if(!supa){ alert('Falta configurar Supabase.'); return; }
+  const btn = ev.currentTarget;
+  btn.disabled = true;
+  const payload = {
+    nombre_prospecto: document.getElementById('cot-nombre').value.trim(),
+    contacto: document.getElementById('cot-contacto').value.trim(),
+    servicio: document.getElementById('cot-servicio').value.trim(),
+    monto: Number(document.getElementById('cot-monto').value) || null,
+    fecha_envio: document.getElementById('cot-fecha-envio').value || null,
+    estado: document.getElementById('cot-estado').value,
+    motivo_perdida: document.getElementById('cot-motivo-perdida').value.trim() || null,
+    notas: document.getElementById('cot-notas').value.trim() || null
+  };
+  if(payload.estado !== 'perdida') payload.motivo_perdida = null;
+  if(payload.estado !== 'pendiente') payload.fecha_resolucion = new Date().toISOString().slice(0,10);
+  try{
+    if(direccionState.editandoCotId){
+      const { error } = await supa.from('cotizaciones').update(payload).eq('id', direccionState.editandoCotId);
+      if(error) throw error;
+    } else {
+      const { error } = await supa.from('cotizaciones').insert(payload);
+      if(error) throw error;
+    }
+    document.getElementById('modal-cotizacion-bg').classList.remove('open');
+    await cargarDireccion();
+  } catch(err){ console.error(err); alert('No se pudo guardar la cotización.'); }
+  btn.disabled = false;
+});
+
+document.getElementById('btn-eliminar-cotizacion').addEventListener('click', async () => {
+  if(!supa || !direccionState.editandoCotId) return;
+  if(!confirm('¿Eliminar esta cotización?')) return;
+  try{
+    const { error } = await supa.from('cotizaciones').delete().eq('id', direccionState.editandoCotId);
+    if(error) throw error;
+    document.getElementById('modal-cotizacion-bg').classList.remove('open');
+    await cargarDireccion();
+  } catch(err){ console.error(err); alert('No se pudo eliminar.'); }
+});
+
+document.getElementById('btn-crear-contrato-desde-cotizacion').addEventListener('click', () => {
+  const c = direccionState.cotizaciones.find(x => String(x.id) === String(direccionState.editandoCotId));
+  document.getElementById('modal-cotizacion-bg').classList.remove('open');
+  abrirModalContrato(c);
+});
+
+document.getElementById('btn-guardar-contrato').addEventListener('click', async (ev) => {
+  if(!supa) { alert('Falta configurar Supabase.'); return; }
+  const btn = ev.currentTarget;
+  btn.disabled = true;
+  const cotizacionId = document.getElementById('modal-contrato-bg').dataset.cotizacionId || null;
+  const payload = {
+    cotizacion_id: cotizacionId || null,
+    nombre_cliente: document.getElementById('con-nombre-cliente').value.trim(),
+    monto_mensual: Number(document.getElementById('con-monto-mensual').value) || null,
+    fecha_firma: document.getElementById('con-fecha-firma').value || null,
+    duracion_meses: Number(document.getElementById('con-duracion').value) || null,
+    servicios: document.getElementById('con-servicios').value.trim() || null,
+    notas: document.getElementById('con-notas').value.trim() || null
+  };
+  try{
+    const { error } = await supa.from('contratos').insert(payload);
+    if(error) throw error;
+    document.getElementById('modal-contrato-bg').classList.remove('open');
+    await cargarDireccion();
+  } catch(err){ console.error(err); alert('No se pudo guardar el contrato.'); }
+  btn.disabled = false;
+});
+
+cargarDireccion();
 cargarClientes();
 cargarDatos('edicion');
 cargarDatos('cm');
