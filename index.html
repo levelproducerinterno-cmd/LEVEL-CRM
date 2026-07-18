@@ -4027,10 +4027,16 @@ async function cargarLineaProduccion(){
     const todosClientes = await respCli.json();
     const todoTeam = await respTeam.json();
 
+    console.log('[LineaProduccion] Total slots recibidos:', todosSlots.length);
+    console.log('[LineaProduccion] Primer slot:', todosSlots[0]);
+    console.log('[LineaProduccion] Buscando year=' + LINEA_STATE.year + ' month=' + LINEA_STATE.month);
+
     LINEA_SLOTS = todosSlots.filter(s =>
       parseInt(s.Year, 10) === LINEA_STATE.year &&
       parseInt(s.Month, 10) === LINEA_STATE.month
     );
+
+    console.log('[LineaProduccion] Slots del mes actual:', LINEA_SLOTS.length);
 
     renderLineaProduccion(todosClientes, todoTeam);
   } catch(err) {
