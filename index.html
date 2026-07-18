@@ -97,6 +97,55 @@
   .pick-chip:hover{border-color:var(--rojo);}
   .pick-chip.selected{background:var(--negro);color:#fff;border-color:var(--negro);}
 
+  /* ============ LÍNEA DE PRODUCCIÓN ============ */
+  .linea-controles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .linea-nav-btn{background:#2a2723;border:1px solid #555;color:#fff;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:0.85rem;font-family:'Cormorant Garamond',serif;font-weight:600;}
+  .linea-nav-btn:hover{background:#3a3733;border-color:#888;}
+  .linea-mes-actual{color:#fff;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;padding:0 14px;letter-spacing:0.06em;text-transform:uppercase;min-width:170px;text-align:center;}
+  .linea-toggle-solo-mios{color:#fff;font-size:0.82rem;display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:6px 12px;background:#2a2723;border-radius:4px;border:1px solid #555;}
+  .linea-toggle-solo-mios input{margin:0;cursor:pointer;}
+
+  .linea-cuerpo{padding:24px 28px 60px;background:#f7f5f2;min-height:600px;}
+  .linea-empty{padding:60px 20px;text-align:center;color:#8a8578;font-size:0.9rem;background:#fbfaf7;border:1px dashed #d8d3c9;border-radius:4px;}
+  .linea-editor-block{margin-bottom:34px;background:#fff;border:1px solid #e4e0d6;border-radius:6px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.06);}
+  .linea-editor-header{padding:14px 22px;color:#fff;display:flex;align-items:center;gap:14px;font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;letter-spacing:0.04em;}
+  .linea-editor-header .editor-dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);}
+  .linea-editor-header .editor-nombre{flex:1;}
+  .linea-editor-header .editor-stats{font-family:'Montserrat',sans-serif;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;background:rgba(255,255,255,0.18);padding:5px 12px;border-radius:12px;}
+  .linea-editor-header.sin-asignar{background:linear-gradient(135deg,#c72a09,#8f1c05);}
+  .linea-cliente-row{display:grid;grid-template-columns:260px 1fr;gap:20px;padding:14px 22px;border-bottom:1px solid #f0ede6;}
+  .linea-cliente-row:last-child{border-bottom:none;}
+  .linea-cliente-info{display:flex;flex-direction:column;gap:6px;justify-content:center;}
+  .linea-cliente-info .cli-nombre{font-weight:700;font-size:0.94rem;color:var(--negro);display:flex;align-items:center;gap:8px;}
+  .linea-cliente-info .cli-emoji{font-size:1.1rem;}
+  .linea-cliente-info .cli-count{font-size:0.72rem;color:#8a8578;letter-spacing:0.04em;font-weight:600;}
+  .linea-cliente-info .cli-count .cli-count-num{color:var(--negro);font-weight:700;}
+  .linea-cliente-info .cli-bar{width:100%;height:6px;background:#e4e0d6;border-radius:3px;overflow:hidden;margin-top:4px;}
+  .linea-cliente-info .cli-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+  .linea-slots{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .linea-slot{min-width:52px;padding:10px 8px;border-radius:6px;text-align:center;font-weight:700;font-size:0.82rem;font-family:'Montserrat',sans-serif;letter-spacing:0.02em;border:1.5px solid transparent;color:#1c1c1c;transition:transform 0.15s;}
+  .linea-slot:hover{transform:translateY(-2px);}
+  .linea-slot.estatus-gris{background:#f0ede6;border-color:#d8d3c9;color:#8a8578;}
+  .linea-slot.estatus-rojo{background:#fdecea;border-color:#f5c9c1;color:#7a1a09;}
+  .linea-slot.estatus-amarillo{background:#fff8e0;border-color:#e8d97a;color:#7a5a00;}
+  .linea-slot.estatus-verde{background:#e6f4e6;border-color:#a4d0a4;color:#1a5a1a;}
+  .linea-slot-group{background:#fbfaf7;border:1px solid #d8d3c9;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:70px;position:relative;}
+  .linea-slot-group.estatus-gris{background:#f0ede6;}
+  .linea-slot-group.estatus-rojo{background:#fdecea;border-color:#f5c9c1;}
+  .linea-slot-group.estatus-amarillo{background:#fff8e0;border-color:#e8d97a;}
+  .linea-slot-group.estatus-verde{background:#e6f4e6;border-color:#a4d0a4;}
+  .linea-slot-group .grupo-titulo{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1rem;text-align:center;padding-bottom:4px;border-bottom:1px solid rgba(0,0,0,0.08);margin-bottom:4px;color:#1c1c1c;letter-spacing:0.02em;}
+  .linea-slot-group .linea-slot{min-width:auto;padding:6px 4px;font-size:0.72rem;}
+
+  /* Leyenda del semáforo */
+  .linea-leyenda{display:flex;gap:14px;align-items:center;padding:10px 22px;background:#fff;border-bottom:1px solid #e4e0d6;font-size:0.72rem;color:#666;letter-spacing:0.06em;text-transform:uppercase;}
+  .linea-leyenda-item{display:flex;align-items:center;gap:6px;font-weight:600;}
+  .linea-leyenda-color{width:14px;height:14px;border-radius:3px;border:1.5px solid transparent;}
+  .linea-leyenda-color.gris{background:#f0ede6;border-color:#d8d3c9;}
+  .linea-leyenda-color.rojo{background:#fdecea;border-color:#f5c9c1;}
+  .linea-leyenda-color.amarillo{background:#fff8e0;border-color:#e8d97a;}
+  .linea-leyenda-color.verde{background:#e6f4e6;border-color:#a4d0a4;}
+
   /* ============ MIS GUIONES ============ */
   .mg-wrap{display:grid;grid-template-columns:280px 1fr;min-height:600px;background:var(--negro);}
   .mg-lateral{background:#1a1817;color:#f0ede6;padding:24px 20px;border-right:1px solid #2a2723;}
@@ -406,7 +455,7 @@
 <body>
 
 <!-- ============ PANTALLA DE LOGIN (visible mientras no hay sesión) ============ -->
-<div id="login-overlay" class="login-overlay">
+<div id="login-overlay" class="login-overlay hidden">
   <div class="login-box">
     <div class="login-brand">
       <h1><span style="font-family:'Cormorant Garamond',serif;font-weight:400;">LEVEL</span> <strong>PRODUCER</strong></h1>
@@ -445,6 +494,7 @@
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion" data-rol="Direccion,Edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
+  <button class="tab-btn" data-modo="linea" data-rol="Direccion,CM,Edicion">📊 Línea de Producción</button>
   <button class="tab-btn" data-modo="misguiones" data-rol="Direccion,Edicion">📄 Mis Guiones</button>
 </div>
 
@@ -545,6 +595,23 @@
     <div class="cal-grid" id="cm-cal-dow-row"></div>
     <div class="cal-grid" id="cm-cal-grid" style="margin-top:6px;"></div>
   </div>
+</div>
+
+<!-- ============ PANEL: LÍNEA DE PRODUCCIÓN ============ -->
+<div class="modo-panel" id="panel-linea">
+  <div class="panel-header">
+    <div class="titulo-panel">Línea de Producción</div>
+    <div class="linea-controles">
+      <button class="linea-nav-btn" data-linea-nav="prev">←</button>
+      <div class="linea-mes-actual" id="linea-mes-actual">—</div>
+      <button class="linea-nav-btn" data-linea-nav="next">→</button>
+      <button class="linea-nav-btn" data-linea-nav="hoy" style="margin-left:8px;">Hoy</button>
+      <label class="linea-toggle-solo-mios" id="linea-toggle-wrap" style="display:none;margin-left:16px;">
+        <input type="checkbox" id="linea-toggle-solo-mios"> Solo míos
+      </label>
+    </div>
+  </div>
+  <div id="linea-cuerpo" class="linea-cuerpo"></div>
 </div>
 
 <!-- ============ PANEL: MIS GUIONES (para Edición y Dirección) ============ -->
@@ -3676,7 +3743,9 @@ async function llenarLoginDropdown(){
 }
 
 function mostrarLogin(){
-  document.getElementById('login-overlay').classList.remove('hidden');
+  const overlay = document.getElementById('login-overlay');
+  overlay.classList.remove('hidden');
+  overlay.style.display = ''; // limpia cualquier display:none inline
   document.getElementById('user-badge').style.display = 'none';
   llenarLoginDropdown();
 }
@@ -3761,6 +3830,9 @@ function entrarAlCRM(){
   cargarClientes();
   cargarDatos('edicion');
   cargarDatos('cm');
+  // Genera automáticamente los slots del mes actual para todos los clientes activos
+  // (idempotente: no duplica si ya existen). Corre al primer login del día.
+  lineaGenerarSlotsSiFalta();
 }
 
 document.getElementById('btn-login').addEventListener('click', intentarLogin);
@@ -3898,6 +3970,251 @@ document.querySelectorAll('.tab-btn[data-modo="misguiones"]').forEach(btn => {
 });
 
 // ============================================================
+// ============ LÍNEA DE PRODUCCIÓN =============================
+// ============================================================
+const LINEA_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let LINEA_STATE = { year: null, month: null }; // 1-12
+let LINEA_SLOTS = [];
+let LINEA_SOLO_MIOS = false;
+let LINEA_LAST_GENERATED_KEY = ''; // "2026-07" para no regenerar dos veces el mismo mes
+
+function lineaInicializarMesActual(){
+  const d = new Date();
+  LINEA_STATE.year = d.getFullYear();
+  LINEA_STATE.month = d.getMonth() + 1;
+}
+
+function lineaMesLabel(){
+  return LINEA_MESES[LINEA_STATE.month - 1] + ' ' + LINEA_STATE.year;
+}
+
+// Genera slots del mes actual (llamado automáticamente al arrancar/al cambiar de día)
+async function lineaGenerarSlotsSiFalta(){
+  const d = new Date();
+  const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  if(LINEA_LAST_GENERATED_KEY === key) return; // ya generamos hoy
+  LINEA_LAST_GENERATED_KEY = key;
+  try {
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        tipo: 'slots_generar_mes',
+        year: d.getFullYear(),
+        month: d.getMonth() + 1
+      })
+    });
+  } catch(err){ console.error('No se pudieron generar slots:', err); }
+}
+
+async function cargarLineaProduccion(){
+  if(LINEA_STATE.year === null) lineaInicializarMesActual();
+  document.getElementById('linea-mes-actual').textContent = lineaMesLabel();
+  // Toggle "solo míos" solo visible para Edición
+  document.getElementById('linea-toggle-wrap').style.display =
+    (USUARIO_ACTUAL && USUARIO_ACTUAL.Puesto === 'Edicion') ? 'inline-flex' : 'none';
+
+  const cuerpo = document.getElementById('linea-cuerpo');
+  cuerpo.innerHTML = '<div class="linea-empty">Cargando...</div>';
+
+  try {
+    // Cargamos slots, clientes y team en paralelo
+    const [respSlots, respCli, respTeam] = await Promise.all([
+      fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' })
+    ]);
+    const todosSlots = await respSlots.json();
+    const todosClientes = await respCli.json();
+    const todoTeam = await respTeam.json();
+
+    LINEA_SLOTS = todosSlots.filter(s =>
+      parseInt(s.Year, 10) === LINEA_STATE.year &&
+      parseInt(s.Month, 10) === LINEA_STATE.month
+    );
+
+    renderLineaProduccion(todosClientes, todoTeam);
+  } catch(err) {
+    console.error(err);
+    cuerpo.innerHTML = '<div class="linea-empty">Error al cargar. Revisa tu conexión.</div>';
+  }
+}
+
+function renderLineaProduccion(todosClientes, todoTeam){
+  const cuerpo = document.getElementById('linea-cuerpo');
+  const editores = todoTeam.filter(m => m.Puesto === 'Edicion');
+  const clientesActivos = todosClientes.filter(c => String(c.Estado || 'Activo') === 'Activo');
+
+  // Si el usuario es editor y activó "solo míos", filtramos
+  let editoresAMostrar = editores;
+  if(LINEA_SOLO_MIOS && USUARIO_ACTUAL && USUARIO_ACTUAL.Puesto === 'Edicion'){
+    editoresAMostrar = editores.filter(e => String(e.ID) === String(USUARIO_ACTUAL.ID));
+  }
+
+  // Índice slots por cliente para acceso rápido
+  const slotsPorCliente = {};
+  LINEA_SLOTS.forEach(s => {
+    const cid = String(s.ClienteID);
+    if(!slotsPorCliente[cid]) slotsPorCliente[cid] = [];
+    slotsPorCliente[cid].push(s);
+  });
+
+  // Ordenar cada grupo de slots por Numero, SubNumero
+  Object.keys(slotsPorCliente).forEach(cid => {
+    slotsPorCliente[cid].sort((a, b) => {
+      const na = parseInt(a.Numero, 10);
+      const nb = parseInt(b.Numero, 10);
+      if(na !== nb) return na - nb;
+      return (parseInt(a.SubNumero, 10) || 0) - (parseInt(b.SubNumero, 10) || 0);
+    });
+  });
+
+  // Agrupar clientes por editor
+  const bloques = editoresAMostrar.map(e => ({
+    editor: e,
+    clientes: clientesActivos.filter(c => String(c.EditorID || '') === String(e.ID))
+  }));
+
+  // Sin asignar (solo si no es "solo míos")
+  if(!LINEA_SOLO_MIOS){
+    const sinAsignar = clientesActivos.filter(c => !c.EditorID || String(c.EditorID).trim() === '');
+    if(sinAsignar.length > 0){
+      bloques.push({ editor: null, clientes: sinAsignar, sinAsignar: true });
+    }
+  }
+
+  // Filtrar bloques vacíos (excepto "sin asignar" que ya lo controlamos)
+  const bloquesConClientes = bloques.filter(b => b.clientes.length > 0);
+
+  if(bloquesConClientes.length === 0){
+    cuerpo.innerHTML = `
+      <div class="linea-leyenda">
+        <div class="linea-leyenda-item"><span class="linea-leyenda-color gris"></span> No grabado</div>
+        <div class="linea-leyenda-item"><span class="linea-leyenda-color rojo"></span> Grabado</div>
+        <div class="linea-leyenda-item"><span class="linea-leyenda-color amarillo"></span> Editado</div>
+        <div class="linea-leyenda-item"><span class="linea-leyenda-color verde"></span> Publicado</div>
+      </div>
+      <div class="linea-empty" style="margin-top:24px;">No hay clientes activos para este mes.</div>`;
+    return;
+  }
+
+  let html = `
+    <div class="linea-leyenda">
+      <div class="linea-leyenda-item"><span class="linea-leyenda-color gris"></span> No grabado</div>
+      <div class="linea-leyenda-item"><span class="linea-leyenda-color rojo"></span> Grabado</div>
+      <div class="linea-leyenda-item"><span class="linea-leyenda-color amarillo"></span> Editado</div>
+      <div class="linea-leyenda-item"><span class="linea-leyenda-color verde"></span> Publicado</div>
+    </div>
+  `;
+
+  bloquesConClientes.forEach(b => {
+    const editorColor = b.sinAsignar ? '#c72a09' : (b.editor.Color || '#c72a09');
+    const editorNombre = b.sinAsignar ? '⚠ Sin editor asignado' : b.editor.Nombre;
+    const totalSlots = b.clientes.reduce((acc, c) => acc + (slotsPorCliente[String(c.ID)] || []).length, 0);
+    const verdes = b.clientes.reduce((acc, c) => acc + ((slotsPorCliente[String(c.ID)] || []).filter(s => s.Estatus === 'verde').length), 0);
+    const editadosOMas = b.clientes.reduce((acc, c) => acc + ((slotsPorCliente[String(c.ID)] || []).filter(s => s.Estatus === 'amarillo' || s.Estatus === 'verde').length), 0);
+    html += `
+      <div class="linea-editor-block">
+        <div class="linea-editor-header${b.sinAsignar ? ' sin-asignar' : ''}" style="${b.sinAsignar ? '' : 'background:' + editorColor + ';'}">
+          ${b.sinAsignar ? '' : '<span class="editor-dot" style="background:#fff;"></span>'}
+          <span class="editor-nombre">${editorNombre}</span>
+          <span class="editor-stats">${editadosOMas} editados · ${verdes} publicados · ${totalSlots} total</span>
+        </div>
+    `;
+    b.clientes.forEach(c => {
+      const slotsCli = slotsPorCliente[String(c.ID)] || [];
+      const total = slotsCli.length;
+      const publicados = slotsCli.filter(s => s.Estatus === 'verde').length;
+      const pct = total > 0 ? Math.round(publicados / total * 100) : 0;
+      const editados = slotsCli.filter(s => s.Estatus === 'amarillo' || s.Estatus === 'verde').length;
+
+      // Render de slots: agrupados si es podcast (SubNumero > 0), plano si es simple
+      let slotsHtml = '';
+      if(String(c.NumeracionModo || 'simple') === 'episodios'){
+        // Agrupar por Numero (episodio)
+        const grupos = {};
+        slotsCli.forEach(s => {
+          const num = parseInt(s.Numero, 10);
+          if(!grupos[num]) grupos[num] = [];
+          grupos[num].push(s);
+        });
+        Object.keys(grupos).sort((a,b) => parseInt(a,10) - parseInt(b,10)).forEach(numKey => {
+          const reelsDelGrupo = grupos[numKey];
+          // Estatus del grupo: si todos verdes = verde, si alguno amarillo = amarillo, si alguno rojo = rojo, sino gris
+          let estadoGrupo = 'gris';
+          if(reelsDelGrupo.every(r => r.Estatus === 'verde')) estadoGrupo = 'verde';
+          else if(reelsDelGrupo.some(r => r.Estatus === 'amarillo' || r.Estatus === 'verde')) estadoGrupo = 'amarillo';
+          else if(reelsDelGrupo.some(r => r.Estatus === 'rojo')) estadoGrupo = 'rojo';
+          slotsHtml += `
+            <div class="linea-slot-group estatus-${estadoGrupo}">
+              <div class="grupo-titulo">${LINEA_STATE.month}.${numKey}</div>
+              ${reelsDelGrupo.map(r => `
+                <div class="linea-slot estatus-${r.Estatus || 'gris'}" title="${LINEA_STATE.month}.${r.Numero}.${r.SubNumero}">
+                  .${r.SubNumero}
+                </div>
+              `).join('')}
+            </div>
+          `;
+        });
+      } else {
+        // Simple
+        slotsCli.forEach(s => {
+          slotsHtml += `<div class="linea-slot estatus-${s.Estatus || 'gris'}" title="${LINEA_STATE.month}.${s.Numero}">${LINEA_STATE.month}.${s.Numero}</div>`;
+        });
+      }
+      if(slotsCli.length === 0){
+        slotsHtml = '<div style="color:#8a8578;font-size:0.82rem;font-style:italic;">Sin slots configurados para este mes.</div>';
+      }
+
+      html += `
+        <div class="linea-cliente-row">
+          <div class="linea-cliente-info">
+            <div class="cli-nombre"><span class="cli-emoji">${c.Emoji || '👤'}</span> ${c.Nombre || ''}</div>
+            <div class="cli-count">
+              <span class="cli-count-num">${editados}</span>/${total} editados
+              &nbsp;·&nbsp;
+              <span class="cli-count-num">${publicados}</span>/${total} publicados
+              &nbsp;<strong style="color:${editorColor};">${pct}%</strong>
+            </div>
+            <div class="cli-bar"><div class="cli-bar-fill" style="width:${pct}%;background:${editorColor};"></div></div>
+          </div>
+          <div class="linea-slots">${slotsHtml}</div>
+        </div>
+      `;
+    });
+    html += '</div>';
+  });
+
+  cuerpo.innerHTML = html;
+}
+
+// Navegación de mes
+document.querySelectorAll('[data-linea-nav]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const accion = btn.dataset.lineaNav;
+    if(accion === 'prev'){
+      LINEA_STATE.month--;
+      if(LINEA_STATE.month < 1){ LINEA_STATE.month = 12; LINEA_STATE.year--; }
+    } else if(accion === 'next'){
+      LINEA_STATE.month++;
+      if(LINEA_STATE.month > 12){ LINEA_STATE.month = 1; LINEA_STATE.year++; }
+    } else if(accion === 'hoy'){
+      lineaInicializarMesActual();
+    }
+    cargarLineaProduccion();
+  });
+});
+
+document.getElementById('linea-toggle-solo-mios').addEventListener('change', (e) => {
+  LINEA_SOLO_MIOS = e.target.checked;
+  cargarLineaProduccion();
+});
+
+// Hook: cuando el usuario da clic en la pestaña "Línea de Producción", recargamos
+document.querySelectorAll('.tab-btn[data-modo="linea"]').forEach(btn => {
+  btn.addEventListener('click', () => cargarLineaProduccion());
+});
+
+// ============================================================
 // ============ ARRANQUE ==============================
 // ============================================================
 // Guard: si la URL trae ?guiones=TOKEN, mostramos la vista pública del cliente
@@ -3918,8 +4235,11 @@ if(_tokenPublico){
 }
 
 async function arrancarVistaPublicaCliente(token){
+  // Oculta el login overlay explícitamente por si acaso
+  const overlay = document.getElementById('login-overlay');
+  if(overlay){ overlay.classList.add('hidden'); overlay.style.display = 'none'; }
   // Oculta todo el CRM y muestra solo la vista pública
-  document.querySelectorAll('body > .topbar, body > .tabs-switch, body > .modo-panel, body > .modal-bg, body > .cliente-detalle-bg, body > #exp-render-root, body > #inf-render-root').forEach(el => {
+  document.querySelectorAll('body > .topbar, body > .tabs-switch, body > .modo-panel, body > .modal-bg, body > .cliente-detalle-bg, body > #exp-render-root, body > #inf-render-root, body > #login-overlay').forEach(el => {
     el.style.display = 'none';
   });
   const cont = document.createElement('div');
