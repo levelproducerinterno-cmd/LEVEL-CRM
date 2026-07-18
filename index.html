@@ -97,6 +97,26 @@
   .pick-chip:hover{border-color:var(--rojo);}
   .pick-chip.selected{background:var(--negro);color:#fff;border-color:var(--negro);}
 
+  /* ============ MODAL: Invitaciones semanales ============ */
+  .inv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .inv-modal{background:#fff;color:#1c1c1c;max-width:560px;width:100%;border-radius:8px;padding:36px 40px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;}
+  .inv-modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.8rem;line-height:1;color:#8a8578;cursor:pointer;padding:4px 10px;}
+  .inv-modal-close:hover{color:var(--negro);}
+  .inv-modal-titulo{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--negro);}
+  .inv-modal-sub{color:#8a8578;font-size:0.92rem;margin-top:4px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f0ede6;}
+  .inv-modal-lista{background:#e6f4e6;border:1px solid #a4d0a4;color:#1a5a1a;padding:12px 14px;border-radius:6px;font-size:0.88rem;margin-bottom:12px;}
+  .inv-modal-skip{background:#fff8e0;border:1px solid #e8d97a;color:#7a5a00;padding:12px 14px;border-radius:6px;font-size:0.85rem;margin-bottom:16px;}
+  .inv-modal-skip ul{margin:6px 0 0;padding-left:20px;}
+  .inv-modal-skip li{margin-bottom:3px;}
+  .inv-modal-wa{background:#faf8f4;border:1px solid #e4e0d6;border-radius:8px;padding:16px 18px;margin-top:20px;}
+  .inv-modal-wa-titulo{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:700;color:#25d366;}
+  .inv-modal-wa-sub{font-size:0.85rem;color:#666;margin:6px 0 12px;}
+  .inv-modal-wa textarea{width:100%;min-height:110px;padding:10px 12px;border:1px solid #d8d3c9;border-radius:4px;font-family:inherit;font-size:0.9rem;background:#fff;color:#1c1c1c;resize:vertical;line-height:1.5;}
+  .inv-modal-wa-botones{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .inv-modal-wa-botones .btn{background:#25d366;color:#fff;border:none;}
+  .inv-modal-wa-botones .btn:hover{background:#1ea952;}
+  .inv-copiado-msg{margin-top:10px;font-size:0.85rem;color:#2e7d2e;font-weight:600;min-height:20px;}
+
   /* Recursos del cliente dentro del modal de Edición */
   .m-recursos-cliente{margin-top:14px;padding:12px 14px;background:#faf8f4;border:1px solid #e4e0d6;border-radius:6px;}
   .m-recursos-titulo{font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#8a8578;font-weight:700;margin-bottom:8px;}
@@ -669,7 +689,10 @@
 <div class="modo-panel" id="panel-team">
   <div class="panel-header">
     <div class="titulo-panel">Team</div>
-    <button class="btn" id="btn-nuevo-team">+ Nuevo miembro</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn ghost" id="btn-invitaciones-semanales" title="Envía la invitación de Calendar con las tareas de la semana a cada miembro con email + tareas configuradas">📅 Enviar invitaciones semanales</button>
+      <button class="btn" id="btn-nuevo-team">+ Nuevo miembro</button>
+    </div>
   </div>
   <div class="team-tabla-wrap">
     <table class="team-tabla">
@@ -927,6 +950,16 @@
         <label>PIN de acceso (4 dígitos)</label>
         <input type="text" id="nt-pin" placeholder="Ej. 1234" inputmode="numeric" maxlength="8" style="letter-spacing:0.3em;font-weight:700;">
         <div class="hint" style="margin-top:6px;font-size:0.72rem;">Se lo compartes por WhatsApp para que entre al CRM. Puedes cambiarlo cuando quieras.</div>
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Email (para invitaciones semanales de Calendar)</label>
+        <input type="email" id="nt-email" placeholder="Ej. nombre@ejemplo.com">
+        <div class="hint" style="margin-top:6px;font-size:0.72rem;">Debe ser una cuenta de Gmail o Google Workspace. Sin email no recibe invitaciones.</div>
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Tareas semanales (aparecerán en la invitación de Calendar)</label>
+        <textarea id="nt-tareas" placeholder="Ej. Calendarizar contenido con copys, mandar videos un día antes de publicar, hacer informes mensuales los miércoles, publicar contenido, disfrutar tu vida." style="min-height:100px;"></textarea>
+        <div class="hint" style="margin-top:6px;font-size:0.72rem;">Este texto se enviará cada lunes 9:00 AM en la invitación de Calendar. Puedes editarlo cuando quieras.</div>
       </div>
     </div>
     <div class="modal-actions">
@@ -2469,6 +2502,86 @@ function actualizarSelectoresTeam(){
 // ---- Modal Team ----
 let TEAM_EDITANDO_ID = null;
 const modalTeamBg = document.getElementById('modal-team-bg');
+// ---- Botón: Enviar invitaciones semanales ----
+document.getElementById('btn-invitaciones-semanales').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-invitaciones-semanales');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    const resp = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ tipo: 'team_enviar_invitaciones_semanales' })
+    });
+    const data = await resp.json();
+    mostrarResultadoInvitaciones(data);
+  } catch(err) {
+    alert('No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
+
+function mostrarResultadoInvitaciones(data){
+  const enviados = data.enviados || [];
+  const skippeados = data.skippeados || [];
+  const total = enviados.length;
+  const nombresEnviados = enviados.map(e => e.nombre).join(', ');
+
+  // Mensaje pre-armado para WhatsApp
+  const mensajeWA = 'Hola team 👋\n\nLes aviso que les acaba de llegar una invitación a su correo con las tareas de esta semana. Por favor, agréguenla a su calendario para no olvidarla.\n\n¡Gracias! 🙌';
+
+  const bg = document.createElement('div');
+  bg.className = 'inv-modal-bg';
+  bg.innerHTML = `
+    <div class="inv-modal">
+      <button class="inv-modal-close">×</button>
+      <div class="inv-modal-titulo">✅ Invitaciones enviadas</div>
+      <div class="inv-modal-sub">${total} miembro${total === 1 ? '' : 's'} recibirá${total === 1 ? '' : 'n'} su invitación de Calendar.</div>
+
+      ${total > 0 ? `<div class="inv-modal-lista"><strong>Enviadas a:</strong> ${nombresEnviados}</div>` : ''}
+      ${skippeados.length > 0 ? `
+        <div class="inv-modal-skip">
+          <strong>No se enviaron ${skippeados.length}:</strong>
+          <ul>${skippeados.map(s => `<li>${s.nombre} — ${s.razon}</li>`).join('')}</ul>
+        </div>
+      ` : ''}
+
+      <div class="inv-modal-wa">
+        <div class="inv-modal-wa-titulo">💬 Notifica en el grupo de WhatsApp</div>
+        <div class="inv-modal-wa-sub">Copia este mensaje y pégalo en el grupo del team:</div>
+        <textarea id="inv-mensaje-wa" readonly>${mensajeWA}</textarea>
+        <div class="inv-modal-wa-botones">
+          <button class="btn" id="inv-btn-copiar">📋 Copiar mensaje</button>
+          <a href="https://web.whatsapp.com/" target="_blank" rel="noopener" class="btn ghost">Abrir WhatsApp Web ↗</a>
+        </div>
+        <div id="inv-copiado-msg" class="inv-copiado-msg"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+
+  const cerrar = () => bg.remove();
+  bg.querySelector('.inv-modal-close').addEventListener('click', cerrar);
+  bg.addEventListener('click', (e) => { if(e.target === bg) cerrar(); });
+
+  document.getElementById('inv-btn-copiar').addEventListener('click', async () => {
+    const txt = document.getElementById('inv-mensaje-wa');
+    try {
+      await navigator.clipboard.writeText(txt.value);
+      document.getElementById('inv-copiado-msg').textContent = '✓ Copiado. Ahora pégalo en tu grupo de WhatsApp.';
+    } catch(err) {
+      // Fallback si el navegador no permite clipboard API
+      txt.select();
+      document.execCommand('copy');
+      document.getElementById('inv-copiado-msg').textContent = '✓ Copiado. Ahora pégalo en tu grupo de WhatsApp.';
+    }
+  });
+}
+
 document.getElementById('btn-nuevo-team').addEventListener('click', () => {
   TEAM_EDITANDO_ID = null;
   document.getElementById('modal-team-title').textContent = 'Nuevo miembro del team';
@@ -2481,6 +2594,8 @@ document.getElementById('btn-nuevo-team').addEventListener('click', () => {
   document.getElementById('nt-bebida').value = '';
   document.getElementById('nt-tarjeta').value = '';
   document.getElementById('nt-pin').value = '';
+  document.getElementById('nt-email').value = '';
+  document.getElementById('nt-tareas').value = '';
   modalTeamBg.classList.add('open');
 });
 document.getElementById('btn-cancelar-team').addEventListener('click', () => modalTeamBg.classList.remove('open'));
@@ -2500,6 +2615,8 @@ function abrirModalTeamEditar(id){
   document.getElementById('nt-bebida').value = m.BebidaFavorita || '';
   document.getElementById('nt-tarjeta').value = m.NumTarjeta || '';
   document.getElementById('nt-pin').value = m.Pin ? String(m.Pin) : '';
+  document.getElementById('nt-email').value = m.Email || '';
+  document.getElementById('nt-tareas').value = m.TareasSemanales || '';
   modalTeamBg.classList.add('open');
 }
 
@@ -2516,7 +2633,9 @@ document.getElementById('btn-guardar-team').addEventListener('click', async () =
     dulceFavorito: document.getElementById('nt-dulce').value.trim(),
     bebidaFavorita: document.getElementById('nt-bebida').value.trim(),
     numTarjeta: document.getElementById('nt-tarjeta').value.trim(),
-    pin: document.getElementById('nt-pin').value.trim()
+    pin: document.getElementById('nt-pin').value.trim(),
+    email: document.getElementById('nt-email').value.trim(),
+    tareasSemanales: document.getElementById('nt-tareas').value.trim()
   };
   modalTeamBg.classList.remove('open');
   try {
