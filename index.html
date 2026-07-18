@@ -235,18 +235,63 @@
   .vp-body textarea.vp-notas{min-height:80px;}
   .vp-msg{margin-left:12px;color:#666;font-size:0.82rem;}
 
-  /* Calendario de publicaciones */
-  .vp-cal-card{background:#fff;color:#1c1c1c;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:6px;padding:18px 22px;margin-bottom:14px;}
-  .vp-cal-card.listo{border-left-color:#2e7d2e;}
-  .vp-cal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:12px;border-bottom:1px solid #f0ede6;}
-  .vp-cal-folio{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--negro);}
-  .vp-cal-fecha{font-size:0.82rem;color:#666;margin-top:2px;text-transform:capitalize;}
-  .vp-cal-badge{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:5px 10px;border-radius:12px;color:#fff;white-space:nowrap;}
-  .vp-cal-agendado{background:#c72a09;}
-  .vp-cal-listo{background:#2e7d2e;}
-  .vp-cal-copy-label{font-size:0.66rem;letter-spacing:0.1em;color:#8a8578;font-weight:700;margin-top:14px;margin-bottom:6px;}
-  .vp-cal-copy{background:#faf8f4;padding:12px 14px;border-radius:4px;font-size:0.9rem;line-height:1.6;color:#1c1c1c;white-space:pre-wrap;}
-  .vp-cal-copy-vacio{color:#8a8578;font-style:italic;font-size:0.85rem;margin-top:12px;}
+  /* ============ CM LAYOUT + PANEL LISTOS PARA PUBLICAR ============ */
+  .cm-layout{display:grid;grid-template-columns:1fr 320px;gap:18px;padding:0 22px 30px;}
+  .cm-layout-main{min-width:0;}
+  .cm-listos-panel{background:var(--negro);color:#f0ede6;border-radius:8px;overflow:hidden;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
+  .cm-listos-header{padding:16px 18px;background:linear-gradient(135deg,#1c1a17,#3a2a26);border-bottom:1px solid #444;}
+  .cm-listos-titulo{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;letter-spacing:0.02em;color:#fff;}
+  .cm-listos-sub{font-size:0.72rem;color:#b7b2a9;margin-top:4px;letter-spacing:0.06em;text-transform:uppercase;}
+  .cm-listos-lista{padding:14px;overflow-y:auto;flex:1;}
+  .cm-listos-vacio{color:#8a8578;font-size:0.82rem;text-align:center;padding:30px 10px;font-style:italic;}
+  .cm-listos-card{background:#2a2723;border:1px solid #444;border-left:3px solid #e8d97a;border-radius:6px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s,border-color 0.15s;}
+  .cm-listos-card:hover{transform:translateY(-1px);border-color:#c72a09;border-left-color:#c72a09;background:#3a3733;}
+  .cm-listos-card-titulo{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:6px;color:#fff;}
+  .cm-listos-card-cliente{font-size:0.76rem;color:#b7b2a9;letter-spacing:0.04em;margin-top:4px;}
+  .cm-listos-card-editor{font-size:0.68rem;color:#c72a09;margin-top:6px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;}
+
+  @media (max-width: 900px){
+    .cm-layout{grid-template-columns:1fr;}
+    .cm-listos-panel{position:static;max-height:none;}
+  }
+  .vp-cal-controles{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;}
+  .vp-cal-nav{background:rgba(255,255,255,0.06);color:#f0ede6;border:1px solid rgba(255,255,255,0.15);padding:8px 14px;border-radius:4px;cursor:pointer;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:0.95rem;}
+  .vp-cal-nav:hover{background:rgba(255,255,255,0.12);border-color:#c72a09;}
+  .vp-cal-mes-actual{color:#fff;font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;padding:0 18px;letter-spacing:0.06em;text-transform:uppercase;min-width:220px;text-align:center;}
+  .vp-cal-hoy{margin-left:12px;}
+
+  .vp-cal-leyenda{display:flex;justify-content:center;gap:22px;margin-bottom:16px;font-size:0.78rem;color:#b7b2a9;letter-spacing:0.04em;}
+  .vp-cal-leyenda-item{display:inline-flex;align-items:center;gap:6px;}
+  .vp-cal-leyenda-color{width:14px;height:14px;border-radius:3px;}
+  .vp-cal-leyenda-color.agendado{background:#fdecea;border:1.5px solid #c72a09;}
+  .vp-cal-leyenda-color.publicado{background:#e6f4e6;border:1.5px solid #2e7d2e;}
+
+  .vp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#333;border:1px solid #333;border-radius:8px;overflow:hidden;}
+  .vp-cal-diahead{background:#1c1a17;color:#c72a09;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:800;text-align:center;padding:10px 4px;}
+  .vp-cal-celda{background:#faf8f4;color:#1c1c1c;min-height:100px;padding:6px 6px 8px;display:flex;flex-direction:column;gap:4px;}
+  .vp-cal-celda.vacia{background:#f0ede6;opacity:0.5;}
+  .vp-cal-celda.hoy{background:#fff;box-shadow:inset 0 0 0 2px #c72a09;}
+  .vp-cal-celda.con-posts{background:#fff;}
+  .vp-cal-num{font-family:'Cormorant Garamond',serif;font-size:0.92rem;font-weight:700;color:#8a8578;text-align:right;padding:0 3px 2px;}
+  .vp-cal-celda.hoy .vp-cal-num{color:#c72a09;font-size:1.05rem;}
+  .vp-cal-pill{background:#fdecea;border:1.5px solid #c72a09;color:#7a1a09;padding:5px 8px;border-radius:5px;font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.01em;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform 0.15s;}
+  .vp-cal-pill:hover{transform:translateY(-1px);}
+  .vp-cal-pill.publicado{background:#e6f4e6;border-color:#2e7d2e;color:#1a5a1a;}
+
+  /* Modal del post */
+  .vp-cal-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:vpcalfadein 0.15s ease-out;}
+  @keyframes vpcalfadein{from{opacity:0;}to{opacity:1;}}
+  .vp-cal-modal{background:#fff;color:#1c1c1c;max-width:600px;width:100%;border-radius:8px;padding:32px 36px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .vp-cal-modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.8rem;line-height:1;color:#8a8578;cursor:pointer;padding:4px 10px;}
+  .vp-cal-modal-close:hover{color:var(--negro);}
+  .vp-cal-modal-badge{display:inline-block;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;font-weight:800;padding:4px 12px;border-radius:12px;color:#fff;margin-bottom:14px;}
+  .vp-cal-modal-badge.agendado{background:#c72a09;}
+  .vp-cal-modal-badge.publicado{background:#2e7d2e;}
+  .vp-cal-modal-titulo{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;line-height:1.15;color:var(--negro);}
+  .vp-cal-modal-fecha{color:#8a8578;font-size:0.9rem;margin-top:6px;text-transform:capitalize;padding-bottom:18px;border-bottom:1px solid #f0ede6;}
+  .vp-cal-modal-copy-label{font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase;color:#8a8578;font-weight:800;margin:18px 0 8px;}
+  .vp-cal-modal-copy{background:#faf8f4;padding:16px 18px;border-radius:6px;font-size:0.95rem;line-height:1.7;white-space:pre-wrap;color:#1c1c1c;}
+  .vp-cal-modal-copy-vacio{color:#8a8578;font-style:italic;padding:12px 0;}
 
   /* Expediente e Informes */
   .vp-pdf-card{background:#fff;color:#1c1c1c;padding:22px;border-radius:8px;margin-bottom:24px;}
@@ -712,9 +757,20 @@
     <div class="kpi-wrap" id="cm-kpi-wrap"></div>
   </div>
 
-  <div class="calendar-wrap">
-    <div class="cal-grid" id="cm-cal-dow-row"></div>
-    <div class="cal-grid" id="cm-cal-grid" style="margin-top:6px;"></div>
+  <div class="cm-layout">
+    <div class="cm-layout-main">
+      <div class="calendar-wrap">
+        <div class="cal-grid" id="cm-cal-dow-row"></div>
+        <div class="cal-grid" id="cm-cal-grid" style="margin-top:6px;"></div>
+      </div>
+    </div>
+    <aside class="cm-listos-panel" id="cm-listos-panel">
+      <div class="cm-listos-header">
+        <div class="cm-listos-titulo">📥 Videos listos para publicar</div>
+        <div class="cm-listos-sub" id="cm-listos-count">—</div>
+      </div>
+      <div class="cm-listos-lista" id="cm-listos-lista"></div>
+    </aside>
   </div>
 </div>
 
@@ -1547,6 +1603,11 @@ Nombre cliente:
       <label>Copy del video</label>
       <textarea id="m-copy" placeholder="Escribe aquí el copy/caption para este video..."></textarea>
     </div>
+    <div class="field" id="campo-palabra-clave" style="display:none;">
+      <label>Palabra clave (para el calendario del cliente)</label>
+      <input type="text" id="m-palabra-clave" placeholder='Ej. "café", "ubicación", "menú nuevo" — una palabra o frase corta' maxlength="40">
+      <div class="hint" style="margin-top:6px;font-size:0.72rem;">El cliente verá esta palabra en la pastilla del calendario. Ej: "7.5 · café".</div>
+    </div>
     <div class="field" id="campo-responsable">
       <label>Responsables ya usados (clic para usar)</label>
       <div class="chips-row" id="chips-responsables"></div>
@@ -1644,6 +1705,10 @@ async function cargarDatos(modoKey){
   }
   actualizaFiltros(modoKey);
   render(modoKey);
+  // Cuando se carga Edición o CM, refrescamos el panel de "listos para publicar"
+  if(modoKey === 'edicion' || modoKey === 'cm'){
+    if(typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
+  }
 }
 
 function actualizaFiltros(modoKey){
@@ -1863,6 +1928,117 @@ function renderKPIs(modoKey){
   }
 }
 
+// ============ Panel "Videos listos para publicar" (al lado del calendario CM) ============
+// Muestra las tarjetas de Edición marcadas como Listo que NO tienen tarjeta correspondiente en CM.
+// Al hacer clic, se abre el modal de CM prellenado con cliente, folio y guion (si existe).
+function renderPanelListosParaPublicar(){
+  const lista = document.getElementById('cm-listos-lista');
+  const countEl = document.getElementById('cm-listos-count');
+  if(!lista) return;
+
+  const edicionCards = (estado.edicion && estado.edicion.TODAS) ? estado.edicion.TODAS : [];
+  const cmCards = (estado.cm && estado.cm.TODAS) ? estado.cm.TODAS : [];
+
+  // Índice de tarjetas CM por cliente+folio (case-insensitive)
+  const cmIdx = new Set();
+  cmCards.forEach(c => {
+    const cli = String(c.Cliente || '').trim().toLowerCase();
+    const fol = String(c.Folio || '').trim();
+    if(cli && fol) cmIdx.add(cli + '|' + fol);
+  });
+
+  // Filtrar Edición: solo las que están marcadas Listo y NO tienen contraparte en CM
+  const listos = edicionCards.filter(e => {
+    const est = String(e.Listo || '').toUpperCase();
+    if(est !== 'SI') return false;
+    const cli = String(e.Cliente || '').trim().toLowerCase();
+    const fol = String(e.Folio || '').trim();
+    if(!cli || !fol) return false;
+    return !cmIdx.has(cli + '|' + fol);
+  });
+
+  // Ordenar por fecha descendente (los más recientes arriba)
+  listos.sort((a, b) => {
+    const fa = new Date(a.Fecha || 0).getTime();
+    const fb = new Date(b.Fecha || 0).getTime();
+    return fb - fa;
+  });
+
+  countEl.textContent = listos.length === 0
+    ? 'Nada pendiente por agendar'
+    : (listos.length + ' listo' + (listos.length === 1 ? '' : 's') + ' por agendar');
+
+  if(listos.length === 0){
+    lista.innerHTML = '<div class="cm-listos-vacio">🎉 Todo agendado. Cuando Edición marque nuevos videos como Listo, aparecerán aquí.</div>';
+    return;
+  }
+
+  lista.innerHTML = listos.map(e => `
+    <div class="cm-listos-card" data-listo-id="${e.ID}">
+      <div class="cm-listos-card-titulo">${e.Emoji || '📄'} ${e.Folio || 'sin folio'}</div>
+      <div class="cm-listos-card-cliente">${e.Cliente || 'Sin cliente'}</div>
+      ${e.Responsable ? `<div class="cm-listos-card-editor">Editor: ${e.Responsable}</div>` : ''}
+    </div>
+  `).join('');
+
+  lista.querySelectorAll('[data-listo-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.listoId;
+      const src = edicionCards.find(x => String(x.ID) === String(id));
+      if(!src) return;
+      abrirModalCMPrellenadoDesdeListo(src);
+    });
+  });
+}
+
+// Abre el modal de CM ya prellenado con datos de la tarjeta lista de Edición.
+// Busca guion aprobado del cliente con el folio para prellenar el copy si existe.
+async function abrirModalCMPrellenadoDesdeListo(edicionCard){
+  // Simula "+ Nueva tarjeta" en modo CM
+  document.getElementById('modal-title').textContent = 'Agendar publicación (desde video listo)';
+  document.getElementById('m-id').value = '';
+  document.getElementById('m-modo').value = 'cm';
+  const hoy = new Date();
+  document.getElementById('m-fecha').value = hoy.toISOString().slice(0,10);
+  document.getElementById('m-cliente').value = edicionCard.Cliente || '';
+  document.getElementById('m-emoji').value = edicionCard.Emoji || '';
+  document.getElementById('m-folio').value = edicionCard.Folio || '';
+  document.getElementById('m-copy').value = '';
+  document.getElementById('m-palabra-clave').value = '';
+  document.getElementById('m-responsable').value = '';
+  document.getElementById('m-listo').value = 'NO';
+  document.getElementById('m-folio-sugerido').textContent = '';
+  document.getElementById('m-recursos-cliente').style.display = 'none';
+  document.getElementById('m-recursos-cliente').innerHTML = '';
+  renderChipsModal('cm');
+  // Seleccionar cliente en el dropdown por nombre
+  const sel = document.getElementById('m-cliente-select');
+  const nombreCli = String(edicionCard.Cliente || '').trim().toLowerCase();
+  for(let i = 0; i < sel.options.length; i++){
+    const opt = sel.options[i];
+    if((opt.dataset.nombre || '').trim().toLowerCase() === nombreCli){
+      sel.selectedIndex = i;
+      break;
+    }
+  }
+  // Buscar guion aprobado con este folio para el cliente y prellenar copy
+  const clienteObj = (CLIENTES || []).find(c => String(c.Nombre || '').trim().toLowerCase() === nombreCli);
+  if(clienteObj){
+    try {
+      const resp = await fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' });
+      const todosGuiones = await resp.json();
+      const guionMatch = todosGuiones.find(g =>
+        String(g.ClienteID) === String(clienteObj.ID) &&
+        String(g.Folio || '').trim() === String(edicionCard.Folio || '').trim()
+      );
+      if(guionMatch && guionMatch.Guion){
+        document.getElementById('m-copy').value = guionMatch.Guion;
+      }
+    } catch(err){ console.error(err); }
+  }
+  modalBg.classList.add('open');
+}
+
 // ============ Modal compartido ============
 function renderChipsModal(modoKey){
   // Llenamos el DROPDOWN con los clientes activos (los de la hoja Clientes)
@@ -1912,6 +2088,7 @@ function renderChipsModal(modoKey){
   }
 
   document.getElementById('campo-copy').style.display = modo.tieneCopy ? 'block' : 'none';
+  document.getElementById('campo-palabra-clave').style.display = modo.tieneCopy ? 'block' : 'none';
 }
 
 // Muestra en el modal los recursos del cliente seleccionado: link de Frame.io + acceso rápido a Guiones.
@@ -1940,32 +2117,11 @@ function renderRecursosClienteEnModal(clienteId){
       <button type="button" class="m-recurso-btn m-recurso-guiones" id="btn-abrir-guiones-cliente">📄 Ver guiones del cliente</button>
     </div>
   `;
-  // Botón de guiones: cierra el modal y abre el detalle del cliente en pestaña Guiones
+  // Botón de guiones: abre EN NUEVA PESTAÑA la vista de Mis Guiones con el cliente preseleccionado
   document.getElementById('btn-abrir-guiones-cliente').addEventListener('click', () => {
-    modalBg.classList.remove('open');
-    abrirDetalleClienteEnGuiones(clienteId);
+    const url = window.location.origin + window.location.pathname + '?misguiones=' + encodeURIComponent(clienteId);
+    window.open(url, '_blank', 'noopener');
   });
-}
-
-// Abre el detalle del cliente y navega a la subtab de guiones
-function abrirDetalleClienteEnGuiones(clienteId){
-  // Cambiamos a la pestaña Clientes primero si no estamos ahí
-  const tabClientes = document.querySelector('.tab-btn[data-modo="clientes"]');
-  if(tabClientes){
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.modo-panel').forEach(p => p.classList.remove('active'));
-    tabClientes.classList.add('active');
-    document.getElementById('panel-clientes').classList.add('active');
-  }
-  // Abrimos el detalle del cliente (usa la función global existente)
-  if(typeof abrirDetalleCliente === 'function'){
-    abrirDetalleCliente(clienteId);
-    // Después de abrir, hacemos clic en la subtab de guiones
-    setTimeout(() => {
-      const subGuiones = document.querySelector('.cd-subtab-btn[data-sub="guiones"]');
-      if(subGuiones) subGuiones.click();
-    }, 200);
-  }
 }
 
 // Sugiere el próximo folio libre del cliente para el mes actual
@@ -2012,6 +2168,7 @@ function abrirModalNueva(modoKey){
   document.getElementById('m-emoji').value = '';
   document.getElementById('m-folio').value = '';
   document.getElementById('m-copy').value = '';
+  document.getElementById('m-palabra-clave').value = '';
   document.getElementById('m-responsable').value = '';
   document.getElementById('m-listo').value = 'NO';
   document.getElementById('m-folio-sugerido').textContent = '';
@@ -2033,6 +2190,7 @@ function abrirModalEdicion(modoKey, id){
   document.getElementById('m-emoji').value = item.Emoji || '';
   document.getElementById('m-folio').value = item.Folio || '';
   document.getElementById('m-copy').value = item.Copy || '';
+  document.getElementById('m-palabra-clave').value = item.PalabraClave || '';
   document.getElementById('m-responsable').value = item.Responsable || '';
   document.getElementById('m-listo').value = String(item.Listo).toUpperCase() === 'SI' ? 'SI' : 'NO';
   renderChipsModal(modoKey);
@@ -2078,6 +2236,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     Listo: document.getElementById('m-listo').value
   };
   if(modo.tieneCopy) datosForm.Copy = document.getElementById('m-copy').value.trim();
+  if(modo.tieneCopy) datosForm.PalabraClave = document.getElementById('m-palabra-clave').value.trim();
   if(modo.tieneResponsable) datosForm.Responsable = document.getElementById('m-responsable').value.trim();
   if(modo.etapaFija) datosForm.Etapa = modo.etapaFija;
 
@@ -2094,7 +2253,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
       fecha: datosForm.Fecha, cliente: datosForm.Cliente, emoji: datosForm.Emoji,
       folio: datosForm.Folio, listo: datosForm.Listo
     };
-    if(modo.tieneCopy) payload.copy = datosForm.Copy;
+    if(modo.tieneCopy){ payload.copy = datosForm.Copy; payload.palabraClave = datosForm.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = datosForm.Responsable;
     if(modo.etapaFija) payload.etapa = datosForm.Etapa;
     try{
@@ -2111,7 +2270,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
       fecha: nueva.Fecha, cliente: nueva.Cliente, emoji: nueva.Emoji,
       folio: nueva.Folio, listo: nueva.Listo
     };
-    if(modo.tieneCopy) payload.copy = nueva.Copy;
+    if(modo.tieneCopy){ payload.copy = nueva.Copy; payload.palabraClave = nueva.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = nueva.Responsable;
     if(modo.etapaFija) payload.etapa = nueva.Etapa;
     try{
@@ -4570,6 +4729,7 @@ document.querySelectorAll('.tab-btn[data-modo="linea"]').forEach(btn => {
 // (solo guiones, editable) y NO arrancamos el CRM normal.
 const _urlParams = new URLSearchParams(window.location.search);
 const _tokenPublico = _urlParams.get('guiones');
+const _misGuionesClienteId = _urlParams.get('misguiones');
 if(_tokenPublico){
   arrancarVistaPublicaCliente(_tokenPublico);
 } else {
@@ -4578,8 +4738,31 @@ if(_tokenPublico){
   if(sesionPrevia && sesionPrevia.ID && sesionPrevia.Puesto){
     USUARIO_ACTUAL = sesionPrevia;
     entrarAlCRM();
+    // Si venimos con ?misguiones=ID, navegar y preseleccionar el cliente
+    if(_misGuionesClienteId){
+      setTimeout(() => autoAbrirMisGuionesParaCliente(_misGuionesClienteId), 400);
+    }
   } else {
     mostrarLogin();
+  }
+}
+
+// Navega a la pestaña Mis Guiones y auto-selecciona un cliente por ID
+function autoAbrirMisGuionesParaCliente(clienteId){
+  const tabMis = document.querySelector('.tab-btn[data-modo="misguiones"]');
+  if(!tabMis || tabMis.classList.contains('rol-hide')) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.modo-panel').forEach(p => p.classList.remove('active'));
+  tabMis.classList.add('active');
+  document.getElementById('panel-misguiones').classList.add('active');
+  // cargarMisGuiones ya se llama por el listener del tab, pero fuerzo por si acaso
+  if(typeof cargarMisGuiones === 'function'){
+    cargarMisGuiones().then(() => {
+      // Después de cargar, seleccionar el cliente
+      MG_CLIENTE_SELECCIONADO_ID = clienteId;
+      if(typeof renderMgClientesLista === 'function') renderMgClientesLista();
+      if(typeof renderMgDetalle === 'function') renderMgDetalle();
+    });
   }
 }
 
@@ -4755,35 +4938,156 @@ async function arrancarVistaPublicaCliente(token){
   }
 
   // ============ CALENDARIO DE PUBLICACIONES (solo lectura) ============
+  // Estado del calendario del portal cliente
+  let VP_CAL_MES = null; // { year, month } - se inicializa al mes actual
+  let VP_CAL_MODAL_ABIERTO = false;
+
+  const _MESES_ESP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function _vpCalIndexarPorFecha(){
+    // Agrupa publicaciones por fecha ISO (yyyy-mm-dd)
+    const idx = {};
+    (VP_CALENDARIO || []).forEach(ev => {
+      if(!ev.Fecha) return;
+      // Aseguramos yyyy-mm-dd tomando los primeros 10 chars por si vienen con hora
+      const key = String(ev.Fecha).slice(0, 10);
+      if(!idx[key]) idx[key] = [];
+      idx[key].push(ev);
+    });
+    return idx;
+  }
+
   function renderVpCalendario(){
     const lista = document.getElementById('vp-calendario-lista');
+    if(!VP_CAL_MES){
+      const hoy = new Date();
+      VP_CAL_MES = { year: hoy.getFullYear(), month: hoy.getMonth() + 1 };
+    }
     if(!VP_CALENDARIO || VP_CALENDARIO.length === 0){
       lista.innerHTML = '<div class="vp-empty">Todavía no hay publicaciones agendadas. Cuando el equipo agende contenido, aparecerá aquí.</div>';
       return;
     }
-    // Ordenar por fecha ascendente
-    const items = VP_CALENDARIO.slice().sort((a, b) => {
-      const fa = new Date(a.Fecha || 0).getTime();
-      const fb = new Date(b.Fecha || 0).getTime();
-      return fa - fb;
+
+    const year = VP_CAL_MES.year;
+    const month = VP_CAL_MES.month; // 1-12
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0); // último día del mes
+    const totalDias = lastDay.getDate();
+    // JS: getDay() → 0=Domingo, 1=Lunes, ..., 6=Sábado. Queremos que la semana empiece en Lunes.
+    let firstWeekday = firstDay.getDay(); // 0-6
+    firstWeekday = firstWeekday === 0 ? 6 : firstWeekday - 1; // 0=Lunes ... 6=Domingo
+    const hoyISO = new Date().toISOString().slice(0, 10);
+    const eventosPorFecha = _vpCalIndexarPorFecha();
+
+    let html = `
+      <div class="vp-cal-controles">
+        <button class="vp-cal-nav" data-vpcal-nav="prev">←</button>
+        <div class="vp-cal-mes-actual">${_MESES_ESP[month - 1]} ${year}</div>
+        <button class="vp-cal-nav" data-vpcal-nav="next">→</button>
+        <button class="vp-cal-nav vp-cal-hoy" data-vpcal-nav="hoy">Hoy</button>
+      </div>
+      <div class="vp-cal-leyenda">
+        <span class="vp-cal-leyenda-item"><span class="vp-cal-leyenda-color agendado"></span> Agendado</span>
+        <span class="vp-cal-leyenda-item"><span class="vp-cal-leyenda-color publicado"></span> Publicado</span>
+      </div>
+      <div class="vp-cal-grid">
+        <div class="vp-cal-diahead">Lun</div>
+        <div class="vp-cal-diahead">Mar</div>
+        <div class="vp-cal-diahead">Mié</div>
+        <div class="vp-cal-diahead">Jue</div>
+        <div class="vp-cal-diahead">Vie</div>
+        <div class="vp-cal-diahead">Sáb</div>
+        <div class="vp-cal-diahead">Dom</div>
+    `;
+
+    // Celdas vacías antes del primer día
+    for(let i = 0; i < firstWeekday; i++){
+      html += '<div class="vp-cal-celda vacia"></div>';
+    }
+
+    for(let d = 1; d <= totalDias; d++){
+      const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const esHoy = isoDate === hoyISO;
+      const eventos = eventosPorFecha[isoDate] || [];
+      let pastillasHtml = '';
+      eventos.forEach(ev => {
+        const listo = String(ev.Listo || '').toUpperCase() === 'SI';
+        const clase = listo ? 'publicado' : 'agendado';
+        const palabra = String(ev.PalabraClave || '').trim();
+        const label = ev.Folio ? (palabra ? `${ev.Folio} · ${palabra}` : ev.Folio) : (palabra || 'publicación');
+        pastillasHtml += `
+          <button class="vp-cal-pill ${clase}" data-vpcal-post="${ev.ID}" title="${label.replace(/"/g,'&quot;')}">
+            ${listo ? '✓ ' : ''}${label.replace(/</g,'&lt;')}
+          </button>
+        `;
+      });
+      html += `
+        <div class="vp-cal-celda${esHoy ? ' hoy' : ''}${eventos.length ? ' con-posts' : ''}">
+          <div class="vp-cal-num">${d}</div>
+          ${pastillasHtml}
+        </div>
+      `;
+    }
+
+    html += '</div>';
+    lista.innerHTML = html;
+
+    // Navegación de mes
+    lista.querySelectorAll('[data-vpcal-nav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const accion = btn.dataset.vpcalNav;
+        if(accion === 'prev'){
+          VP_CAL_MES.month--;
+          if(VP_CAL_MES.month < 1){ VP_CAL_MES.month = 12; VP_CAL_MES.year--; }
+        } else if(accion === 'next'){
+          VP_CAL_MES.month++;
+          if(VP_CAL_MES.month > 12){ VP_CAL_MES.month = 1; VP_CAL_MES.year++; }
+        } else if(accion === 'hoy'){
+          const h = new Date();
+          VP_CAL_MES = { year: h.getFullYear(), month: h.getMonth() + 1 };
+        }
+        renderVpCalendario();
+      });
     });
-    lista.innerHTML = items.map(ev => {
-      const listo = String(ev.Listo || '').toUpperCase() === 'SI';
-      const badge = listo ? '<span class="vp-cal-badge vp-cal-listo">Publicado</span>' : '<span class="vp-cal-badge vp-cal-agendado">Agendado</span>';
-      const fecha = ev.Fecha ? new Date(ev.Fecha).toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric', weekday:'long' }) : 'Sin fecha';
-      const copy = String(ev.Copy || '').trim();
-      return `
-        <div class="vp-cal-card${listo ? ' listo' : ''}">
-          <div class="vp-cal-head">
-            <div>
-              <div class="vp-cal-folio">${ev.Folio || 'sin folio'}</div>
-              <div class="vp-cal-fecha">${fecha}</div>
-            </div>
-            ${badge}
-          </div>
-          ${copy ? `<div class="vp-cal-copy-label">COPY DE LA PUBLICACIÓN</div><div class="vp-cal-copy">${copy.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>` : '<div class="vp-cal-copy-vacio">Sin copy todavía.</div>'}
-        </div>`;
-    }).join('');
+
+    // Clic en pastilla → abrir modal con detalle
+    lista.querySelectorAll('[data-vpcal-post]').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const id = pill.dataset.vpcalPost;
+        const ev = VP_CALENDARIO.find(e => String(e.ID) === String(id));
+        if(ev) abrirVpModalPost(ev);
+      });
+    });
+  }
+
+  function abrirVpModalPost(ev){
+    if(VP_CAL_MODAL_ABIERTO) return;
+    VP_CAL_MODAL_ABIERTO = true;
+    const listo = String(ev.Listo || '').toUpperCase() === 'SI';
+    const fecha = ev.Fecha ? new Date(ev.Fecha).toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric', weekday:'long' }) : 'Sin fecha';
+    const copy = String(ev.Copy || '').trim();
+    const palabra = String(ev.PalabraClave || '').trim();
+    const bg = document.createElement('div');
+    bg.className = 'vp-cal-modal-bg';
+    bg.innerHTML = `
+      <div class="vp-cal-modal">
+        <button class="vp-cal-modal-close" aria-label="Cerrar">×</button>
+        <div class="vp-cal-modal-badge ${listo ? 'publicado' : 'agendado'}">${listo ? '✓ Publicado' : 'Agendado'}</div>
+        <div class="vp-cal-modal-titulo">${ev.Folio ? ev.Folio : ''}${palabra ? ' · ' + palabra : ''}</div>
+        <div class="vp-cal-modal-fecha">${fecha}</div>
+        <div class="vp-cal-modal-copy-label">Copy de la publicación</div>
+        ${copy
+          ? `<div class="vp-cal-modal-copy">${copy.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`
+          : '<div class="vp-cal-modal-copy-vacio">Sin copy todavía. Se agregará antes de publicar.</div>'}
+      </div>
+    `;
+    document.body.appendChild(bg);
+    const cerrar = () => {
+      bg.remove();
+      VP_CAL_MODAL_ABIERTO = false;
+    };
+    bg.querySelector('.vp-cal-modal-close').addEventListener('click', cerrar);
+    bg.addEventListener('click', (e) => { if(e.target === bg) cerrar(); });
   }
 
   // ============ EXPEDIENTE (solo lectura) ============
