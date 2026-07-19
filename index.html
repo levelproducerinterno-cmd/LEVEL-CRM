@@ -97,6 +97,76 @@
   .pick-chip:hover{border-color:var(--rojo);}
   .pick-chip.selected{background:var(--negro);color:#fff;border-color:var(--negro);}
 
+  /* ============ DASHBOARD ============ */
+  .dash-controles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .dash-nav-btn{background:#2a2723;border:1px solid #555;color:#fff;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:0.85rem;font-family:'Cormorant Garamond',serif;font-weight:600;}
+  .dash-nav-btn:hover{background:#3a3733;border-color:#888;}
+  .dash-nav-btn.dash-hoy{margin-left:8px;}
+  .dash-year{color:#fff;font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;padding:0 18px;letter-spacing:0.06em;min-width:80px;text-align:center;}
+
+  .dash-cuerpo{background:#f7f5f2;padding:0 0 60px;min-height:600px;}
+  .dash-empty{text-align:center;color:#8a8578;padding:80px 20px;font-size:0.95rem;font-style:italic;}
+  .dash-leyenda{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:12px 26px;background:#fff;border-bottom:1px solid #e4e0d6;font-size:0.72rem;color:#666;letter-spacing:0.04em;}
+  .dash-leyenda-item{display:flex;align-items:center;gap:6px;font-weight:700;text-transform:uppercase;}
+  .dash-leyenda-color{width:16px;height:16px;border-radius:3px;border:1.5px solid transparent;}
+  .dash-leyenda-color.verde{background:#e6f4e6;border-color:#a4d0a4;}
+  .dash-leyenda-color.amarillo{background:#fff8e0;border-color:#e8d97a;}
+  .dash-leyenda-color.rojo{background:#fdecea;border-color:#f5c9c1;}
+  .dash-leyenda-color-vacio{width:16px;height:16px;border-radius:3px;background:#f0ede6;border:1.5px solid #d8d3c9;}
+  .dash-leyenda-nota{margin-left:auto;font-style:italic;text-transform:none;letter-spacing:normal;color:#8a8578;font-weight:400;font-size:0.72rem;}
+  .dash-leyenda-nota em{color:var(--rojo);font-style:normal;font-weight:700;}
+
+  .dash-tabla-wrap{overflow-x:auto;padding:18px 26px 40px;}
+  .dash-tabla{border-collapse:separate;border-spacing:0;font-family:'Montserrat',sans-serif;font-size:0.78rem;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;}
+  .dash-tabla th, .dash-tabla td{border-right:1px solid #e4e0d6;border-bottom:1px solid #e4e0d6;padding:8px 10px;text-align:center;vertical-align:middle;}
+  .dash-tabla th:last-child, .dash-tabla td:last-child{border-right:none;}
+  .dash-tabla tbody tr:last-child td{border-bottom:none;}
+  .dash-tabla thead th{background:#1c1a17;color:#fff;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:0.7rem;padding:10px 8px;}
+  .dash-th-empty{background:#1c1a17;color:#fff;}
+  .dash-th-mes{background:#2a2723;border-right:2px solid #c72a09;color:#fff;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;text-transform:none;letter-spacing:0.02em;}
+  .dash-th-sem{background:#3a3733;color:#d4cfc4;font-size:0.68rem;font-weight:600;line-height:1.3;min-width:44px;}
+  .dash-th-sem.actual{background:var(--rojo);color:#fff;}
+  .dash-th-resumen{background:#5c1f0d;color:#fff;font-weight:800;letter-spacing:0.08em;border-right:2px solid #c72a09;font-size:0.65rem;}
+
+  .dash-td-miembro{background:#faf8f4;padding:12px 14px;min-width:140px;text-align:left;vertical-align:top;}
+  .dash-miembro-nombre{border-left:4px solid var(--rojo);padding-left:10px;font-family:'Cormorant Garamond',serif;display:flex;flex-direction:column;gap:2px;}
+  .dash-miembro-nombre > span:first-child{font-weight:700;font-size:1.1rem;color:var(--negro);}
+  .dash-miembro-puesto{font-family:'Montserrat',sans-serif;font-size:0.62rem;color:#8a8578;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;}
+  .dash-td-metrica{background:#faf8f4;text-align:left;padding-left:14px;font-weight:700;color:#1c1c1c;font-size:0.75rem;min-width:100px;letter-spacing:0.02em;}
+  .dash-td-metrica.reportada{color:var(--rojo);font-style:italic;}
+
+  .dash-td-valor{min-width:44px;font-weight:700;font-size:0.85rem;color:#1c1c1c;}
+  .dash-td-valor.actual{box-shadow:inset 0 0 0 2px var(--rojo);}
+  .dash-td-resumen{background:#faf8f4;font-weight:800;font-size:0.95rem;border-right:2px solid #c72a09;color:#1c1c1c;}
+  .dash-td-valor.verde, .dash-td-resumen.verde{background:#e6f4e6;}
+  .dash-td-valor.amarillo, .dash-td-resumen.amarillo{background:#fff8e0;}
+  .dash-td-valor.rojo, .dash-td-resumen.rojo{background:#fdecea;}
+  .dash-td-valor.vacio, .dash-td-resumen.vacio{background:#f0ede6;color:#c9c4b8;font-weight:400;}
+
+  /* ============ POPUP REPORTE SEMANAL (obligatorio) ============ */
+  .reporte-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;animation:reportefadein 0.2s ease-out;}
+  @keyframes reportefadein{from{opacity:0;}to{opacity:1;}}
+  .reporte-modal{background:#fff;color:#1c1c1c;max-width:520px;width:100%;border-radius:12px;padding:44px 44px 36px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
+  .reporte-titulo{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--negro);line-height:1.1;}
+  .reporte-sub{color:#666;font-size:0.95rem;margin-top:8px;line-height:1.5;}
+  .reporte-semana-tag{display:inline-block;background:#f0ede6;color:#8a8578;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:12px;margin-top:14px;}
+  .reporte-pregunta{margin-top:28px;}
+  .reporte-pregunta label{display:block;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:12px;color:var(--negro);}
+  .reporte-slider-wrap{display:flex;align-items:center;gap:16px;padding:14px 18px;background:#faf8f4;border-radius:8px;}
+  .reporte-emoji{font-size:2.2rem;line-height:1;}
+  .reporte-slider-wrap input[type="range"]{flex:1;height:8px;-webkit-appearance:none;background:linear-gradient(to right,#c72a09,#e8d97a,#a4d0a4);border-radius:4px;outline:none;}
+  .reporte-slider-wrap input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:#fff;border:3px solid var(--negro);border-radius:50%;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+  .reporte-slider-wrap input[type="range"]::-moz-range-thumb{width:24px;height:24px;background:#fff;border:3px solid var(--negro);border-radius:50%;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+  .reporte-valor{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:var(--rojo);min-width:32px;text-align:center;}
+  .reporte-slider-scale{display:flex;justify-content:space-between;margin-top:8px;padding:0 6px;color:#8a8578;font-size:0.72rem;font-weight:600;}
+  .reporte-numero{width:100%;padding:12px 14px;font-size:1.4rem;border:1.5px solid #d8d3c9;border-radius:6px;font-family:'Cormorant Garamond',serif;font-weight:700;text-align:center;color:var(--negro);background:#faf8f4;}
+  .reporte-numero:focus{outline:none;border-color:var(--rojo);background:#fff;}
+  .reporte-hint{font-size:0.78rem;color:#8a8578;margin-top:8px;text-align:center;}
+  .reporte-btn{width:100%;background:var(--rojo);color:#fff;border:none;padding:16px;font-size:0.95rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:6px;cursor:pointer;font-family:inherit;margin-top:28px;}
+  .reporte-btn:hover:not(:disabled){background:#a01d05;}
+  .reporte-btn:disabled{opacity:0.6;cursor:wait;}
+  .reporte-error{color:var(--rojo);text-align:center;margin-top:10px;font-size:0.85rem;min-height:20px;font-weight:600;}
+
   /* ============ MODAL: Invitaciones semanales ============ */
   .inv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
   .inv-modal{background:#fff;color:#1c1c1c;max-width:560px;width:100%;border-radius:8px;padding:36px 40px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;}
@@ -682,6 +752,7 @@
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
   <button class="tab-btn" data-modo="linea" data-rol="Direccion,CM,Edicion">📊 Línea de Producción</button>
   <button class="tab-btn" data-modo="misguiones" data-rol="Direccion,Edicion">📄 Mis Guiones</button>
+  <button class="tab-btn" data-modo="dashboard" data-rol="Direccion,CM,Edicion,Filmmaker">📊 Dashboard</button>
 </div>
 
 <!-- ============ PANEL: CLIENTES ============ -->
@@ -812,6 +883,22 @@
     </div>
   </div>
   <div id="linea-cuerpo" class="linea-cuerpo"></div>
+</div>
+
+<!-- ============ PANEL: DASHBOARD ============ -->
+<div class="modo-panel" id="panel-dashboard">
+  <div class="panel-header">
+    <div class="titulo-panel">Dashboard semanal</div>
+    <div class="dash-controles">
+      <button class="dash-nav-btn" data-dash-nav="prev">← Año anterior</button>
+      <div class="dash-year" id="dash-year">—</div>
+      <button class="dash-nav-btn" data-dash-nav="next">Año siguiente →</button>
+      <button class="dash-nav-btn dash-hoy" data-dash-nav="hoy">Este año</button>
+    </div>
+  </div>
+  <div class="dash-cuerpo" id="dash-cuerpo">
+    <div class="dash-empty">Cargando...</div>
+  </div>
 </div>
 
 <!-- ============ PANEL: MIS GUIONES (para Edición y Dirección) ============ -->
@@ -4417,6 +4504,9 @@ function entrarAlCRM(){
   // Genera automáticamente los slots del mes actual para todos los clientes activos
   // (idempotente: no duplica si ya existen). Corre al primer login del día.
   lineaGenerarSlotsSiFalta();
+  // Chequea si el usuario tiene reporte pendiente de la semana pasada.
+  // Solo aplica lunes 8am → jueves fin del día.
+  setTimeout(() => chequearReportePendiente(), 800);
 }
 
 document.getElementById('btn-login').addEventListener('click', intentarLogin);
@@ -4428,6 +4518,116 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   USUARIO_ACTUAL = null;
   window.location.reload();
 });
+
+// ============================================================
+// ============ REPORTE SEMANAL (popup del lunes) ==============
+// ============================================================
+// Chequea si el usuario debe reportar la semana pasada.
+// Solo aplica lunes ≥8am hasta jueves fin del día.
+// Si hay pendiente, muestra popup obligatorio sin escape.
+async function chequearReportePendiente(){
+  if(!USUARIO_ACTUAL) return;
+  // Solo aplica a roles con métricas: Edicion, CM, Filmmaker
+  const rolesConReporte = ['Edicion', 'CM', 'Filmmaker'];
+  if(!rolesConReporte.includes(USUARIO_ACTUAL.Puesto)) return;
+  try {
+    const resp = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ tipo: 'reporte_pendiente', miembroId: USUARIO_ACTUAL.ID })
+    });
+    const data = await resp.json();
+    if(data.pendiente && data.semana){
+      mostrarPopupReporteSemanal(data.semana);
+    }
+  } catch(err) {
+    console.error('No se pudo chequear reporte pendiente:', err);
+  }
+}
+
+function mostrarPopupReporteSemanal(semana){
+  // No se puede cerrar. Solo se sale respondiendo.
+  const bg = document.createElement('div');
+  bg.className = 'reporte-modal-bg';
+  bg.innerHTML = `
+    <div class="reporte-modal">
+      <div class="reporte-titulo">Cierre de semana</div>
+      <div class="reporte-sub">Antes de arrancar la semana, cuéntanos cómo te fue la pasada. Toma 20 segundos.</div>
+      <div class="reporte-semana-tag">Reportando: semana ${semana}</div>
+
+      <div class="reporte-pregunta">
+        <label>¿Cómo te sentiste esta semana?</label>
+        <div class="reporte-slider-wrap">
+          <span class="reporte-emoji" id="reporte-emoji">😐</span>
+          <input type="range" id="reporte-mental" min="1" max="10" value="7" step="1">
+          <span class="reporte-valor" id="reporte-mental-valor">7</span>
+        </div>
+        <div class="reporte-slider-scale">
+          <span>😔 1</span><span>😐 5</span><span>😄 10</span>
+        </div>
+      </div>
+
+      <div class="reporte-pregunta">
+        <label>¿Cuántos feedbacks recibiste esta semana?</label>
+        <input type="number" id="reporte-feedbacks" min="0" max="50" value="0" step="1" class="reporte-numero">
+        <div class="reporte-hint">Cuenta cada vez que un cliente o Dirección te pidió cambios.</div>
+      </div>
+
+      <button class="reporte-btn" id="reporte-guardar">Guardar y descansar 🌴</button>
+      <div class="reporte-error" id="reporte-error"></div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+
+  const mentalInput = document.getElementById('reporte-mental');
+  const mentalValor = document.getElementById('reporte-mental-valor');
+  const mentalEmoji = document.getElementById('reporte-emoji');
+  function actualizarSliderVisual(){
+    const v = parseInt(mentalInput.value, 10);
+    mentalValor.textContent = v;
+    let emoji = '😐';
+    if(v >= 9) emoji = '😄';
+    else if(v >= 7) emoji = '🙂';
+    else if(v >= 4) emoji = '😐';
+    else emoji = '😔';
+    mentalEmoji.textContent = emoji;
+  }
+  mentalInput.addEventListener('input', actualizarSliderVisual);
+  actualizarSliderVisual();
+
+  document.getElementById('reporte-guardar').addEventListener('click', async () => {
+    const btn = document.getElementById('reporte-guardar');
+    const errEl = document.getElementById('reporte-error');
+    const mental = parseInt(mentalInput.value, 10);
+    const feedbacks = parseInt(document.getElementById('reporte-feedbacks').value, 10);
+    if(isNaN(feedbacks) || feedbacks < 0){
+      errEl.textContent = 'Escribe un número de feedbacks válido (0 o más).';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    errEl.textContent = '';
+    try {
+      await fetch(SHEETS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          tipo: 'reporte_guardar',
+          miembroId: USUARIO_ACTUAL.ID,
+          semana: semana,
+          mental: mental,
+          feedbacks: feedbacks
+        })
+      });
+      bg.remove();
+    } catch(err) {
+      console.error(err);
+      errEl.textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+      btn.disabled = false;
+      btn.textContent = 'Guardar y descansar 🌴';
+    }
+  });
+}
 
 // ============================================================
 // ============ MIS GUIONES (para Edición y Dirección) =========
@@ -4551,6 +4751,247 @@ document.getElementById('mg-filtro-estatus').addEventListener('change', () => {
 // Hook en el switcher de top-tabs para cargar Mis Guiones al hacer clic en la pestaña
 document.querySelectorAll('.tab-btn[data-modo="misguiones"]').forEach(btn => {
   btn.addEventListener('click', () => cargarMisGuiones());
+});
+
+// ============================================================
+// ============ DASHBOARD SEMANAL ==============================
+// ============================================================
+let DASH_YEAR = new Date().getFullYear();
+let DASH_DATA = null;
+
+const DASH_MESES_NOMBRE = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DASH_MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// Métricas por rol. Cada entrada define: key en los datos, label mostrado, invertida (0 es bueno) o no.
+const DASH_METRICAS = {
+  Edicion: [
+    { key: 'entregados', label: 'Entregados', invertida: false },
+    { key: 'agendados', label: 'Agendados', invertida: false },
+    { key: 'feedbacks', label: 'Feedbacks', invertida: true, esReportada: true },
+    { key: 'atrasados', label: 'Atrasados', invertida: true },
+    { key: 'mental', label: 'Mental', invertida: false, esReportada: true }
+  ],
+  Filmmaker: [
+    { key: 'entregados', label: 'Entregados', invertida: false },
+    { key: 'agendados', label: 'Agendados', invertida: false },
+    { key: 'atrasados', label: 'Atrasados', invertida: true },
+    { key: 'mental', label: 'Mental', invertida: false, esReportada: true }
+  ],
+  CM: [
+    { key: 'publicados', label: 'Publicados', invertida: false },
+    { key: 'agendados', label: 'Agendados', invertida: false },
+    { key: 'expedientes', label: 'Expedientes', invertida: false },
+    { key: 'informes', label: 'Informes', invertida: false },
+    { key: 'atrasados', label: 'Atrasados', invertida: true },
+    { key: 'mental', label: 'Mental', invertida: false, esReportada: true }
+  ]
+};
+
+// Devuelve la clave de semana (YYYY-Www) para una fecha dada, semana empieza LUNES
+function dashClaveSemana(fecha){
+  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  const dia = d.getDay();
+  const diasDesdeLunes = dia === 0 ? 6 : dia - 1;
+  d.setDate(d.getDate() - diasDesdeLunes);
+  const jueves = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3);
+  const year = jueves.getFullYear();
+  const enero1 = new Date(year, 0, 1);
+  const diaEnero1 = enero1.getDay();
+  const offset = diaEnero1 <= 4 ? diaEnero1 - 1 : diaEnero1 - 8;
+  const primerJueves = new Date(year, 0, 1 - offset + 3);
+  const diffMs = jueves.getTime() - primerJueves.getTime();
+  const semanaNum = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return year + '-W' + String(semanaNum).padStart(2, '0');
+}
+
+// Devuelve el lunes de una clave de semana dada
+function dashLunesDeSemana(claveSemana){
+  const [yearStr, semStr] = claveSemana.split('-W');
+  const year = parseInt(yearStr, 10);
+  const sem = parseInt(semStr, 10);
+  // Primer jueves del año determina la W01
+  const enero1 = new Date(year, 0, 1);
+  const diaEnero1 = enero1.getDay();
+  const offset = diaEnero1 <= 4 ? diaEnero1 - 1 : diaEnero1 - 8;
+  const primerJueves = new Date(year, 0, 1 - offset + 3);
+  // Lunes de esa semana
+  const lunesW01 = new Date(primerJueves.getFullYear(), primerJueves.getMonth(), primerJueves.getDate() - 3);
+  const lunesBuscado = new Date(lunesW01.getFullYear(), lunesW01.getMonth(), lunesW01.getDate() + (sem - 1) * 7);
+  return lunesBuscado;
+}
+
+// Genera todas las claves de semana del año agrupadas por mes
+// Retorna: [{ mes: 0-11, semanas: ['2026-W01', '2026-W02', ...] }, ...]
+function dashSemanasDelAnio(year){
+  const grupos = DASH_MESES_NOMBRE.map((_, mesIdx) => ({ mes: mesIdx, semanas: [] }));
+  // Iteramos todos los lunes del año (aproximado: desde diciembre año-1 hasta enero año+1 para agarrar bordes)
+  const inicio = new Date(year - 1, 11, 25);
+  const fin = new Date(year + 1, 0, 15);
+  const vistos = new Set();
+  for(let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 7)){
+    const clave = dashClaveSemana(d);
+    if(vistos.has(clave)) continue;
+    vistos.add(clave);
+    const [yearClave] = clave.split('-W');
+    if(parseInt(yearClave, 10) !== year) continue;
+    // Determinar a qué mes pertenece: el mes del jueves de esa semana
+    const lunes = dashLunesDeSemana(clave);
+    const jueves = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 3);
+    grupos[jueves.getMonth()].semanas.push(clave);
+  }
+  return grupos;
+}
+
+async function cargarDashboard(){
+  const cuerpo = document.getElementById('dash-cuerpo');
+  cuerpo.innerHTML = '<div class="dash-empty">Cargando...</div>';
+  document.getElementById('dash-year').textContent = DASH_YEAR;
+  try {
+    const resp = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ tipo: 'dashboard_leer', year: DASH_YEAR })
+    });
+    DASH_DATA = await resp.json();
+    renderDashboard();
+  } catch(err) {
+    console.error(err);
+    cuerpo.innerHTML = '<div class="dash-empty">Error al cargar. Revisa tu conexión.</div>';
+  }
+}
+
+function renderDashboard(){
+  const cuerpo = document.getElementById('dash-cuerpo');
+  if(!DASH_DATA || !DASH_DATA.miembros){
+    cuerpo.innerHTML = '<div class="dash-empty">Sin datos.</div>';
+    return;
+  }
+  // Filtrar solo miembros con rol que tiene métricas
+  const rolesConMetricas = Object.keys(DASH_METRICAS);
+  const miembros = DASH_DATA.miembros.filter(m => rolesConMetricas.includes(m.puesto));
+  if(miembros.length === 0){
+    cuerpo.innerHTML = '<div class="dash-empty">No hay miembros con rol Edición, Filmmaker o CM configurados.</div>';
+    return;
+  }
+
+  // Estructura de semanas por mes
+  const grupos = dashSemanasDelAnio(DASH_YEAR);
+  const semanaActual = DASH_DATA.semanaActual;
+
+  // Header con meses + semanas
+  // Estructura: primera fila = meses (con colspan). Segunda fila = semanas + "Resumen" por mes
+  let headerMeses = '<tr><th class="dash-th-empty" rowspan="2">Miembro</th><th class="dash-th-empty" rowspan="2">Métrica</th>';
+  let headerSemanas = '<tr>';
+  grupos.forEach(g => {
+    if(g.semanas.length === 0) return;
+    const colspan = g.semanas.length + 1; // +1 por columna Resumen
+    headerMeses += `<th class="dash-th-mes" colspan="${colspan}">${DASH_MESES_NOMBRE[g.mes]}</th>`;
+    g.semanas.forEach(sem => {
+      const lunes = dashLunesDeSemana(sem);
+      const esActual = sem === semanaActual;
+      headerSemanas += `<th class="dash-th-sem${esActual ? ' actual' : ''}">${lunes.getDate()}<br>${DASH_MESES_CORTO[lunes.getMonth()].toLowerCase()}</th>`;
+    });
+    headerSemanas += `<th class="dash-th-resumen">Resumen</th>`;
+  });
+  headerMeses += '</tr>';
+  headerSemanas += '</tr>';
+
+  // Índice de datos por miembro+semana para acceso rápido
+  const indexPorMiembro = {};
+  miembros.forEach(m => {
+    indexPorMiembro[m.id] = {};
+    (m.semanas || []).forEach(s => {
+      indexPorMiembro[m.id][s.semana] = s;
+    });
+  });
+
+  // Filas: por cada miembro, sus métricas
+  let filas = '';
+  miembros.forEach(m => {
+    const metricas = DASH_METRICAS[m.puesto] || [];
+    metricas.forEach((met, mIdx) => {
+      filas += '<tr>';
+      if(mIdx === 0){
+        filas += `<td class="dash-td-miembro" rowspan="${metricas.length}"><div class="dash-miembro-nombre" style="border-left-color:${m.color};"><span>${m.nombre}</span><span class="dash-miembro-puesto">${m.puesto === 'Direccion' ? 'Dirección' : m.puesto}</span></div></td>`;
+      }
+      filas += `<td class="dash-td-metrica ${met.esReportada ? 'reportada' : ''}">${met.label}</td>`;
+      // Por cada mes
+      grupos.forEach(g => {
+        if(g.semanas.length === 0) return;
+        let sumMes = 0;
+        let countMes = 0;
+        g.semanas.forEach(sem => {
+          const data = indexPorMiembro[m.id][sem];
+          let valor = null;
+          if(data){
+            valor = data[met.key];
+            if(valor === null || valor === undefined) valor = null;
+          }
+          const esActual = sem === semanaActual;
+          const claseCelda = dashClaseValor(valor, met.invertida);
+          const contenido = (valor === null || valor === undefined) ? '—' : valor;
+          filas += `<td class="dash-td-valor ${claseCelda}${esActual ? ' actual' : ''}">${contenido}</td>`;
+          if(valor !== null && valor !== undefined){
+            sumMes += valor;
+            countMes++;
+          }
+        });
+        // Resumen del mes: promedio redondeado
+        const promedio = countMes > 0 ? Math.round(sumMes / countMes) : null;
+        const claseResumen = dashClaseValor(promedio, met.invertida);
+        const contenidoResumen = promedio === null ? '—' : promedio;
+        filas += `<td class="dash-td-resumen ${claseResumen}">${contenidoResumen}</td>`;
+      });
+      filas += '</tr>';
+    });
+  });
+
+  cuerpo.innerHTML = `
+    <div class="dash-leyenda">
+      <span class="dash-leyenda-item"><span class="dash-leyenda-color verde"></span> 9-10</span>
+      <span class="dash-leyenda-item"><span class="dash-leyenda-color amarillo"></span> 7-8</span>
+      <span class="dash-leyenda-item"><span class="dash-leyenda-color rojo"></span> ≤ 6</span>
+      <span class="dash-leyenda-item"><span class="dash-leyenda-color-vacio"></span> Sin dato</span>
+      <span class="dash-leyenda-nota">Las métricas <em>invertidas</em> (feedbacks, atrasados) usan la escala al revés: menos = mejor.</span>
+    </div>
+    <div class="dash-tabla-wrap">
+      <table class="dash-tabla">
+        <thead>${headerMeses}${headerSemanas}</thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Devuelve la clase CSS de color según valor y si la métrica es invertida
+function dashClaseValor(valor, invertida){
+  if(valor === null || valor === undefined) return 'vacio';
+  if(invertida){
+    // 0-2 verde, 3-4 amarillo, ≥5 rojo (feedbacks/atrasados: menos = mejor)
+    if(valor <= 2) return 'verde';
+    if(valor <= 4) return 'amarillo';
+    return 'rojo';
+  }
+  // Normal: 9-10 verde, 7-8 amarillo, ≤6 rojo
+  if(valor >= 9) return 'verde';
+  if(valor >= 7) return 'amarillo';
+  return 'rojo';
+}
+
+// Navegación
+document.querySelectorAll('[data-dash-nav]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const accion = btn.dataset.dashNav;
+    if(accion === 'prev') DASH_YEAR--;
+    else if(accion === 'next') DASH_YEAR++;
+    else if(accion === 'hoy') DASH_YEAR = new Date().getFullYear();
+    cargarDashboard();
+  });
+});
+
+// Hook: al clickear la pestaña Dashboard, cargar
+document.querySelectorAll('.tab-btn[data-modo="dashboard"]').forEach(btn => {
+  btn.addEventListener('click', () => cargarDashboard());
 });
 
 // ============================================================
