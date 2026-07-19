@@ -2502,6 +2502,64 @@ function actualizarSelectoresTeam(){
 // ---- Modal Team ----
 let TEAM_EDITANDO_ID = null;
 const modalTeamBg = document.getElementById('modal-team-bg');
+// URL del grupo de WhatsApp del team. Si el grupo cambia en el futuro, actualiza esta constante.
+const WHATSAPP_GRUPO_URL = 'https://chat.whatsapp.com/Ez5yt7EC1XtJZNYGzZqhR0';
+
+// Plantillas de tareas semanales por puesto. Se aplican cuando el textarea está vacío
+// o cuando su contenido coincide EXACTAMENTE con otra plantilla conocida (no custom).
+const PLANTILLAS_TAREAS = {
+  Edicion: `• Checar diario el Hub de Edición
+• Descargar archivos Frame
+• Checar los guiones de tus clientes
+• Darle clic en listo cuando se haya aprobado un video
+• Editar con intención música, sfx, zoom in, zoom out, broll, y que todo un video sea una pieza de arte. (Que editar sea parte de ti)
+• Seguir aprendiendo sobre edición, música, etc.
+• Ser feliz y sonreír :)`,
+  Direccion: `• Mejorar tu sistema un 1% al día
+• Actualizar el Hub de Edición todos los Lunes
+• Mandar un mensaje a todos tus clientes con sus avances los días Lunes
+• Tener juntas con prospectos y cerrar ventas
+• Dirigir y coordinar a tu equipo todos los días
+• Grabar con técnica y sin fallos
+• Subir material a Frame el mismo día o un día después de grabación
+• Cuidar tu negocio
+• Sonreír y ser feliz :)`,
+  CM: `• Tener listo el calendario de toda la semana los días viernes para comenzar con todo el lunes
+• Mandar un día antes de publicar al grupo con cliente video y copy a publicar el día posterior con: "Buenos días Equipo de "CLIENTE" por aquí les dejo el video con copy que se estará publicando mañana, igual les recuerdo que toda esta info la pueden ver en su link de cliente. Lindo día a todos 👋🏻☀️"
+• Todos los viernes/sábados tener listos los videos a publicar de todos los clientes con copy en borradores
+• Semana 1 de cada mes; Realizar informes de todos los clientes
+• Si se agregó un cliente nuevo; Realizar expediente
+• Si se agregó un cliente nuevo; Crear grupo con contactos, mandar mensaje junto con expediente
+• Mantener claridad y comunicación en grupo con clientes
+• Ser feliz y disfrutar de la vida :) <3`
+};
+
+// Devuelve true si el contenido está vacío o coincide con una plantilla conocida.
+// En cualquier otro caso (custom) devuelve false y no se debe reemplazar.
+function _esPlantillaOVacio(texto){
+  const t = String(texto || '').trim();
+  if(!t) return true;
+  const plantillas = Object.values(PLANTILLAS_TAREAS).map(p => p.trim());
+  return plantillas.indexOf(t) !== -1;
+}
+
+// Aplica la plantilla del puesto si corresponde
+function _aplicarPlantillaSiCorresponde(puesto){
+  const textarea = document.getElementById('nt-tareas');
+  if(!textarea) return;
+  if(_esPlantillaOVacio(textarea.value) && PLANTILLAS_TAREAS[puesto]){
+    textarea.value = PLANTILLAS_TAREAS[puesto];
+  }
+}
+
+// Listener del select de puesto → prellena tareas si el textarea no es custom
+const _puestoSelListener = document.getElementById('nt-puesto');
+if(_puestoSelListener){
+  _puestoSelListener.addEventListener('change', (e) => {
+    _aplicarPlantillaSiCorresponde(e.target.value);
+  });
+}
+
 // ---- Botón: Enviar invitaciones semanales ----
 document.getElementById('btn-invitaciones-semanales').addEventListener('click', async () => {
   const btn = document.getElementById('btn-invitaciones-semanales');
@@ -2556,7 +2614,7 @@ function mostrarResultadoInvitaciones(data){
         <textarea id="inv-mensaje-wa" readonly>${mensajeWA}</textarea>
         <div class="inv-modal-wa-botones">
           <button class="btn" id="inv-btn-copiar">📋 Copiar mensaje</button>
-          <a href="https://web.whatsapp.com/" target="_blank" rel="noopener" class="btn ghost">Abrir WhatsApp Web ↗</a>
+          <a href="${WHATSAPP_GRUPO_URL}" target="_blank" rel="noopener" class="btn ghost">Abrir grupo del team ↗</a>
         </div>
         <div id="inv-copiado-msg" class="inv-copiado-msg"></div>
       </div>
@@ -2595,7 +2653,8 @@ document.getElementById('btn-nuevo-team').addEventListener('click', () => {
   document.getElementById('nt-tarjeta').value = '';
   document.getElementById('nt-pin').value = '';
   document.getElementById('nt-email').value = '';
-  document.getElementById('nt-tareas').value = '';
+  // Prellenamos las tareas con la plantilla del puesto por default (Edicion)
+  document.getElementById('nt-tareas').value = PLANTILLAS_TAREAS[document.getElementById('nt-puesto').value] || '';
   modalTeamBg.classList.add('open');
 });
 document.getElementById('btn-cancelar-team').addEventListener('click', () => modalTeamBg.classList.remove('open'));
@@ -2609,7 +2668,9 @@ function abrirModalTeamEditar(id){
   document.getElementById('nt-nombre').value = m.Nombre || '';
   document.getElementById('nt-puesto').value = m.Puesto || 'Edicion';
   document.getElementById('nt-color').value = m.Color || '#c72a09';
-  document.getElementById('nt-cumpleanos').value = m.Cumpleanos || '';
+  // Cumpleaños: el sheet devuelve la fecha como ISO string tipo "2026-07-15T00:00:00.000Z".
+  // El input type="date" solo acepta "yyyy-mm-dd", así que cortamos los primeros 10 chars.
+  document.getElementById('nt-cumpleanos').value = String(m.Cumpleanos || '').slice(0, 10);
   document.getElementById('nt-direccion').value = m.Direccion || '';
   document.getElementById('nt-dulce').value = m.DulceFavorito || '';
   document.getElementById('nt-bebida').value = m.BebidaFavorita || '';
