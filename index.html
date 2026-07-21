@@ -292,10 +292,16 @@
   .linea-cliente-info{display:flex;flex-direction:column;gap:6px;justify-content:center;padding-right:20px;}
   .linea-cliente-info .cli-nombre{font-weight:700;font-size:0.94rem;color:var(--negro);display:flex;align-items:center;gap:8px;}
   .linea-cliente-info .cli-emoji{font-size:1.1rem;}
-  .linea-cliente-info .cli-count{font-size:0.72rem;color:#8a8578;letter-spacing:0.04em;font-weight:600;}
+  .linea-cliente-info .cli-editores{font-size:0.72rem;color:#5c5850;font-weight:600;margin-top:2px;letter-spacing:0.02em;}
+  .linea-cliente-info .cli-count{font-size:0.72rem;color:#8a8578;letter-spacing:0.04em;font-weight:600;margin-top:3px;}
   .linea-cliente-info .cli-count .cli-count-num{color:var(--negro);font-weight:700;}
   .linea-cliente-info .cli-bar{width:100%;height:6px;background:#e4e0d6;border-radius:3px;overflow:hidden;margin-top:4px;}
   .linea-cliente-info .cli-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+  .linea-cliente-info .cli-regenerar{margin-top:8px;background:none;border:1px solid #d8d3c9;color:#8a8578;padding:4px 10px;border-radius:4px;font-size:0.68rem;font-weight:600;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:0.02em;}
+  .linea-cliente-info .cli-regenerar:hover{border-color:var(--rojo);color:var(--rojo);}
+  .linea-cliente-info .cli-regenerar:disabled{opacity:0.5;cursor:wait;}
+  body.dark .linea-cliente-info .cli-editores{color:#a9a49a;}
+  body.dark .linea-cliente-info .cli-regenerar{border-color:#3a3a3e;color:#9a968e;}
 
   /* Multi-mes: grid horizontal con una columna por mes */
   .linea-slots-multi{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;overflow-x:auto;}
@@ -5764,6 +5770,16 @@ function renderLineaProduccion(){
         <div class="linea-cliente-row">
           <div class="linea-cliente-info">
             <div class="cli-nombre"><span class="cli-emoji">${c.Emoji || '👤'}</span> ${c.Nombre || ''}</div>
+            ${(function(){
+              // Mostrar editores asignados (1 o 2)
+              const ed1 = TEAM.find(m => String(m.ID) === String(c.EditorID || ''));
+              const ed2 = TEAM.find(m => String(m.ID) === String(c.Editor2ID || ''));
+              const nombres = [];
+              if(ed1) nombres.push(ed1.Nombre);
+              if(ed2) nombres.push(ed2.Nombre);
+              if(nombres.length === 0) return '';
+              return `<div class="cli-editores">✂️ ${nombres.join(' y ')}</div>`;
+            })()}
             <div class="cli-count">
               <span class="cli-count-num">${editadosCliMes}</span>/${totalCliMes} editados
               &nbsp;·&nbsp;
@@ -5771,6 +5787,7 @@ function renderLineaProduccion(){
               &nbsp;<strong style="color:${editorColor};">${pct}%</strong>
             </div>
             <div class="cli-bar"><div class="cli-bar-fill" style="width:${pct}%;background:${editorColor};"></div></div>
+            <button class="cli-regenerar" data-regenerar-cliente="${c.ID}" title="Borra y recrea los slots de este cliente según su configuración actual. Úsalo si ves slots de más o de menos.">🔄 Regenerar slots</button>
           </div>
           <div class="linea-slots-multi">${colsHtml}</div>
         </div>
@@ -5788,6 +5805,47 @@ function _bindLineaBotones(){
     btn.addEventListener('click', () => {
       LINEA_STATE.vista = btn.dataset.vista;
       renderLineaProduccion();
+    });
+  });
+  // Botones de regenerar slots por cliente
+  document.querySelectorAll('[data-regenerar-cliente]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const clienteId = btn.dataset.regenerarCliente;
+      const cli = (CLIENTES || []).find(c => String(c.ID) === String(clienteId));
+      const nombreCli = cli ? cli.Nombre : 'este cliente';
+      const confirmar = confirm(`Esto borrará y volverá a crear los slots de "${nombreCli}" del mes que estás viendo, según su configuración actual.\n\nEl estatus (grabado/editado/publicado) de los videos que sigan existiendo se conserva.\n\n¿Continuar?`);
+      if(!confirmar) return;
+      const textoOriginal = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Regenerando...';
+      // Determinar year/month del mes ancla que se está viendo
+      if(LINEA_STATE.year === null) lineaInicializarMesActual();
+      try {
+        const resp = await fetch(SHEETS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            tipo: 'slots_regenerar_cliente',
+            clienteId: clienteId,
+            year: LINEA_STATE.year,
+            month: LINEA_STATE.month
+          })
+        });
+        const data = await resp.json();
+        if(data.status === 'ok'){
+          alert(`✓ Listo. Se recrearon ${data.creados} slots (se borraron ${data.borrados} viejos).`);
+          await cargarLineaProduccion();
+        } else {
+          alert('Error: ' + (data.mensaje || 'no se pudo regenerar'));
+        }
+      } catch(err) {
+        alert('No se pudo regenerar. Revisa tu conexión.');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
+      }
     });
   });
 }
