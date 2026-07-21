@@ -40,6 +40,25 @@
   .panel-header .titulo-panel{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.2rem;}
 
   .toolbar{background:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid #e4e0d6;}
+
+  /* Header sticky en Edición/CM: la toolbar + KPIs se quedan pegados al hacer scroll */
+  .panel-sticky-top{position:sticky;top:0;z-index:40;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+  body.dark .panel-sticky-top{background:#1a1a1d;box-shadow:0 2px 8px rgba(0,0,0,0.4);}
+
+  /* Header sticky en Línea de Producción */
+  .linea-sticky-top{position:sticky;top:0;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+  body.dark .linea-sticky-top{box-shadow:0 2px 8px rgba(0,0,0,0.4);}
+
+  /* Zoom del contenido: reduce visualmente todo al nivel elegido (petite) */
+  body.zoom-80 #panel-edicion, body.zoom-80 #panel-cm, body.zoom-80 #panel-linea{zoom:0.8;}
+  body.zoom-70 #panel-edicion, body.zoom-70 #panel-cm, body.zoom-70 #panel-linea{zoom:0.7;}
+  body.zoom-90 #panel-edicion, body.zoom-90 #panel-cm, body.zoom-90 #panel-linea{zoom:0.9;}
+
+  /* Botones de zoom en la topbar */
+  .zoom-controls{display:flex;align-items:center;gap:2px;margin-left:8px;background:rgba(255,255,255,0.08);border-radius:5px;padding:2px;}
+  .zoom-btn{background:none;border:none;color:#fff;width:26px;height:24px;border-radius:3px;cursor:pointer;font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .zoom-btn:hover{background:rgba(255,255,255,0.15);}
+  .zoom-nivel{color:#fff;font-size:0.7rem;font-weight:700;min-width:34px;text-align:center;letter-spacing:0.02em;}
   .toolbar label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#666;font-weight:600;margin-right:6px;}
   select{font-family:'Montserrat',sans-serif;font-size:0.85rem;padding:7px 10px;border:1px solid #d8d3c9;border-radius:2px;background:#fff;}
   .btn{background:var(--rojo);color:#fff;border:none;padding:9px 18px;border-radius:2px;cursor:pointer;font-size:0.85rem;font-weight:600;letter-spacing:0.02em;}
@@ -877,6 +896,11 @@
     <span class="u-nombre" id="ub-nombre"></span>
     <span class="u-puesto" id="ub-puesto"></span>
     <button class="u-darkmode" id="btn-darkmode" title="Cambiar modo claro/oscuro">🌙</button>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoom-menos" title="Alejar (más pequeño)">−</button>
+      <span class="zoom-nivel" id="zoom-nivel">80%</span>
+      <button class="zoom-btn" id="zoom-mas" title="Acercar (más grande)">+</button>
+    </div>
     <button class="u-logout" id="btn-logout">Cerrar sesión</button>
   </div>
 </div>
@@ -946,6 +970,7 @@
     </div>
   </div>
 
+  <div class="panel-sticky-top">
   <div class="toolbar">
     <div><label>Cliente</label><select id="ed-f-filtro-cliente"><option value="">Todos</option></select></div>
     <div><label>Editor</label><select id="ed-f-filtro-responsable"><option value="">Todos</option></select></div>
@@ -957,6 +982,7 @@
   <div class="kpi-section">
     <div class="kpi-section-title">Objetivo de la semana — videos de Edición por editor</div>
     <div class="kpi-wrap" id="ed-kpi-wrap"></div>
+  </div>
   </div>
 
   <div class="calendar-wrap">
@@ -977,6 +1003,7 @@
     </div>
   </div>
 
+  <div class="panel-sticky-top">
   <div class="toolbar">
     <div><label>Cliente</label><select id="cm-f-filtro-cliente"><option value="">Todos</option></select></div>
     <div><label>Responsable</label><select id="cm-f-filtro-responsable"><option value="">Todos</option></select></div>
@@ -988,6 +1015,7 @@
   <div class="kpi-section">
     <div class="kpi-section-title">Objetivo de la semana — videos por publicar</div>
     <div class="kpi-wrap" id="cm-kpi-wrap"></div>
+  </div>
   </div>
 
   <div class="cm-layout">
@@ -4937,6 +4965,46 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   window.location.reload();
 });
 
+// ============ ZOOM (petite) ============
+// Niveles disponibles: 70, 80, 90, 100. Default 80. Se guarda por dispositivo.
+const ZOOM_NIVELES = [70, 80, 90, 100];
+function aplicarZoom(nivel){
+  document.body.classList.remove('zoom-70','zoom-80','zoom-90');
+  if(nivel === 70) document.body.classList.add('zoom-70');
+  else if(nivel === 80) document.body.classList.add('zoom-80');
+  else if(nivel === 90) document.body.classList.add('zoom-90');
+  // 100 = sin clase (tamaño normal)
+  const nivelEl = document.getElementById('zoom-nivel');
+  if(nivelEl) nivelEl.textContent = nivel + '%';
+}
+function leerZoom(){
+  try {
+    const v = parseInt(localStorage.getItem('level_zoom'), 10);
+    return ZOOM_NIVELES.includes(v) ? v : 80;
+  } catch(e){ return 80; }
+}
+function guardarZoom(nivel){
+  try { localStorage.setItem('level_zoom', String(nivel)); } catch(e){}
+}
+let ZOOM_ACTUAL = leerZoom();
+aplicarZoom(ZOOM_ACTUAL);
+(function(){
+  const btnMenos = document.getElementById('zoom-menos');
+  const btnMas = document.getElementById('zoom-mas');
+  if(btnMenos){
+    btnMenos.addEventListener('click', () => {
+      const idx = ZOOM_NIVELES.indexOf(ZOOM_ACTUAL);
+      if(idx > 0){ ZOOM_ACTUAL = ZOOM_NIVELES[idx - 1]; aplicarZoom(ZOOM_ACTUAL); guardarZoom(ZOOM_ACTUAL); }
+    });
+  }
+  if(btnMas){
+    btnMas.addEventListener('click', () => {
+      const idx = ZOOM_NIVELES.indexOf(ZOOM_ACTUAL);
+      if(idx < ZOOM_NIVELES.length - 1){ ZOOM_ACTUAL = ZOOM_NIVELES[idx + 1]; aplicarZoom(ZOOM_ACTUAL); guardarZoom(ZOOM_ACTUAL); }
+    });
+  }
+})();
+
 // ============ MODO OSCURO ============
 // Se guarda la preferencia por dispositivo. NO usamos localStorage dentro de artifacts,
 // pero en la app real (Vercel) sí funciona. Aquí lo envolvemos en try/catch por seguridad.
@@ -5659,6 +5727,7 @@ function renderLineaProduccion(){
   }).join('');
 
   let html = `
+    <div class="linea-sticky-top">
     <div class="linea-kpi-header">
       <div class="linea-kpis-grandes">
         <div class="linea-kpi-card kpi-editar">
@@ -5686,7 +5755,7 @@ function renderLineaProduccion(){
   `;
 
   if(bloquesConClientes.length === 0){
-    html += '<div class="linea-empty" style="margin-top:24px;">No hay clientes activos.</div>';
+    html += '</div><div class="linea-empty" style="margin-top:24px;">No hay clientes activos.</div>';
     cuerpo.innerHTML = html;
     _bindLineaBotones();
     return;
@@ -5704,6 +5773,7 @@ function renderLineaProduccion(){
     </div>`;
   });
   html += `</div>`;
+  html += `</div>`; // cierra linea-sticky-top
 
   bloquesConClientes.forEach(b => {
     const editorColor = b.sinAsignar ? '#c72a09' : (b.editor.Color || '#c72a09');
