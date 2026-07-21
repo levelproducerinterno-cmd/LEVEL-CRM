@@ -69,11 +69,16 @@
   .cal-dow{text-align:center;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:8px;font-weight:600;}
   .cal-cell{background:#fff;min-height:170px;border-radius:4px;padding:10px;border:1px solid #eee;}
   .cal-cell.outside{background:#f2f0ec;}
+  .cal-cell.finde{background:#ecebe7;}
+  .cal-cell.finde.outside{background:#e4e2dd;}
   .cal-cell .daynum{font-size:0.8rem;font-weight:700;color:#333;margin-bottom:6px;}
+  .cal-cell.finde .daynum{color:#8a8578;}
   .cal-cell.today .daynum{color:var(--rojo);}
 
   .card{background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:2px;padding:8px 10px;margin-bottom:8px;font-size:0.85rem;cursor:pointer;}
   .card .c-top{font-weight:700;color:#1c1c1c;line-height:1.35;font-size:0.9rem;}
+  .card .c-copiable{display:block;width:100%;margin-top:5px;background:#f0ede6;border:1px dashed #c9c4b8;border-radius:3px;padding:4px 6px;font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:700;color:#5c5850;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em;}
+  .card .c-copiable:hover{background:#e4e0d6;border-color:var(--rojo);color:var(--rojo);}
   .card .c-copy{font-size:0.78rem;color:#666;margin-top:4px;line-height:1.4;max-height:3.6em;overflow:hidden;}
   .card .c-resp{font-size:0.8rem;color:#555;margin-top:3px;display:flex;align-items:center;gap:5px;}
   .resp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -117,27 +122,28 @@
   .dash-leyenda-nota em{color:var(--rojo);font-style:normal;font-weight:700;}
 
   .dash-tabla-wrap{overflow-x:auto;padding:18px 26px 40px;}
-  .dash-tabla{border-collapse:separate;border-spacing:0;font-family:'Montserrat',sans-serif;font-size:0.78rem;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,0.06);border-radius:6px;overflow:hidden;}
-  .dash-tabla th, .dash-tabla td{border-right:1px solid #e4e0d6;border-bottom:1px solid #e4e0d6;padding:8px 10px;text-align:center;vertical-align:middle;}
+  .dash-tabla{border-collapse:separate;border-spacing:0;font-family:'Montserrat',sans-serif;font-size:0.78rem;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,0.06);border-radius:6px;}
+  .dash-tabla th, .dash-tabla td{border-right:1px solid #e4e0d6;border-bottom:1px solid #e4e0d6;padding:8px 10px;text-align:center;vertical-align:middle;box-sizing:border-box;}
   .dash-tabla th:last-child, .dash-tabla td:last-child{border-right:none;}
   .dash-tabla tbody tr:last-child td{border-bottom:none;}
   .dash-tabla thead th{background:#1c1a17;color:#fff;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:0.7rem;padding:10px 8px;}
-  .dash-th-empty{background:#1c1a17;color:#fff;position:sticky;z-index:5;}
-  /* Primera columna congelada (Miembro) */
-  .dash-tabla thead th.dash-th-empty:first-child{left:0;z-index:6;box-shadow:2px 0 4px rgba(0,0,0,0.15);}
-  /* Segunda columna congelada (Métrica) */
-  .dash-tabla thead th.dash-th-empty:nth-child(2){left:150px;z-index:6;box-shadow:2px 0 4px rgba(0,0,0,0.15);}
+
+  /* Columnas congeladas del thead (Miembro y Métrica) */
+  .dash-tabla thead th.dash-th-empty{background:#1c1a17 !important;color:#fff;position:sticky !important;z-index:15;}
+  .dash-tabla thead th.dash-th-empty:first-child{left:0 !important;z-index:16;box-shadow:3px 0 8px rgba(0,0,0,0.25);width:170px;min-width:170px;max-width:170px;}
+  .dash-tabla thead th.dash-th-empty:nth-child(2){left:170px !important;z-index:16;box-shadow:3px 0 8px rgba(0,0,0,0.25);width:130px;min-width:130px;max-width:130px;}
+
   .dash-th-mes{background:#2a2723;border-right:2px solid #c72a09;color:#fff;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;text-transform:none;letter-spacing:0.02em;}
   .dash-th-sem{background:#3a3733;color:#d4cfc4;font-size:0.68rem;font-weight:600;line-height:1.3;min-width:44px;}
   .dash-th-sem.actual{background:var(--rojo);color:#fff;}
   .dash-th-resumen{background:#5c1f0d;color:#fff;font-weight:800;letter-spacing:0.08em;border-right:2px solid #c72a09;font-size:0.65rem;}
 
-  /* Columnas del body también congeladas */
-  .dash-td-miembro{background:#faf8f4;padding:12px 14px;min-width:150px;max-width:150px;text-align:left;vertical-align:top;position:sticky;left:0;z-index:3;box-shadow:2px 0 4px rgba(0,0,0,0.08);}
+  /* Columnas congeladas del body */
+  .dash-td-miembro{background:#faf8f4 !important;padding:12px 14px;width:170px;min-width:170px;max-width:170px;text-align:left;vertical-align:top;position:sticky !important;left:0 !important;z-index:5;box-shadow:3px 0 8px rgba(0,0,0,0.12);}
   .dash-miembro-nombre{border-left:4px solid var(--rojo);padding-left:10px;font-family:'Cormorant Garamond',serif;display:flex;flex-direction:column;gap:2px;}
   .dash-miembro-nombre > span:first-child{font-weight:700;font-size:1.1rem;color:var(--negro);}
   .dash-miembro-puesto{font-family:'Montserrat',sans-serif;font-size:0.62rem;color:#8a8578;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;}
-  .dash-td-metrica{background:#faf8f4;text-align:left;padding-left:14px;font-weight:700;color:#1c1c1c;font-size:0.75rem;min-width:110px;max-width:110px;letter-spacing:0.02em;position:sticky;left:150px;z-index:3;box-shadow:2px 0 4px rgba(0,0,0,0.08);}
+  .dash-td-metrica{background:#faf8f4 !important;text-align:left;padding-left:14px;font-weight:700;color:#1c1c1c;font-size:0.75rem;width:130px;min-width:130px;max-width:130px;letter-spacing:0.02em;position:sticky !important;left:170px !important;z-index:5;box-shadow:3px 0 8px rgba(0,0,0,0.12);}
   .dash-td-metrica.reportada{color:var(--rojo);font-style:italic;}
 
   .dash-td-valor{min-width:44px;font-weight:700;font-size:0.85rem;color:#1c1c1c;}
@@ -337,6 +343,7 @@
   .cm-listos-header{padding:16px 18px;background:linear-gradient(135deg,#1c1a17,#3a2a26);border-bottom:1px solid #444;}
   .cm-listos-titulo{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;letter-spacing:0.02em;color:#fff;}
   .cm-listos-sub{font-size:0.72rem;color:#b7b2a9;margin-top:4px;letter-spacing:0.06em;text-transform:uppercase;}
+  .cm-listos-filtro{width:100%;margin-top:10px;padding:7px 10px;border-radius:4px;border:1px solid #555;background:#2a2723;color:#fff;font-size:0.8rem;font-family:'Montserrat',sans-serif;}
   .cm-listos-lista{padding:14px;overflow-y:auto;flex:1;}
   .cm-listos-vacio{color:#8a8578;font-size:0.82rem;text-align:center;padding:30px 10px;font-style:italic;}
   .cm-listos-card{background:#2a2723;border:1px solid #444;border-left:3px solid #e8d97a;border-radius:6px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s,border-color 0.15s;}
@@ -400,6 +407,14 @@
   .vp-pdf-hist-item a{color:#c72a09;text-decoration:none;font-weight:600;}
   .vp-pdf-hist-item a:hover{text-decoration:underline;}
 
+  .vp-videos-card{background:#fff;color:#1c1c1c;padding:60px 40px;border-radius:8px;text-align:center;max-width:560px;margin:0 auto;}
+  .vp-inspo-box{background:#eef4fb;border:1px solid #c5dbf0;border-radius:6px;padding:12px 14px;margin-bottom:4px;}
+  .vp-inspo-box a{color:#4a90e2;text-decoration:none;font-weight:700;font-size:0.9rem;}
+  .vp-inspo-box a:hover{text-decoration:underline;}
+  .vp-videos-emoji{font-size:3.4rem;margin-bottom:14px;}
+  .vp-videos-card h2{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;margin:0 0 12px;color:var(--negro);}
+  .vp-videos-card p{color:#666;font-size:0.92rem;line-height:1.6;margin:0;}
+
   .vp-exp-info{background:#fff;color:#1c1c1c;padding:24px 28px;border-radius:8px;}
   .vp-exp-sub{font-size:1rem;color:#8a8578;margin-bottom:20px;font-style:italic;}
   .vp-exp-bloque{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #f0ede6;}
@@ -433,6 +448,12 @@
   .mg-guion-card.open .mgc-body{display:block;}
   .mg-guion-card .mgc-body h4{font-size:0.72rem;text-transform:uppercase;color:#666;font-weight:700;letter-spacing:0.06em;margin:16px 0 6px;}
   .mg-guion-card .mgc-body p{margin:0;white-space:pre-wrap;line-height:1.55;}
+  .mgc-copiable-wrap{display:flex;gap:8px;margin-top:14px;padding:12px;background:#faf8f4;border:1px solid #e4e0d6;border-radius:6px;align-items:center;}
+  .mgc-copiable-input{flex:1;padding:8px 12px;border:1px solid #d8d3c9;border-radius:4px;font-family:'Montserrat',sans-serif;font-size:0.92rem;font-weight:700;color:var(--negro);background:#fff;letter-spacing:0.02em;}
+  .mgc-copiar-btn{background:var(--negro);color:#fff;border:none;padding:9px 16px;border-radius:4px;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .mgc-copiar-btn:hover{background:#3a3733;}
+  .mgc-inspo-link{color:#4a90e2;text-decoration:none;font-weight:700;}
+  .mgc-inspo-link:hover{text-decoration:underline;}
   .mg-guion-card .mgc-estatus{background:#c72a09;color:#fff;padding:3px 10px;border-radius:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;}
   .mg-guion-card[data-estatus="Aprobado"] .mgc-estatus{background:#c08b00;}
   .mg-guion-card[data-estatus="Grabado"] .mgc-estatus{background:#2e7d2e;}
@@ -867,6 +888,9 @@
       <div class="cm-listos-header">
         <div class="cm-listos-titulo">📥 Videos listos para publicar</div>
         <div class="cm-listos-sub" id="cm-listos-count">—</div>
+        <select id="cm-listos-filtro" class="cm-listos-filtro">
+          <option value="">Todos los clientes</option>
+        </select>
       </div>
       <div class="cm-listos-lista" id="cm-listos-lista"></div>
     </aside>
@@ -913,6 +937,7 @@
     <div style="display:flex;gap:10px;align-items:center;">
       <label style="font-size:0.78rem;letter-spacing:0.04em;text-transform:uppercase;color:#b7b2a9;">Ver:</label>
       <select id="mg-filtro-estatus" style="padding:8px 12px;border-radius:4px;border:1px solid #666;background:#2a2723;color:#fff;font-size:0.85rem;">
+        <option value="aprobado_grabado">Listos para editar (aprobados + grabados)</option>
         <option value="Aprobado">Solo aprobados</option>
         <option value="Grabado">Solo grabados</option>
         <option value="">Todos</option>
@@ -952,8 +977,13 @@
         </select>
       </div>
       <div class="field" style="grid-column:1/-1;">
-        <label>Link a su carpeta de Frame.io</label>
+        <label>Link a su carpeta de Frame.io (para editores)</label>
         <input type="text" id="nc-frame" placeholder="https://...">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Link de Frame para el cliente (lo verá en su portal)</label>
+        <input type="text" id="nc-frame-cliente" placeholder="https://... (carpeta compartida con el cliente)">
+        <div class="hint" style="margin-top:6px;font-size:0.72rem;">Es distinto al de los editores. Este link aparecerá en el portal del cliente para que vea sus videos.</div>
       </div>
       <div class="field">
         <label>Tipo de cliente</label>
@@ -984,6 +1014,10 @@
       <div class="field">
         <label>Editor asignado</label>
         <select id="nc-editor"><option value="">— Sin asignar —</option></select>
+      </div>
+      <div class="field">
+        <label>Editor 2 (opcional)</label>
+        <select id="nc-editor2"><option value="">— Sin segundo editor —</option></select>
       </div>
       <div class="field">
         <label>Community Manager asignado</label>
@@ -1918,6 +1952,9 @@ function render(modoKey){
     const yNorm = cellYear + Math.floor(cellMonth / 12) - (cellMonth < 0 ? 1 : 0);
     const dateKey = `${yNorm}-${String(mNorm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
     const isToday = dateKey === hoy.toISOString().slice(0,10);
+    // Detectar sábado (6) y domingo (0) para pintarlos en gris
+    const diaSemanaCelda = new Date(yNorm, mNorm, dayNum).getDay();
+    const esFinDeSemana = diaSemanaCelda === 0 || diaSemanaCelda === 6;
 
     const cards = (porFecha[dateKey] || []).map(r => {
       const listo = String(r.Listo).toUpperCase() === 'SI';
@@ -1936,21 +1973,47 @@ function render(modoKey){
         copyHtml = `<div class="c-copy">${copyTxt.slice(0,90)}${copyTxt.length > 90 ? '…' : ''}</div>`;
       }
 
+      // Título copiable "7.7 - CLIENTE" solo en Edición (donde el editor lo necesita para archivos)
+      let copiableHtml = '';
+      if(modoKey === 'edicion' && folioLimpio && r.Cliente){
+        const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
+        copiableHtml = `<button class="c-copiable" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar '${tituloCopiable.replace(/"/g,'&quot;')}'">📋 ${tituloCopiable.replace(/</g,'&lt;')}</button>`;
+      }
+
       return `
         <div class="card" data-id="${r.ID}" data-modo="${modoKey}">
           <div class="c-top">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</div>
+          ${copiableHtml}
           ${copyHtml}
           ${respHtml}
           <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
         </div>`;
     }).join('');
 
-    html += `<div class="cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}" data-date="${dateKey}">
+    html += `<div class="cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''} ${esFinDeSemana ? 'finde' : ''}" data-date="${dateKey}">
       <div class="daynum">${dayNum}</div>
       ${cards}
     </div>`;
   }
   grid.innerHTML = html;
+
+  // Botones de copiar título en las tarjetas
+  grid.querySelectorAll('[data-copiar-titulo]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const texto = btn.dataset.copiarTitulo;
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch(err) {
+        const ta = document.createElement('textarea');
+        ta.value = texto; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      const original = btn.innerHTML;
+      btn.innerHTML = '✓ Copiado';
+      setTimeout(() => { btn.innerHTML = original; }, 1200);
+    });
+  });
 
   grid.querySelectorAll('[data-toggle-listo]').forEach(el => {
     el.addEventListener('click', async (e) => {
@@ -2059,10 +2122,18 @@ function renderKPIs(modoKey){
 function renderPanelListosParaPublicar(){
   const lista = document.getElementById('cm-listos-lista');
   const countEl = document.getElementById('cm-listos-count');
+  const filtroSel = document.getElementById('cm-listos-filtro');
   if(!lista) return;
 
   const edicionCards = (estado.edicion && estado.edicion.TODAS) ? estado.edicion.TODAS : [];
   const cmCards = (estado.cm && estado.cm.TODAS) ? estado.cm.TODAS : [];
+
+  // Solo clientes que tienen CM asignado (CMID no vacío)
+  const clientesConCM = (CLIENTES || []).filter(c =>
+    String(c.Estado || 'Activo') === 'Activo' &&
+    c.CMID && String(c.CMID).trim() !== ''
+  );
+  const nombresClientesConCM = new Set(clientesConCM.map(c => String(c.Nombre || '').trim().toLowerCase()));
 
   // Índice de tarjetas CM por cliente+folio (case-insensitive)
   const cmIdx = new Set();
@@ -2072,17 +2143,33 @@ function renderPanelListosParaPublicar(){
     if(cli && fol) cmIdx.add(cli + '|' + fol);
   });
 
-  // Filtrar Edición: solo las que están marcadas Listo y NO tienen contraparte en CM
-  const listos = edicionCards.filter(e => {
+  // Filtrar Edición: marcadas Listo, sin contraparte en CM, Y de un cliente que tiene CM activo
+  let listos = edicionCards.filter(e => {
     const est = String(e.Listo || '').toUpperCase();
     if(est !== 'SI') return false;
     const cli = String(e.Cliente || '').trim().toLowerCase();
     const fol = String(e.Folio || '').trim();
     if(!cli || !fol) return false;
+    if(!nombresClientesConCM.has(cli)) return false; // cliente sin CM → no aparece
     return !cmIdx.has(cli + '|' + fol);
   });
 
-  // Ordenar por fecha descendente (los más recientes arriba)
+  // Poblar el dropdown de clientes (solo los que tienen videos listos)
+  const clientesEnListos = [...new Set(listos.map(e => String(e.Cliente || '').trim()))].filter(Boolean).sort();
+  const filtroPrevio = filtroSel ? filtroSel.value : '';
+  if(filtroSel){
+    filtroSel.innerHTML = '<option value="">Todos los clientes</option>' +
+      clientesEnListos.map(nombre => `<option value="${nombre.replace(/"/g,'&quot;')}">${nombre}</option>`).join('');
+    if(clientesEnListos.includes(filtroPrevio)) filtroSel.value = filtroPrevio;
+  }
+
+  // Aplicar filtro de cliente seleccionado
+  const filtroActivo = filtroSel ? filtroSel.value : '';
+  if(filtroActivo){
+    listos = listos.filter(e => String(e.Cliente || '').trim() === filtroActivo);
+  }
+
+  // Ordenar por fecha descendente
   listos.sort((a, b) => {
     const fa = new Date(a.Fecha || 0).getTime();
     const fb = new Date(b.Fecha || 0).getTime();
@@ -2094,7 +2181,7 @@ function renderPanelListosParaPublicar(){
     : (listos.length + ' listo' + (listos.length === 1 ? '' : 's') + ' por agendar');
 
   if(listos.length === 0){
-    lista.innerHTML = '<div class="cm-listos-vacio">🎉 Todo agendado. Cuando Edición marque nuevos videos como Listo, aparecerán aquí.</div>';
+    lista.innerHTML = '<div class="cm-listos-vacio">🎉 Todo agendado. Cuando Edición marque nuevos videos como Listo (de clientes con CM), aparecerán aquí.</div>';
     return;
   }
 
@@ -2115,6 +2202,14 @@ function renderPanelListosParaPublicar(){
     });
   });
 }
+
+// Listener del filtro por cliente del panel de listos
+(function(){
+  const _filtroListos = document.getElementById('cm-listos-filtro');
+  if(_filtroListos){
+    _filtroListos.addEventListener('change', () => renderPanelListosParaPublicar());
+  }
+})();
 
 // Abre el modal de CM ya prellenado con datos de la tarjeta lista de Edición.
 // Busca guion aprobado del cliente con el folio para prellenar el copy si existe.
@@ -2578,16 +2673,22 @@ function renderTeamTabla(){
 // ---- Selectores de editor/CM en el modal de cliente ----
 function actualizarSelectoresTeam(){
   const editorSel = document.getElementById('nc-editor');
+  const editor2Sel = document.getElementById('nc-editor2');
   const cmSel = document.getElementById('nc-cm');
   if(!editorSel || !cmSel) return;
   const valPrevEditor = editorSel.value;
+  const valPrevEditor2 = editor2Sel ? editor2Sel.value : '';
   const valPrevCM = cmSel.value;
-  editorSel.innerHTML = '<option value="">— Sin asignar —</option>' +
-    TEAM.filter(m => m.Puesto === 'Edicion').map(m => `<option value="${m.ID}">${m.Nombre}</option>`).join('');
+  const opcionesEditores = TEAM.filter(m => m.Puesto === 'Edicion' || m.Puesto === 'Filmmaker').map(m => `<option value="${m.ID}">${m.Nombre}</option>`).join('');
+  editorSel.innerHTML = '<option value="">— Sin asignar —</option>' + opcionesEditores;
+  if(editor2Sel){
+    editor2Sel.innerHTML = '<option value="">— Sin segundo editor —</option>' + opcionesEditores;
+  }
   cmSel.innerHTML = '<option value="">— Sin asignar —</option>' +
     TEAM.filter(m => m.Puesto === 'CM').map(m => `<option value="${m.ID}">${m.Nombre}</option>`).join('');
   // Restaura valor si sigue existiendo
   if(Array.from(editorSel.options).some(o => o.value === valPrevEditor)) editorSel.value = valPrevEditor;
+  if(editor2Sel && Array.from(editor2Sel.options).some(o => o.value === valPrevEditor2)) editor2Sel.value = valPrevEditor2;
   if(Array.from(cmSel.options).some(o => o.value === valPrevCM)) cmSel.value = valPrevCM;
 }
 
@@ -2863,6 +2964,7 @@ function abrirModalClienteVacio(){
   document.getElementById('nc-nombre').value = '';
   document.getElementById('nc-emoji').value = '';
   document.getElementById('nc-frame').value = '';
+  document.getElementById('nc-frame-cliente').value = '';
   document.getElementById('nc-tipo').value = 'Recurrente';
   document.getElementById('nc-estado').value = 'Activo';
   document.getElementById('nc-videos-mes').value = 4;
@@ -2870,6 +2972,7 @@ function abrirModalClienteVacio(){
   document.getElementById('nc-episodios-mes').value = 3;
   document.getElementById('nc-reels-episodio').value = 3;
   document.getElementById('nc-editor').value = '';
+  document.getElementById('nc-editor2').value = '';
   document.getElementById('nc-cm').value = '';
   aplicarVisibilidadNumeracion();
   actualizarSelectoresTeam();
@@ -2884,6 +2987,7 @@ function abrirModalClienteEditar(id){
   document.getElementById('nc-nombre').value = c.Nombre || '';
   document.getElementById('nc-emoji').value = c.Emoji || '';
   document.getElementById('nc-frame').value = c.FrameLink || '';
+  document.getElementById('nc-frame-cliente').value = c.FrameLinkCliente || '';
   document.getElementById('nc-tipo').value = c.Tipo || 'Recurrente';
   document.getElementById('nc-estado').value = c.Estado || 'Activo';
   document.getElementById('nc-videos-mes').value = c.VideosMes || 4;
@@ -2892,6 +2996,7 @@ function abrirModalClienteEditar(id){
   document.getElementById('nc-reels-episodio').value = c.ReelsPorEpisodio || 3;
   actualizarSelectoresTeam();
   document.getElementById('nc-editor').value = c.EditorID || '';
+  document.getElementById('nc-editor2').value = c.Editor2ID || '';
   document.getElementById('nc-cm').value = c.CMID || '';
   aplicarVisibilidadNumeracion();
   modalClienteBg.classList.add('open');
@@ -2928,7 +3033,9 @@ document.getElementById('btn-guardar-cliente').addEventListener('click', async (
     episodiosMes: parseInt(document.getElementById('nc-episodios-mes').value, 10) || 0,
     reelsPorEpisodio: parseInt(document.getElementById('nc-reels-episodio').value, 10) || 0,
     editorId: document.getElementById('nc-editor').value,
-    cmId: document.getElementById('nc-cm').value
+    editor2Id: document.getElementById('nc-editor2').value,
+    cmId: document.getElementById('nc-cm').value,
+    frameLinkCliente: document.getElementById('nc-frame-cliente').value.trim()
   };
   modalClienteBg.classList.remove('open');
   try{
@@ -4657,13 +4764,20 @@ async function cargarMisGuiones(){
       MG_CLIENTES = todosLosClientes.filter(c => String(c.Estado || 'Activo') === 'Activo');
     } else {
       MG_CLIENTES = todosLosClientes.filter(c =>
-        String(c.EditorID || '') === String(USUARIO_ACTUAL.ID) &&
+        (String(c.EditorID || '') === String(USUARIO_ACTUAL.ID) || String(c.Editor2ID || '') === String(USUARIO_ACTUAL.ID)) &&
         String(c.Estado || 'Activo') === 'Activo'
       );
     }
   } catch(err){ console.error(err); MG_CLIENTES = []; MG_GUIONES_TODOS = []; }
   renderMgClientesLista();
   renderMgDetalle();
+}
+
+// Devuelve true si el guion pasa el filtro de estatus seleccionado
+function mgPasaFiltro(estatusGuion, filtro){
+  if(!filtro) return true; // "Todos"
+  if(filtro === 'aprobado_grabado') return estatusGuion === 'Aprobado' || estatusGuion === 'Grabado';
+  return estatusGuion === filtro;
 }
 
 function renderMgClientesLista(){
@@ -4676,7 +4790,7 @@ function renderMgClientesLista(){
   cont.innerHTML = MG_CLIENTES.map(c => {
     const guionesDelCli = MG_GUIONES_TODOS.filter(g =>
       String(g.ClienteID) === String(c.ID) &&
-      (!filtroEstatus || g.Estatus === filtroEstatus)
+      mgPasaFiltro(g.Estatus, filtroEstatus)
     );
     const activa = String(c.ID) === String(MG_CLIENTE_SELECCIONADO_ID);
     return `
@@ -4710,21 +4824,25 @@ function renderMgDetalle(){
   const filtroEstatus = document.getElementById('mg-filtro-estatus').value;
   const guionesDelCli = MG_GUIONES_TODOS.filter(g =>
     String(g.ClienteID) === String(cli.ID) &&
-    (!filtroEstatus || g.Estatus === filtroEstatus)
+    mgPasaFiltro(g.Estatus, filtroEstatus)
   );
 
   header.className = 'mg-detalle-header';
   header.innerHTML = `
     <div class="mg-cliente-nombre">${cli.Emoji || '👤'} ${cli.Nombre || ''}</div>
-    <div class="mg-cliente-info">${guionesDelCli.length} guion${guionesDelCli.length === 1 ? '' : 'es'} ${filtroEstatus ? '(' + filtroEstatus.toLowerCase() + 's)' : ''} · Solo lectura</div>
+    <div class="mg-cliente-info">${guionesDelCli.length} guion${guionesDelCli.length === 1 ? '' : 'es'} · Solo lectura</div>
   `;
 
   if(guionesDelCli.length === 0){
-    lista.innerHTML = '<div class="mg-vacio-guiones">No hay guiones ' + (filtroEstatus ? 'con estatus "' + filtroEstatus + '"' : '') + ' para este cliente.</div>';
+    lista.innerHTML = '<div class="mg-vacio-guiones">No hay guiones para este cliente con el filtro actual.</div>';
     return;
   }
   lista.innerHTML = guionesDelCli.map(g => {
     const est = g.Estatus || 'Borrador';
+    // Título copiable en una línea: "7.7 - CLIENTE"
+    const tituloCopiable = (g.Folio ? g.Folio : '') + (g.Folio && cli.Nombre ? ' - ' : '') + (cli.Nombre ? cli.Nombre.toUpperCase() : '');
+    const inspiracion = String(g.Inspiracion || '').trim();
+    const tieneInspiracion = inspiracion && (inspiracion.startsWith('http://') || inspiracion.startsWith('https://'));
     return `
       <div class="mg-guion-card" data-estatus="${est}" data-id="${g.ID}">
         <div class="mgc-head">
@@ -4735,9 +4853,15 @@ function renderMgDetalle(){
           </span>
         </div>
         <div class="mgc-body">
+          ${tituloCopiable ? `
+          <div class="mgc-copiable-wrap">
+            <input type="text" class="mgc-copiable-input" value="${tituloCopiable.replace(/"/g,'&quot;')}" readonly>
+            <button class="mgc-copiar-btn" data-copiar="${tituloCopiable.replace(/"/g,'&quot;')}">📋 Copiar</button>
+          </div>` : ''}
           <h4>Guion</h4>
           <p>${(g.Guion || '(sin contenido)').replace(/</g,'&lt;')}</p>
           ${g.Musica ? '<h4>Referencia musical</h4><p>' + g.Musica.replace(/</g,'&lt;') + '</p>' : ''}
+          ${tieneInspiracion ? '<h4>Link de inspiración</h4><p><a href="' + inspiracion + '" target="_blank" rel="noopener" class="mgc-inspo-link">🎬 Ver video de inspiración ↗</a></p>' : ''}
           ${g.Notas ? '<h4>Notas</h4><p>' + g.Notas.replace(/</g,'&lt;') + '</p>' : ''}
         </div>
       </div>
@@ -4745,6 +4869,26 @@ function renderMgDetalle(){
   }).join('');
   lista.querySelectorAll('.mgc-head').forEach(head => {
     head.addEventListener('click', () => head.closest('.mg-guion-card').classList.toggle('open'));
+  });
+  // Botones de copiar título
+  lista.querySelectorAll('.mgc-copiar-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const texto = btn.dataset.copiar;
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch(err) {
+        const inp = btn.previousElementSibling;
+        inp.select(); document.execCommand('copy');
+      }
+      const original = btn.textContent;
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    });
+  });
+  // Evitar que al hacer clic en el input copiable se cierre la card
+  lista.querySelectorAll('.mgc-copiable-input').forEach(inp => {
+    inp.addEventListener('click', (e) => { e.stopPropagation(); inp.select(); });
   });
 }
 
@@ -5128,11 +5272,11 @@ function renderLineaProduccion(){
   // Agrupar clientes por editor
   const bloques = editoresAMostrar.map(e => ({
     editor: e,
-    clientes: clientesActivos.filter(c => String(c.EditorID || '') === String(e.ID))
+    clientes: clientesActivos.filter(c => String(c.EditorID || '') === String(e.ID) || String(c.Editor2ID || '') === String(e.ID))
   }));
 
   if(!LINEA_SOLO_MIOS){
-    const sinAsignar = clientesActivos.filter(c => !c.EditorID || String(c.EditorID).trim() === '');
+    const sinAsignar = clientesActivos.filter(c => (!c.EditorID || String(c.EditorID).trim() === '') && (!c.Editor2ID || String(c.Editor2ID).trim() === ''));
     if(sinAsignar.length > 0){
       bloques.push({ editor: null, clientes: sinAsignar, sinAsignar: true });
     }
@@ -5155,7 +5299,7 @@ function renderLineaProduccion(){
 
   // Barras horizontales por editor con % de avance del mes actual
   const barrasEditores = editores.map(e => {
-    const clientesDelEditor = clientesActivos.filter(c => String(c.EditorID || '') === String(e.ID));
+    const clientesDelEditor = clientesActivos.filter(c => String(c.EditorID || '') === String(e.ID) || String(c.Editor2ID || '') === String(e.ID));
     const slotsDelEditor = slotsMesActual.filter(s => {
       // Sumamos slots de clientes asignados al editor
       return clientesDelEditor.some(c => String(c.ID) === String(s.ClienteID));
@@ -5418,6 +5562,7 @@ async function arrancarVistaPublicaCliente(token){
     <div class="vp-tabs" id="vp-tabs">
       <button class="vp-tab active" data-vp-tab="guiones">📄 Guiones</button>
       <button class="vp-tab" data-vp-tab="calendario">📆 Calendario de publicaciones</button>
+      <button class="vp-tab" data-vp-tab="videos" id="vp-tab-videos" style="display:none;">🎬 Tus videos</button>
       <button class="vp-tab" data-vp-tab="expediente">📋 Expediente</button>
       <button class="vp-tab" data-vp-tab="informes">📈 Informes</button>
     </div>
@@ -5433,6 +5578,14 @@ async function arrancarVistaPublicaCliente(token){
       </div>
       <div class="vp-seccion" id="vp-seccion-expediente" style="display:none;">
         <div id="vp-expediente-lista"></div>
+      </div>
+      <div class="vp-seccion" id="vp-seccion-videos" style="display:none;">
+        <div class="vp-videos-card">
+          <div class="vp-videos-emoji">🎬</div>
+          <h2>Tus videos en Frame.io</h2>
+          <p>Aquí encontrarás todos tus videos: los que están en revisión y los ya aprobados. Puedes dejar comentarios directamente sobre cada video.</p>
+          <a id="vp-frame-btn" href="#" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;margin-top:18px;">📁 Abrir mi carpeta de videos</a>
+        </div>
       </div>
       <div class="vp-seccion" id="vp-seccion-informes" style="display:none;">
         <div id="vp-informes-lista"></div>
@@ -5466,6 +5619,12 @@ async function arrancarVistaPublicaCliente(token){
       VP_INF_PDFS = data.informesPdfs || [];
       document.getElementById('vp-emoji').textContent = VP_CLIENTE.emoji || '👤';
       document.getElementById('vp-nombre').textContent = VP_CLIENTE.nombre || '';
+      // Pestaña "Tus videos": solo visible si el cliente tiene link de Frame configurado
+      const frameCli = String(VP_CLIENTE.frameLinkCliente || '').trim();
+      if(frameCli && (frameCli.startsWith('http://') || frameCli.startsWith('https://'))){
+        document.getElementById('vp-tab-videos').style.display = '';
+        document.getElementById('vp-frame-btn').href = frameCli;
+      }
       document.getElementById('vp-status').innerHTML = '';
       renderVpGuiones();
       renderVpCalendario();
@@ -5516,6 +5675,13 @@ async function arrancarVistaPublicaCliente(token){
             <textarea class="vp-texto">${g.Guion || ''}</textarea>
             <label>Referencia musical</label>
             <input type="text" class="vp-musica" value="${(g.Musica || '').replace(/"/g,'&quot;')}" placeholder="Link o descripción">
+            ${(function(){
+              const insp = String(g.Inspiracion || '').trim();
+              if(insp && (insp.startsWith('http://') || insp.startsWith('https://'))){
+                return '<label>Link de inspiración (del equipo)</label><div class="vp-inspo-box"><a href="' + insp + '" target="_blank" rel="noopener">🎬 Ver video de inspiración ↗</a></div>';
+              }
+              return '';
+            })()}
             <label>Notas / ideas</label>
             <textarea class="vp-notas">${g.Notas || ''}</textarea>
             <div style="margin-top:14px;">
