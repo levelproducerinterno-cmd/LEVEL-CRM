@@ -65,31 +65,33 @@
   .toast-felicidades.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   .calendar-wrap{padding:20px 28px 60px;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
-  .cal-dow{text-align:center;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:8px;font-weight:600;}
-  .cal-cell{background:#fff;min-height:170px;border-radius:4px;padding:10px;border:1px solid #eee;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-dow{text-align:center;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:6px;font-weight:600;}
+  .cal-cell{background:#fff;min-height:120px;border-radius:4px;padding:6px;border:1px solid #eee;}
   .cal-cell.outside{background:#f2f0ec;}
   .cal-cell.finde{background:#ecebe7;}
   .cal-cell.finde.outside{background:#e4e2dd;}
-  .cal-cell .daynum{font-size:0.8rem;font-weight:700;color:#333;margin-bottom:6px;}
+  .cal-cell .daynum{font-size:0.72rem;font-weight:700;color:#333;margin-bottom:4px;}
   .cal-cell.finde .daynum{color:#8a8578;}
   .cal-cell.today .daynum{color:var(--rojo);}
 
-  .card{background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:2px;padding:8px 10px;margin-bottom:8px;font-size:0.85rem;cursor:pointer;}
-  .card .c-top{font-weight:700;color:#1c1c1c;line-height:1.35;font-size:0.9rem;}
-  .card .c-copiable{display:block;width:100%;margin-top:5px;background:#f0ede6;border:1px dashed #c9c4b8;border-radius:3px;padding:4px 6px;font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:700;color:#5c5850;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.02em;}
-  .card .c-copiable:hover{background:#e4e0d6;border-color:var(--rojo);color:var(--rojo);}
-  .card .c-copy{font-size:0.78rem;color:#666;margin-top:4px;line-height:1.4;max-height:3.6em;overflow:hidden;}
-  .card .c-resp{font-size:0.8rem;color:#555;margin-top:3px;display:flex;align-items:center;gap:5px;}
-  .resp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-  .card .c-status{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;font-size:0.76rem;font-weight:700;}
+  .card{background:#fbfaf7;border:1px solid #e4e0d6;border-left:3px solid var(--rojo);border-radius:3px;padding:5px 7px;margin-bottom:4px;font-size:0.76rem;cursor:pointer;}
+  .card .c-top{font-weight:700;color:#1c1c1c;line-height:1.25;font-size:0.76rem;display:flex;align-items:flex-start;gap:4px;justify-content:space-between;}
+  .card .c-top-txt{flex:1;min-width:0;}
+  .card .c-copiar-icon{flex-shrink:0;background:none;border:none;padding:0 2px;font-size:0.72rem;cursor:pointer;opacity:0.45;line-height:1;transition:opacity 0.15s;}
+  .card .c-copiar-icon:hover{opacity:1;}
+  .card .c-copiar-icon.copiado{opacity:1;color:var(--verde);}
+  .card .c-copy{font-size:0.7rem;color:#666;margin-top:2px;line-height:1.35;max-height:2.7em;overflow:hidden;}
+  .card .c-resp{font-size:0.72rem;color:#555;margin-top:2px;display:flex;align-items:center;gap:4px;}
+  .resp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .card .c-status{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9px;font-size:0.68rem;font-weight:700;}
   .card .c-status.pendiente{background:#fdf1cf;color:#8a6d10;}
   .card .c-status.listo{background:#dff2e6;color:var(--verde);}
   .card.card-lista{border-left-color:#2e7d2e;}
-  .card .c-multidia{display:inline-block;margin-top:4px;font-size:0.68rem;font-weight:700;color:#8a6d10;background:#fdf1cf;padding:2px 7px;border-radius:8px;letter-spacing:0.02em;}
-  .card .c-progreso-wrap{position:relative;height:14px;background:#e4e0d6;border-radius:7px;margin-top:6px;overflow:hidden;}
-  .card .c-progreso-bar{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width 0.3s;}
-  .card .c-progreso-txt{position:absolute;right:6px;top:0;font-size:0.62rem;font-weight:800;line-height:14px;color:#1c1c1c;}
+  .card.card-multidia{border-left-width:5px;border-left-color:#c8a412;}
+  .card .c-progreso-wrap{position:relative;height:12px;background:#e4e0d6;border-radius:6px;margin-top:4px;overflow:hidden;}
+  .card .c-progreso-bar{position:absolute;left:0;top:0;height:100%;border-radius:6px;transition:width 0.3s;}
+  .card .c-progreso-txt{position:absolute;right:5px;top:0;font-size:0.58rem;font-weight:800;line-height:12px;color:#1c1c1c;}
 
   /* Popup pedir link de video al marcar Listo */
   .linkvid-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -777,13 +779,17 @@
   body.dark .card .c-top{color:#f0ede6;}
   body.dark .card .c-copy{color:#a9a49a;}
   body.dark .card .c-resp{color:#b7b2a9;}
-  body.dark .card .c-copiable{background:#2e2e32;border-color:#48484e;color:#c9c4b8;}
-  body.dark .card .c-copiable:hover{background:#3a3a3e;}
+  body.dark .card .c-copiar-icon{opacity:0.5;}
+  body.dark .card .c-copiar-icon:hover{opacity:1;}
   body.dark .card .c-progreso-wrap{background:#3a3a3e;}
   body.dark .card .c-progreso-txt{color:#f0ede6;}
 
   /* Contenido general y KPIs */
   body.dark .kpi-wrap, body.dark .linea-kpi-header{background:#1a1a1d;border-color:#2a2a2e;}
+  body.dark .kpi-section{background:#1a1a1d;border-bottom-color:#2a2a2e;}
+  body.dark .kpi-section-title{color:#9a968e;}
+  body.dark .kpi-header{color:#e4e2dd;}
+  body.dark .kpi-bar-track{background:#3a3a3e;}
   body.dark .calendar-wrap{background:transparent;}
   body.dark .cm-layout-main{background:transparent;}
 
@@ -912,7 +918,10 @@
 <div class="modo-panel active" id="panel-clientes">
   <div class="panel-header">
     <div class="titulo-panel">Clientes</div>
-    <button class="btn" id="btn-nuevo-cliente">+ Nuevo cliente</button>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" id="btn-limpiar-duplicados" title="Elimina clientes duplicados conservando el más completo">🧹 Limpiar duplicados</button>
+      <button class="btn" id="btn-nuevo-cliente">+ Nuevo cliente</button>
+    </div>
   </div>
   <div class="clientes-grid-wrap">
     <div class="clientes-grid" id="clientes-grid"></div>
@@ -2096,45 +2105,36 @@ function render(modoKey){
       let copyHtml = '';
       if(modo.tieneCopy && r.Copy){
         const copyTxt = r.Copy.toString();
-        copyHtml = `<div class="c-copy">${copyTxt.slice(0,90)}${copyTxt.length > 90 ? '…' : ''}</div>`;
+        copyHtml = `<div class="c-copy">${copyTxt.slice(0,80)}${copyTxt.length > 80 ? '…' : ''}</div>`;
       }
 
-      // Título copiable "7.7 - CLIENTE" solo en Edición
-      let copiableHtml = '';
+      // Iconito copiar "7.7 - CLIENTE" (solo Edición), discreto a la derecha del título
+      let copiarBtn = '';
       if(modoKey === 'edicion' && folioLimpio && r.Cliente){
         const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
-        copiableHtml = `<button class="c-copiable" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar '${tituloCopiable.replace(/"/g,'&quot;')}'">📋 ${tituloCopiable.replace(/</g,'&lt;')}</button>`;
+        copiarBtn = `<button class="c-copiar-icon" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
       }
 
-      // Barra de progreso (solo Edición)
+      // Detectar multi-día
       let progresoHtml = '';
-      let multidiaTag = '';
+      let esMultidia = false;
       if(modoKey === 'edicion'){
-        const prog = parseInt(r.Progreso, 10) || (listo ? 100 : 0);
-        let colorBarra = '#c72a09';
-        if(prog >= 100) colorBarra = '#2e7d2e';
-        else if(prog >= 50) colorBarra = '#c8a412';
-        progresoHtml = `<div class="c-progreso-wrap"><div class="c-progreso-bar" style="width:${prog}%;background:${colorBarra};"></div><span class="c-progreso-txt">${prog}%</span></div>`;
-
-        // Detectar multi-día: si tiene FechaFin distinta de Fecha
         const fIni = (r.Fecha || '').toString().slice(0,10);
         const fFin = (r.FechaFin || '').toString().slice(0,10);
         if(fFin && fFin > fIni){
-          // Calcular día X de Y
-          const dIni = new Date(fIni + 'T00:00:00');
-          const dFin = new Date(fFin + 'T00:00:00');
-          const dActual = new Date(dateKey + 'T00:00:00');
-          const totalDias = Math.round((dFin - dIni) / 86400000) + 1;
-          const diaActual = Math.round((dActual - dIni) / 86400000) + 1;
-          multidiaTag = `<span class="c-multidia">📆 Día ${diaActual} de ${totalDias}</span>`;
+          esMultidia = true;
+          // Barra de progreso SOLO para multi-día
+          const prog = parseInt(r.Progreso, 10) || (listo ? 100 : 0);
+          let colorBarra = '#c72a09';
+          if(prog >= 100) colorBarra = '#2e7d2e';
+          else if(prog >= 50) colorBarra = '#c8a412';
+          progresoHtml = `<div class="c-progreso-wrap"><div class="c-progreso-bar" style="width:${prog}%;background:${colorBarra};"></div><span class="c-progreso-txt">${prog}%</span></div>`;
         }
       }
 
       return `
-        <div class="card${listo ? ' card-lista' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
-          <div class="c-top">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</div>
-          ${multidiaTag}
-          ${copiableHtml}
+        <div class="card${listo ? ' card-lista' : ''}${esMultidia ? ' card-multidia' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
+          <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
           ${copyHtml}
           ${respHtml}
           ${progresoHtml}
@@ -2162,8 +2162,9 @@ function render(modoKey){
         document.execCommand('copy'); ta.remove();
       }
       const original = btn.innerHTML;
-      btn.innerHTML = '✓ Copiado';
-      setTimeout(() => { btn.innerHTML = original; }, 1200);
+      btn.innerHTML = '✓';
+      btn.classList.add('copiado');
+      setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copiado'); }, 1000);
     });
   });
 
@@ -3283,6 +3284,34 @@ function aplicarVisibilidadNumeracion(){
 document.getElementById('nc-numeracion-modo').addEventListener('change', aplicarVisibilidadNumeracion);
 
 document.getElementById('btn-nuevo-cliente').addEventListener('click', abrirModalClienteVacio);
+
+// Botón limpiar duplicados de clientes
+document.getElementById('btn-limpiar-duplicados').addEventListener('click', async () => {
+  const confirmar = confirm('Esto eliminará clientes duplicados (mismo nombre y emoji), conservando el más completo de cada uno.\n\n¿Continuar?');
+  if(!confirmar) return;
+  const btn = document.getElementById('btn-limpiar-duplicados');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Limpiando...';
+  try {
+    const resp = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ tipo: 'clientes_limpiar_duplicados' })
+    });
+    const data = await resp.json();
+    alert(data.eliminados > 0
+      ? `✓ Se eliminaron ${data.eliminados} cliente(s) duplicado(s).`
+      : 'No se encontraron duplicados.');
+    await cargarClientes();
+  } catch(err) {
+    alert('No se pudo limpiar. Revisa tu conexión.');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+});
 document.getElementById('btn-cancelar-cliente').addEventListener('click', () => modalClienteBg.classList.remove('open'));
 modalClienteBg.addEventListener('click', (e) => { if(e.target === modalClienteBg) modalClienteBg.classList.remove('open'); });
 
