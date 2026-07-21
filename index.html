@@ -85,6 +85,29 @@
   .card .c-status{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;font-size:0.76rem;font-weight:700;}
   .card .c-status.pendiente{background:#fdf1cf;color:#8a6d10;}
   .card .c-status.listo{background:#dff2e6;color:var(--verde);}
+  .card.card-lista{border-left-color:#2e7d2e;}
+  .card .c-multidia{display:inline-block;margin-top:4px;font-size:0.68rem;font-weight:700;color:#8a6d10;background:#fdf1cf;padding:2px 7px;border-radius:8px;letter-spacing:0.02em;}
+  .card .c-progreso-wrap{position:relative;height:14px;background:#e4e0d6;border-radius:7px;margin-top:6px;overflow:hidden;}
+  .card .c-progreso-bar{position:absolute;left:0;top:0;height:100%;border-radius:7px;transition:width 0.3s;}
+  .card .c-progreso-txt{position:absolute;right:6px;top:0;font-size:0.62rem;font-weight:800;line-height:14px;color:#1c1c1c;}
+
+  /* Popup pedir link de video al marcar Listo */
+  .linkvid-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .linkvid-modal{background:#fff;color:#1c1c1c;max-width:480px;width:100%;border-radius:10px;padding:34px 36px 28px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .linkvid-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.7rem;color:#8a8578;cursor:pointer;line-height:1;}
+  .linkvid-close:hover{color:var(--negro);}
+  .linkvid-titulo{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:var(--negro);}
+  .linkvid-sub{color:#666;font-size:0.9rem;margin:6px 0 20px;line-height:1.5;}
+  .linkvid-label{display:block;font-size:0.72rem;text-transform:uppercase;color:#666;font-weight:700;letter-spacing:0.05em;margin-bottom:6px;}
+  .linkvid-input{width:100%;padding:12px 14px;border:1.5px solid #d8d3c9;border-radius:6px;font-family:inherit;font-size:0.92rem;background:#faf8f4;color:#1c1c1c;}
+  .linkvid-input:focus{outline:none;border-color:var(--rojo);background:#fff;}
+  .linkvid-botones{display:flex;gap:10px;margin-top:20px;}
+  .linkvid-btn-cancelar{flex:1;background:#f0ede6;color:#666;border:none;padding:12px;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;}
+  .linkvid-btn-cancelar:hover{background:#e4e0d6;}
+  .linkvid-btn-ok{flex:2;background:#2e7d2e;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;}
+  .linkvid-btn-ok:hover{background:#256625;}
+  .linkvid-skip{display:block;width:100%;margin-top:12px;background:none;border:none;color:#8a8578;font-size:0.78rem;cursor:pointer;text-decoration:underline;}
+  .linkvid-skip:hover{color:var(--negro);}
 
   /* modal nueva/editar tarjeta */
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow-y:auto;padding:40px 16px;}
@@ -732,6 +755,80 @@
   .inf-rep-tables-row .net-title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:16px;margin-bottom:8px;text-align:center;}
   /* Chart */
   .inf-chart-wrap{width:1300px;height:640px;position:relative;margin:0 auto;}
+  /* ============================================================ */
+  /* ============ MODO OSCURO (toggle por usuario) ============== */
+  /* ============================================================ */
+  .u-darkmode{background:none;border:1px solid #666;color:#fff;padding:4px 9px;border-radius:3px;cursor:pointer;font-size:0.9rem;margin-left:6px;line-height:1;}
+  .u-darkmode:hover{border-color:#fff;background:#3a3733;}
+
+  body.dark{background:#0d0d0f;color:#e4e2dd;}
+  /* Superficies claras → oscuras */
+  body.dark .toolbar{background:#1a1a1d;border-bottom-color:#2a2a2e;}
+  body.dark .toolbar label{color:#9a968e;}
+  body.dark select{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
+  body.dark .cal-cell{background:#1a1a1d;border-color:#2a2a2e;}
+  body.dark .cal-cell.outside{background:#141416;}
+  body.dark .cal-cell.finde{background:#242427;}
+  body.dark .cal-cell.finde.outside{background:#1c1c1f;}
+  body.dark .cal-cell .daynum{color:#c9c4b8;}
+  body.dark .cal-cell.finde .daynum{color:#7a766e;}
+  body.dark .cal-dow{color:#9a968e;}
+  body.dark .card{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
+  body.dark .card .c-top{color:#f0ede6;}
+  body.dark .card .c-copy{color:#a9a49a;}
+  body.dark .card .c-resp{color:#b7b2a9;}
+  body.dark .card .c-copiable{background:#2e2e32;border-color:#48484e;color:#c9c4b8;}
+  body.dark .card .c-copiable:hover{background:#3a3a3e;}
+  body.dark .card .c-progreso-wrap{background:#3a3a3e;}
+  body.dark .card .c-progreso-txt{color:#f0ede6;}
+
+  /* Contenido general y KPIs */
+  body.dark .kpi-wrap, body.dark .linea-kpi-header{background:#1a1a1d;border-color:#2a2a2e;}
+  body.dark .calendar-wrap{background:transparent;}
+  body.dark .cm-layout-main{background:transparent;}
+
+  /* Modales */
+  body.dark .modal{background:#1e1e21;color:#e4e2dd;}
+  body.dark .modal label{color:#9a968e;}
+  body.dark .modal input, body.dark .modal textarea, body.dark .modal select{background:#282a2d;border-color:#3a3a3e;color:#e4e2dd;}
+  body.dark .modal .hint{color:#8a867e;}
+  body.dark .m-recursos-cliente{background:#232326;border-color:#3a3a3e;}
+
+  /* Clientes / Team / listas */
+  body.dark .cliente-card, body.dark .team-tabla, body.dark .exp-card, body.dark .mg-guion-card{background:#1e1e21;color:#e4e2dd;}
+  body.dark .team-tabla th{background:#232326;color:#e4e2dd;}
+  body.dark .team-tabla td{border-color:#2a2a2e;color:#d4cfc4;}
+  body.dark .team-tabla tr:hover td{background:#232326;}
+
+  /* Dashboard */
+  body.dark .dash-cuerpo{background:#0d0d0f;}
+  body.dark .dash-leyenda{background:#1a1a1d;border-color:#2a2a2e;color:#9a968e;}
+  body.dark .dash-tabla{background:#1a1a1d;}
+  body.dark .dash-td-miembro, body.dark .dash-td-metrica{background:#232326 !important;color:#e4e2dd;}
+  body.dark .dash-td-metrica{color:#e4e2dd;}
+  body.dark .dash-td-valor{color:#e4e2dd;}
+  body.dark .dash-td-valor.vacio, body.dark .dash-td-resumen.vacio{background:#242427;color:#6a665e;}
+  body.dark .dash-td-resumen{background:#232326;}
+  body.dark .dash-td-valor.verde, body.dark .dash-td-resumen.verde{background:#1e3a24;}
+  body.dark .dash-td-valor.amarillo, body.dark .dash-td-resumen.amarillo{background:#3a3418;}
+  body.dark .dash-td-valor.rojo, body.dark .dash-td-resumen.rojo{background:#3a1e1a;}
+  body.dark .dash-miembro-nombre > span:first-child{color:#f0ede6;}
+
+  /* Mis Guiones */
+  body.dark .mg-wrap{background:transparent;}
+  body.dark .mg-lateral{background:#1a1a1d;}
+  body.dark .mg-cliente-pill{background:#232326;color:#e4e2dd;}
+  body.dark .mg-cliente-pill.active{background:var(--rojo);}
+  body.dark .mgc-body{color:#d4cfc4;}
+  body.dark .mgc-body h4{color:#9a968e;}
+  body.dark .mgc-copiable-wrap{background:#232326;border-color:#3a3a3e;}
+  body.dark .mgc-copiable-input{background:#282a2d;border-color:#3a3a3e;color:#f0ede6;}
+
+  /* Panel CM listos */
+  body.dark .cm-listos-vacio{color:#8a867e;}
+
+  /* Genéricos de texto oscuro que deben aclararse */
+  body.dark h1, body.dark h2, body.dark h3, body.dark h4{color:#f0ede6;}
 </style>
 </head>
 <body>
@@ -767,6 +864,7 @@
     <span class="u-color" id="ub-color"></span>
     <span class="u-nombre" id="ub-nombre"></span>
     <span class="u-puesto" id="ub-puesto"></span>
+    <button class="u-darkmode" id="btn-darkmode" title="Cambiar modo claro/oscuro">🌙</button>
     <button class="u-logout" id="btn-logout">Cerrar sesión</button>
   </div>
 </div>
@@ -1743,6 +1841,11 @@ Nombre cliente:
       <label>Fecha</label>
       <input type="date" id="m-fecha">
     </div>
+    <div class="field" id="campo-fecha-fin" style="display:none;">
+      <label>Fecha fin (opcional — para videos que toman varios días)</label>
+      <input type="date" id="m-fecha-fin">
+      <div class="hint" style="margin-top:6px;font-size:0.72rem;">Déjalo vacío si el video se hace en un solo día. Si lo llenas, la pastilla se extenderá desde la fecha de inicio hasta esta fecha.</div>
+    </div>
     <div class="field">
       <label>Cliente</label>
       <select id="m-cliente-select" style="width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.88rem;background:#fff;">
@@ -1772,6 +1875,11 @@ Nombre cliente:
       <div class="chips-row" id="chips-responsables"></div>
       <label style="margin-top:10px;">Responsable</label>
       <input type="text" id="m-responsable" placeholder="Ej. Fer (nuevo si no está arriba)">
+    </div>
+    <div class="field" id="campo-progreso" style="display:none;">
+      <label>Progreso de edición: <span id="m-progreso-valor">0%</span></label>
+      <input type="range" id="m-progreso" min="0" max="100" step="5" value="0" style="width:100%;">
+      <div class="hint" style="margin-top:6px;font-size:0.72rem;">Al llegar a 100% se marca automáticamente como Listo.</div>
     </div>
     <div class="field">
       <label>Estatus</label>
@@ -1928,8 +2036,26 @@ function render(modoKey){
   const porFecha = {};
   filtradas.forEach(r => {
     const key = (r.Fecha || '').toString().slice(0,10);
-    if(!porFecha[key]) porFecha[key] = [];
-    porFecha[key].push(r);
+    if(!key) return;
+    // Si tiene FechaFin (multi-día) y es Edición, la repetimos en cada día del rango
+    const fFin = (r.FechaFin || '').toString().slice(0,10);
+    if(modoKey === 'edicion' && fFin && fFin > key){
+      const dIni = new Date(key + 'T00:00:00');
+      const dFin = new Date(fFin + 'T00:00:00');
+      // Límite de seguridad: máximo 60 días para no colgar el navegador
+      let cursor = new Date(dIni);
+      let guard = 0;
+      while(cursor <= dFin && guard < 60){
+        const k = cursor.toISOString().slice(0,10);
+        if(!porFecha[k]) porFecha[k] = [];
+        porFecha[k].push(r);
+        cursor.setDate(cursor.getDate() + 1);
+        guard++;
+      }
+    } else {
+      if(!porFecha[key]) porFecha[key] = [];
+      porFecha[key].push(r);
+    }
   });
 
   const totalCeldas = Math.ceil((inicioOffset + diasEnMes) / 7) * 7;
@@ -1973,19 +2099,45 @@ function render(modoKey){
         copyHtml = `<div class="c-copy">${copyTxt.slice(0,90)}${copyTxt.length > 90 ? '…' : ''}</div>`;
       }
 
-      // Título copiable "7.7 - CLIENTE" solo en Edición (donde el editor lo necesita para archivos)
+      // Título copiable "7.7 - CLIENTE" solo en Edición
       let copiableHtml = '';
       if(modoKey === 'edicion' && folioLimpio && r.Cliente){
         const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
         copiableHtml = `<button class="c-copiable" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar '${tituloCopiable.replace(/"/g,'&quot;')}'">📋 ${tituloCopiable.replace(/</g,'&lt;')}</button>`;
       }
 
+      // Barra de progreso (solo Edición)
+      let progresoHtml = '';
+      let multidiaTag = '';
+      if(modoKey === 'edicion'){
+        const prog = parseInt(r.Progreso, 10) || (listo ? 100 : 0);
+        let colorBarra = '#c72a09';
+        if(prog >= 100) colorBarra = '#2e7d2e';
+        else if(prog >= 50) colorBarra = '#c8a412';
+        progresoHtml = `<div class="c-progreso-wrap"><div class="c-progreso-bar" style="width:${prog}%;background:${colorBarra};"></div><span class="c-progreso-txt">${prog}%</span></div>`;
+
+        // Detectar multi-día: si tiene FechaFin distinta de Fecha
+        const fIni = (r.Fecha || '').toString().slice(0,10);
+        const fFin = (r.FechaFin || '').toString().slice(0,10);
+        if(fFin && fFin > fIni){
+          // Calcular día X de Y
+          const dIni = new Date(fIni + 'T00:00:00');
+          const dFin = new Date(fFin + 'T00:00:00');
+          const dActual = new Date(dateKey + 'T00:00:00');
+          const totalDias = Math.round((dFin - dIni) / 86400000) + 1;
+          const diaActual = Math.round((dActual - dIni) / 86400000) + 1;
+          multidiaTag = `<span class="c-multidia">📆 Día ${diaActual} de ${totalDias}</span>`;
+        }
+      }
+
       return `
-        <div class="card" data-id="${r.ID}" data-modo="${modoKey}">
+        <div class="card${listo ? ' card-lista' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
           <div class="c-top">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</div>
+          ${multidiaTag}
           ${copiableHtml}
           ${copyHtml}
           ${respHtml}
+          ${progresoHtml}
           <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
         </div>`;
     }).join('');
@@ -2022,6 +2174,15 @@ function render(modoKey){
       const mk = el.dataset.toggleModo;
       const actual = el.dataset.listo;
       const nuevo = actual === 'SI' ? 'NO' : 'SI';
+
+      // En Edición, al marcar como Listo, pedimos el link del video editado final
+      if(mk === 'edicion' && nuevo === 'SI'){
+        const item = estado[mk].TODAS.find(r => String(r.ID) === String(id));
+        pedirLinkVideoYMarcarListo(id, item, el);
+        return;
+      }
+
+      // Flujo normal (CM, o desmarcar en Edición)
       el.textContent = nuevo === 'SI' ? '✓ Listo' : 'Pendiente';
       el.dataset.listo = nuevo;
       el.className = 'c-status ' + (nuevo === 'SI' ? 'listo' : 'pendiente');
@@ -2043,6 +2204,70 @@ function render(modoKey){
   });
 
   renderKPIs(modoKey);
+}
+
+// Popup que pide el link del video editado antes de marcar como Listo (solo Edición).
+// Al confirmar: guarda el link, marca Listo, progreso 100%, y refresca el panel del CM.
+function pedirLinkVideoYMarcarListo(id, item, statusEl){
+  const linkPrevio = item && item.LinkVideo ? item.LinkVideo : '';
+  const bg = document.createElement('div');
+  bg.className = 'linkvid-modal-bg';
+  bg.innerHTML = `
+    <div class="linkvid-modal">
+      <button class="linkvid-close">×</button>
+      <div class="linkvid-titulo">🎬 Marcar como Listo</div>
+      <div class="linkvid-sub">Pega el link del video editado final para que el Community Manager lo pueda descargar y publicar.</div>
+      <label class="linkvid-label">Link del video (Frame, Drive, etc.)</label>
+      <input type="url" id="linkvid-input" class="linkvid-input" placeholder="https://..." value="${linkPrevio.replace(/"/g,'&quot;')}">
+      <div class="linkvid-botones">
+        <button class="linkvid-btn-cancelar" id="linkvid-cancelar">Cancelar</button>
+        <button class="linkvid-btn-ok" id="linkvid-confirmar">Marcar como Listo ✓</button>
+      </div>
+      <button class="linkvid-skip" id="linkvid-skip">Marcar Listo sin link</button>
+    </div>
+  `;
+  document.body.appendChild(bg);
+  const input = document.getElementById('linkvid-input');
+  setTimeout(() => input.focus(), 100);
+
+  const cerrar = () => bg.remove();
+  bg.querySelector('.linkvid-close').addEventListener('click', cerrar);
+  document.getElementById('linkvid-cancelar').addEventListener('click', cerrar);
+  bg.addEventListener('click', (e) => { if(e.target === bg) cerrar(); });
+
+  async function confirmar(conLink){
+    const link = conLink ? input.value.trim() : '';
+    // Actualiza UI
+    statusEl.textContent = '✓ Listo';
+    statusEl.dataset.listo = 'SI';
+    statusEl.className = 'c-status listo';
+    if(item){ item.Listo = 'SI'; item.LinkVideo = link; item.Progreso = 100; }
+    renderKPIs('edicion');
+    cerrar();
+    // Guarda en backend: primero el link, luego el listo (2 llamadas para no perder datos)
+    try{
+      if(link){
+        await fetch(SHEETS_URL, {
+          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'linkVideo', valor: link })
+        });
+      }
+      await fetch(SHEETS_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'progreso', valor: 100 })
+      });
+      await fetch(SHEETS_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'listo', valor:'SI' })
+      });
+    } catch(err){ console.error('No se pudo marcar listo', err); }
+    // Refresca el panel del CM (por si el video ahora aparece como listo para publicar)
+    if(typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
+  }
+
+  document.getElementById('linkvid-confirmar').addEventListener('click', () => confirmar(true));
+  document.getElementById('linkvid-skip').addEventListener('click', () => confirmar(false));
+  input.addEventListener('keydown', (e) => { if(e.key === 'Enter') confirmar(true); });
 }
 
 // ============ KPIs semanales ============
@@ -2256,10 +2481,20 @@ async function abrirModalCMPrellenadoDesdeListo(edicionCard){
       }
     } catch(err){ console.error(err); }
   }
+  // Mostrar el link del video editado (si el editor lo dejó) para que el CM lo descargue
+  const linkVideo = String(edicionCard.LinkVideo || '').trim();
+  const recursosDiv = document.getElementById('m-recursos-cliente');
+  if(linkVideo && (linkVideo.startsWith('http://') || linkVideo.startsWith('https://'))){
+    recursosDiv.style.display = 'block';
+    recursosDiv.innerHTML = `
+      <div class="m-recursos-titulo">Video editado listo para publicar</div>
+      <div class="m-recursos-botones">
+        <a href="${linkVideo}" target="_blank" rel="noopener" class="m-recurso-btn m-recurso-frame">🎬 Descargar / ver el video</a>
+      </div>
+    `;
+  }
   modalBg.classList.add('open');
 }
-
-// ============ Modal compartido ============
 function renderChipsModal(modoKey){
   // Llenamos el DROPDOWN con los clientes activos (los de la hoja Clientes)
   const sel = document.getElementById('m-cliente-select');
@@ -2309,6 +2544,10 @@ function renderChipsModal(modoKey){
 
   document.getElementById('campo-copy').style.display = modo.tieneCopy ? 'block' : 'none';
   document.getElementById('campo-palabra-clave').style.display = modo.tieneCopy ? 'block' : 'none';
+  // Fecha fin y progreso solo en modo edición
+  const esEdicion = modoKey === 'edicion';
+  document.getElementById('campo-fecha-fin').style.display = esEdicion ? 'block' : 'none';
+  document.getElementById('campo-progreso').style.display = esEdicion ? 'block' : 'none';
 }
 
 // Muestra en el modal los recursos del cliente seleccionado: link de Frame.io + acceso rápido a Guiones.
@@ -2391,6 +2630,9 @@ function abrirModalNueva(modoKey){
   document.getElementById('m-palabra-clave').value = '';
   document.getElementById('m-responsable').value = '';
   document.getElementById('m-listo').value = 'NO';
+  document.getElementById('m-fecha-fin').value = '';
+  document.getElementById('m-progreso').value = 0;
+  document.getElementById('m-progreso-valor').textContent = '0%';
   document.getElementById('m-folio-sugerido').textContent = '';
   document.getElementById('m-recursos-cliente').style.display = 'none';
   document.getElementById('m-recursos-cliente').innerHTML = '';
@@ -2413,6 +2655,10 @@ function abrirModalEdicion(modoKey, id){
   document.getElementById('m-palabra-clave').value = item.PalabraClave || '';
   document.getElementById('m-responsable').value = item.Responsable || '';
   document.getElementById('m-listo').value = String(item.Listo).toUpperCase() === 'SI' ? 'SI' : 'NO';
+  document.getElementById('m-fecha-fin').value = (item.FechaFin || '').toString().slice(0,10);
+  const progresoItem = parseInt(item.Progreso, 10) || 0;
+  document.getElementById('m-progreso').value = progresoItem;
+  document.getElementById('m-progreso-valor').textContent = progresoItem + '%';
   renderChipsModal(modoKey);
   // Después de renderizar el dropdown, seleccionamos el cliente por nombre (tarjeta vieja) o por ID
   const sel = document.getElementById('m-cliente-select');
@@ -2441,6 +2687,24 @@ const modalBg = document.getElementById('modal-bg');
 document.getElementById('btn-cancelar').addEventListener('click', () => modalBg.classList.remove('open'));
 modalBg.addEventListener('click', (e) => { if(e.target === modalBg) modalBg.classList.remove('open'); });
 
+// Slider de progreso: actualiza el % y sincroniza con el estatus
+document.getElementById('m-progreso').addEventListener('input', (e) => {
+  const val = parseInt(e.target.value, 10);
+  document.getElementById('m-progreso-valor').textContent = val + '%';
+  // Al llegar a 100%, marca Listo automáticamente. Si baja de 100, vuelve a Pendiente.
+  const listoSel = document.getElementById('m-listo');
+  if(val === 100) listoSel.value = 'SI';
+  else if(listoSel.value === 'SI') listoSel.value = 'NO';
+});
+// Si el usuario cambia el estatus manualmente a Listo, sube el progreso a 100
+document.getElementById('m-listo').addEventListener('change', (e) => {
+  if(document.getElementById('m-modo').value !== 'edicion') return;
+  if(e.target.value === 'SI'){
+    document.getElementById('m-progreso').value = 100;
+    document.getElementById('m-progreso-valor').textContent = '100%';
+  }
+});
+
 document.getElementById('btn-guardar').addEventListener('click', async () => {
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
@@ -2459,6 +2723,11 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
   if(modo.tieneCopy) datosForm.PalabraClave = document.getElementById('m-palabra-clave').value.trim();
   if(modo.tieneResponsable) datosForm.Responsable = document.getElementById('m-responsable').value.trim();
   if(modo.etapaFija) datosForm.Etapa = modo.etapaFija;
+  // Campos de edición multi-día y progreso
+  if(modoKey === 'edicion'){
+    datosForm.FechaFin = document.getElementById('m-fecha-fin').value;
+    datosForm.Progreso = parseInt(document.getElementById('m-progreso').value, 10) || 0;
+  }
 
   const st = estado[modoKey];
 
@@ -2476,6 +2745,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modo.tieneCopy){ payload.copy = datosForm.Copy; payload.palabraClave = datosForm.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = datosForm.Responsable;
     if(modo.etapaFija) payload.etapa = datosForm.Etapa;
+    if(modoKey === 'edicion'){ payload.fechaFin = datosForm.FechaFin; payload.progreso = datosForm.Progreso; }
     try{
       await fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
     } catch(err){ console.error('No se pudo actualizar', err); }
@@ -2493,6 +2763,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modo.tieneCopy){ payload.copy = nueva.Copy; payload.palabraClave = nueva.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = nueva.Responsable;
     if(modo.etapaFija) payload.etapa = nueva.Etapa;
+    if(modoKey === 'edicion'){ payload.fechaFin = nueva.FechaFin; payload.progreso = nueva.Progreso; }
     try{
       await fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
     } catch(err){ console.error('No se pudo guardar', err); }
@@ -4630,6 +4901,42 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   USUARIO_ACTUAL = null;
   window.location.reload();
 });
+
+// ============ MODO OSCURO ============
+// Se guarda la preferencia por dispositivo. NO usamos localStorage dentro de artifacts,
+// pero en la app real (Vercel) sí funciona. Aquí lo envolvemos en try/catch por seguridad.
+function aplicarModoOscuro(activo){
+  if(activo){
+    document.body.classList.add('dark');
+    const btn = document.getElementById('btn-darkmode');
+    if(btn) btn.textContent = '☀️';
+  } else {
+    document.body.classList.remove('dark');
+    const btn = document.getElementById('btn-darkmode');
+    if(btn) btn.textContent = '🌙';
+  }
+}
+function leerPreferenciaModoOscuro(){
+  try { return localStorage.getItem('level_dark_mode') === '1'; }
+  catch(e){ return false; }
+}
+function guardarPreferenciaModoOscuro(activo){
+  try { localStorage.setItem('level_dark_mode', activo ? '1' : '0'); }
+  catch(e){}
+}
+// Aplicar preferencia guardada al arrancar
+aplicarModoOscuro(leerPreferenciaModoOscuro());
+// Listener del botón
+(function(){
+  const btnDark = document.getElementById('btn-darkmode');
+  if(btnDark){
+    btnDark.addEventListener('click', () => {
+      const activo = !document.body.classList.contains('dark');
+      aplicarModoOscuro(activo);
+      guardarPreferenciaModoOscuro(activo);
+    });
+  }
+})();
 
 // ============================================================
 // ============ REPORTE SEMANAL (popup del lunes) ==============
