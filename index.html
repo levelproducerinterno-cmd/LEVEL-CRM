@@ -86,7 +86,9 @@
   .calendar-wrap{padding:20px 28px 60px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   .cal-dow{text-align:center;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:6px;font-weight:600;}
-  .cal-cell{background:#fff;min-height:120px;border-radius:4px;padding:6px;border:1px solid #eee;}
+  .cal-cell{background:#fff;min-height:120px;border-radius:4px;padding:6px;border:1px solid #eee;cursor:default;position:relative;}
+  .cal-cell:hover{outline:1.5px dashed #d8d3c9;outline-offset:-2px;}
+  body.dark .cal-cell:hover{outline-color:#48484e;}
   .cal-cell.outside{background:#f2f0ec;}
   .cal-cell.finde{background:#ecebe7;}
   .cal-cell.finde.outside{background:#e4e2dd;}
@@ -2238,6 +2240,16 @@ function render(modoKey){
     cardEl.addEventListener('click', () => abrirModalEdicion(cardEl.dataset.modo, cardEl.dataset.id));
   });
 
+  // Doble clic en una celda del día → abre modal de nueva tarjeta con esa fecha pre-llenada
+  grid.querySelectorAll('.cal-cell').forEach(cell => {
+    cell.addEventListener('dblclick', (e) => {
+      // Si el doble clic fue sobre una tarjeta, no crear nueva (la tarjeta maneja su propio clic)
+      if(e.target.closest('.card')) return;
+      const fecha = cell.dataset.date;
+      if(fecha) abrirModalNueva(modoKey, fecha);
+    });
+  });
+
   renderKPIs(modoKey);
 }
 
@@ -2653,11 +2665,11 @@ async function sugerirProximoFolio(clienteId){
   } catch(err){ console.error(err); }
 }
 
-function abrirModalNueva(modoKey){
+function abrirModalNueva(modoKey, fechaPreseleccionada){
   document.getElementById('modal-title').textContent = 'Nueva tarjeta';
   document.getElementById('m-id').value = '';
   document.getElementById('m-modo').value = modoKey;
-  document.getElementById('m-fecha').value = hoy.toISOString().slice(0,10);
+  document.getElementById('m-fecha').value = fechaPreseleccionada || hoy.toISOString().slice(0,10);
   document.getElementById('m-cliente').value = '';
   document.getElementById('m-emoji').value = '';
   document.getElementById('m-folio').value = '';
