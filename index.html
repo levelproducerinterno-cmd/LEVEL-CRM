@@ -84,8 +84,25 @@
   .toast-felicidades.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   .calendar-wrap{padding:20px 28px 60px;}
+  /* El dow-row sigue siendo grid de 7 columnas (encabezados de días) */
+  #ed-cal-dow-row, #cm-cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  /* El grid principal ahora apila SEMANAS verticalmente */
+  #ed-cal-grid, #cm-cal-grid{display:flex;flex-direction:column;gap:4px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   .cal-dow{text-align:center;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:6px;font-weight:600;}
+
+  /* Una semana = carriles multi-día (arriba) + fila de 7 días (abajo) */
+  .cal-semana{display:flex;flex-direction:column;}
+  .cal-semana-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  /* Zona de carriles: grid de 7 columnas alineado con los días */
+  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 4px;margin-bottom:2px;}
+  .md-barra{position:relative;overflow:hidden;background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:4px;padding:3px 8px;font-size:0.72rem;font-weight:700;color:#1c1c1c;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;min-height:22px;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
+  .md-barra:hover{filter:brightness(0.97);box-shadow:0 2px 5px rgba(0,0,0,0.12);}
+  .md-barra.sin-inicio{border-left:none;border-top-left-radius:0;border-bottom-left-radius:0;}
+  .md-barra.sin-fin{border-top-right-radius:0;border-bottom-right-radius:0;}
+  .md-barra-txt{position:relative;z-index:2;overflow:hidden;text-overflow:ellipsis;}
+  .md-barra-prog{position:absolute;left:0;top:0;height:100%;opacity:0.22;z-index:1;}
+  body.dark .md-barra{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
   .cal-cell{background:#fff;min-height:120px;border-radius:4px;padding:6px;border:1px solid #eee;cursor:default;position:relative;}
   .cal-cell:hover{outline:1.5px dashed #d8d3c9;outline-offset:-2px;}
   body.dark .cal-cell:hover{outline-color:#48484e;}
@@ -2078,35 +2095,31 @@ function render(modoKey){
   const diasMesAnterior = new Date(st.viewYear, st.viewMonth, 0).getDate();
 
   const filtradas = getFiltradas(modoKey);
+
+  // Separar videos multi-día (con FechaFin) de los de un solo día.
+  // Multi-día solo aplica en Edición (donde existe FechaFin).
+  const multidiaList = [];
   const porFecha = {};
   filtradas.forEach(r => {
     const key = (r.Fecha || '').toString().slice(0,10);
     if(!key) return;
-    // Si tiene FechaFin (multi-día) y es Edición, la repetimos en cada día del rango
     const fFin = (r.FechaFin || '').toString().slice(0,10);
     if(modoKey === 'edicion' && fFin && fFin > key){
-      const dIni = new Date(key + 'T00:00:00');
-      const dFin = new Date(fFin + 'T00:00:00');
-      // Límite de seguridad: máximo 60 días para no colgar el navegador
-      let cursor = new Date(dIni);
-      let guard = 0;
-      while(cursor <= dFin && guard < 60){
-        const k = cursor.toISOString().slice(0,10);
-        if(!porFecha[k]) porFecha[k] = [];
-        porFecha[k].push(r);
-        cursor.setDate(cursor.getDate() + 1);
-        guard++;
-      }
+      // Es multi-día: lo guardamos aparte para dibujarlo como barra en carriles
+      multidiaList.push({ ...r, _ini: key, _fin: fFin });
     } else {
+      // Video de un solo día
       if(!porFecha[key]) porFecha[key] = [];
       porFecha[key].push(r);
     }
   });
 
   const totalCeldas = Math.ceil((inicioOffset + diasEnMes) / 7) * 7;
+  const numSemanas = totalCeldas / 7;
   const grid = document.getElementById(p + '-cal-grid');
-  let html = '';
 
+  // Construir array de fechas (dateKey) por cada celda del calendario
+  const celdasInfo = [];
   for(let i = 0; i < totalCeldas; i++){
     let dayNum, cellMonth, cellYear, outside = false;
     if(i < inicioOffset){
@@ -2122,66 +2135,130 @@ function render(modoKey){
     const mNorm = ((cellMonth % 12) + 12) % 12;
     const yNorm = cellYear + Math.floor(cellMonth / 12) - (cellMonth < 0 ? 1 : 0);
     const dateKey = `${yNorm}-${String(mNorm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
-    const isToday = dateKey === hoy.toISOString().slice(0,10);
-    // Detectar sábado (6) y domingo (0) para pintarlos en gris
     const diaSemanaCelda = new Date(yNorm, mNorm, dayNum).getDay();
-    const esFinDeSemana = diaSemanaCelda === 0 || diaSemanaCelda === 6;
+    celdasInfo.push({
+      dayNum, dateKey, outside,
+      isToday: dateKey === hoy.toISOString().slice(0,10),
+      esFinDeSemana: diaSemanaCelda === 0 || diaSemanaCelda === 6
+    });
+  }
 
-    const cards = (porFecha[dateKey] || []).map(r => {
-      const listo = String(r.Listo).toUpperCase() === 'SI';
-      const emoji = r.Emoji ? r.Emoji + ' ' : '';
-      let folioLimpio = (r.Folio || '').toString();
-      if(/^\d{4}-\d{2}-\d{2}T/.test(folioLimpio)){ folioLimpio = folioLimpio.slice(0,10); }
+  // Helper: construye el HTML de una tarjeta de UN día (para las celdas)
+  function construirCardHtml(r){
+    const listo = String(r.Listo).toUpperCase() === 'SI';
+    const emoji = r.Emoji ? r.Emoji + ' ' : '';
+    let folioLimpio = (r.Folio || '').toString();
+    if(/^\d{4}-\d{2}-\d{2}T/.test(folioLimpio)){ folioLimpio = folioLimpio.slice(0,10); }
+    let respHtml = '';
+    if(modo.tieneResponsable){
+      const colorResp = colorParaResponsable(r.Responsable);
+      respHtml = `<div class="c-resp"><span class="resp-dot" style="background:${colorResp};"></span>${r.Responsable || ''}</div>`;
+    }
+    let copyHtml = '';
+    if(modo.tieneCopy && r.Copy){
+      const copyTxt = r.Copy.toString();
+      copyHtml = `<div class="c-copy">${copyTxt.slice(0,80)}${copyTxt.length > 80 ? '…' : ''}</div>`;
+    }
+    let copiarBtn = '';
+    if(modoKey === 'edicion' && folioLimpio && r.Cliente){
+      const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
+      copiarBtn = `<button class="c-copiar-icon" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
+    }
+    return `
+      <div class="card${listo ? ' card-lista' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
+        <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
+        ${copyHtml}
+        ${respHtml}
+        <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
+      </div>`;
+  }
 
-      let respHtml = '';
-      if(modo.tieneResponsable){
-        const colorResp = colorParaResponsable(r.Responsable);
-        respHtml = `<div class="c-resp"><span class="resp-dot" style="background:${colorResp};"></span>${r.Responsable || ''}</div>`;
+  // Helper: color del cliente para la barra multi-día (usa color del responsable/editor)
+  function colorMultidia(r){
+    if(modo.tieneResponsable && r.Responsable) return colorParaResponsable(r.Responsable);
+    return '#c72a09';
+  }
+
+  let html = '';
+
+  // Dibujar SEMANA por SEMANA
+  for(let s = 0; s < numSemanas; s++){
+    const celdasSemana = celdasInfo.slice(s * 7, s * 7 + 7);
+    const fechaIniSemana = celdasSemana[0].dateKey;
+    const fechaFinSemana = celdasSemana[6].dateKey;
+
+    // 1) Determinar qué videos multi-día cruzan ESTA semana y en qué columnas
+    const barrasSemana = [];
+    multidiaList.forEach(r => {
+      // ¿El rango [_ini, _fin] se solapa con [fechaIniSemana, fechaFinSemana]?
+      if(r._fin < fechaIniSemana || r._ini > fechaFinSemana) return;
+      // Columna de inicio y fin dentro de esta semana (0-6)
+      let colIni = 0, colFin = 6;
+      for(let c = 0; c < 7; c++){
+        if(celdasSemana[c].dateKey === r._ini) colIni = c;
+        if(celdasSemana[c].dateKey === r._fin) colFin = c;
       }
-      let copyHtml = '';
-      if(modo.tieneCopy && r.Copy){
-        const copyTxt = r.Copy.toString();
-        copyHtml = `<div class="c-copy">${copyTxt.slice(0,80)}${copyTxt.length > 80 ? '…' : ''}</div>`;
+      // Si el inicio real es antes de esta semana, empieza en col 0 (continúa)
+      const empiezaAntes = r._ini < fechaIniSemana;
+      const terminaDespues = r._fin > fechaFinSemana;
+      if(empiezaAntes) colIni = 0;
+      if(terminaDespues) colFin = 6;
+      barrasSemana.push({ r, colIni, colFin, empiezaAntes, terminaDespues });
+    });
+
+    // 2) Asignar carriles (lanes) para que no se encimen barras del mismo periodo
+    barrasSemana.sort((a, b) => a.colIni - b.colIni || b.colFin - a.colFin);
+    const lanes = []; // cada lane = array de barras ya colocadas
+    barrasSemana.forEach(barra => {
+      let laneIdx = 0;
+      while(true){
+        if(!lanes[laneIdx]) lanes[laneIdx] = [];
+        // ¿Cabe en este lane? (no se solapa con ninguna barra ya puesta)
+        const choca = lanes[laneIdx].some(b => !(barra.colFin < b.colIni || barra.colIni > b.colFin));
+        if(!choca){ lanes[laneIdx].push(barra); barra._lane = laneIdx; break; }
+        laneIdx++;
       }
+    });
 
-      // Iconito copiar "7.7 - CLIENTE" (solo Edición), discreto a la derecha del título
-      let copiarBtn = '';
-      if(modoKey === 'edicion' && folioLimpio && r.Cliente){
-        const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
-        copiarBtn = `<button class="c-copiar-icon" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
-      }
+    // 3) Construir HTML de la zona de carriles (barras multi-día)
+    let carrilesHtml = '';
+    if(barrasSemana.length > 0){
+      const numLanes = lanes.length;
+      let barrasHtml = '';
+      barrasSemana.forEach(barra => {
+        const r = barra.r;
+        const listo = String(r.Listo).toUpperCase() === 'SI';
+        const prog = parseInt(r.Progreso, 10) || (listo ? 100 : 0);
+        const color = colorMultidia(r);
+        let folioLimpio = (r.Folio || '').toString();
+        if(/^\d{4}-\d{2}-\d{2}T/.test(folioLimpio)){ folioLimpio = folioLimpio.slice(0,10); }
+        const emoji = r.Emoji ? r.Emoji + ' ' : '';
+        // Bordes redondeados: solo en inicio real (no viene de antes) y fin real (no sigue después)
+        const claseInicio = barra.empiezaAntes ? 'sin-inicio' : '';
+        const claseFin = barra.terminaDespues ? 'sin-fin' : '';
+        barrasHtml += `
+          <div class="md-barra ${claseInicio} ${claseFin}"
+               style="grid-row:${barra._lane + 1};grid-column:${barra.colIni + 1}/${barra.colFin + 2};border-left-color:${color};"
+               data-id="${r.ID}" data-modo="${modoKey}"
+               title="${folioLimpio} — ${r.Cliente || ''} (${prog}%)">
+            <span class="md-barra-txt">${barra.empiezaAntes ? '↔ ' : ''}${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}${barra.terminaDespues ? ' →' : ''}</span>
+            <span class="md-barra-prog" style="width:${prog}%;background:${prog >= 100 ? '#2e7d2e' : (prog >= 50 ? '#c8a412' : color)};"></span>
+          </div>`;
+      });
+      carrilesHtml = `<div class="md-carriles" style="grid-template-rows:repeat(${numLanes}, auto);">${barrasHtml}</div>`;
+    }
 
-      // Detectar multi-día
-      let progresoHtml = '';
-      let esMultidia = false;
-      if(modoKey === 'edicion'){
-        const fIni = (r.Fecha || '').toString().slice(0,10);
-        const fFin = (r.FechaFin || '').toString().slice(0,10);
-        if(fFin && fFin > fIni){
-          esMultidia = true;
-          // Barra de progreso SOLO para multi-día
-          const prog = parseInt(r.Progreso, 10) || (listo ? 100 : 0);
-          let colorBarra = '#c72a09';
-          if(prog >= 100) colorBarra = '#2e7d2e';
-          else if(prog >= 50) colorBarra = '#c8a412';
-          progresoHtml = `<div class="c-progreso-wrap"><div class="c-progreso-bar" style="width:${prog}%;background:${colorBarra};"></div><span class="c-progreso-txt">${prog}%</span></div>`;
-        }
-      }
+    // 4) Construir las 7 celdas de la semana (solo videos de 1 día)
+    let celdasHtml = '';
+    celdasSemana.forEach(ci => {
+      const cardsDia = (porFecha[ci.dateKey] || []).map(construirCardHtml).join('');
+      celdasHtml += `<div class="cal-cell ${ci.outside ? 'outside' : ''} ${ci.isToday ? 'today' : ''} ${ci.esFinDeSemana ? 'finde' : ''}" data-date="${ci.dateKey}">
+        <div class="daynum">${ci.dayNum}</div>
+        ${cardsDia}
+      </div>`;
+    });
 
-      return `
-        <div class="card${listo ? ' card-lista' : ''}${esMultidia ? ' card-multidia' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
-          <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
-          ${copyHtml}
-          ${respHtml}
-          ${progresoHtml}
-          <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
-        </div>`;
-    }).join('');
-
-    html += `<div class="cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''} ${esFinDeSemana ? 'finde' : ''}" data-date="${dateKey}">
-      <div class="daynum">${dayNum}</div>
-      ${cards}
-    </div>`;
+    html += `<div class="cal-semana">${carrilesHtml}<div class="cal-semana-dias">${celdasHtml}</div></div>`;
   }
   grid.innerHTML = html;
 
@@ -2238,6 +2315,14 @@ function render(modoKey){
 
   grid.querySelectorAll('.card').forEach(cardEl => {
     cardEl.addEventListener('click', () => abrirModalEdicion(cardEl.dataset.modo, cardEl.dataset.id));
+  });
+
+  // Click en barra multi-día → abrir edición
+  grid.querySelectorAll('.md-barra').forEach(barraEl => {
+    barraEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirModalEdicion(barraEl.dataset.modo, barraEl.dataset.id);
+    });
   });
 
   // Doble clic en una celda del día → abre modal de nueva tarjeta con esa fecha pre-llenada
