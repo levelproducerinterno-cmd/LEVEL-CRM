@@ -140,6 +140,19 @@
   .card.arrastrando, .md-barra.arrastrando{opacity:0.4;cursor:grabbing;}
   .cal-cell.drop-activo{outline:2px solid var(--rojo);outline-offset:-2px;background:#fff6f4;}
   body.dark .cal-cell.drop-activo{background:#2a1e1c;}
+  /* Estirar: tiradores para alargar/acortar los días */
+  .c-resize{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:ew-resize;opacity:0;transition:opacity 0.15s;}
+  .c-resize::after{content:'';position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-right:2px solid var(--rojo);border-bottom:2px solid var(--rojo);border-radius:0 0 2px 0;}
+  .card{position:relative;}
+  .card:hover .c-resize{opacity:0.85;}
+  .md-resize{position:absolute;top:0;width:10px;height:100%;cursor:ew-resize;opacity:0;transition:opacity 0.15s;z-index:3;}
+  .md-resize.izq{left:0;}
+  .md-resize.der{right:0;}
+  .md-resize::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:60%;background:var(--rojo);border-radius:2px;}
+  .md-barra:hover .md-resize{opacity:0.9;}
+  .cal-cell.resize-destino{outline:2px dashed var(--rojo);outline-offset:-2px;background:#fff6f4;}
+  body.dark .cal-cell.resize-destino{background:#2a1e1c;}
+  body.resizing{cursor:ew-resize;user-select:none;}
   .cal-cell.outside{background:#f2f0ec;}
   .cal-cell.finde{background:#ecebe7;}
   .cal-cell.finde.outside{background:#e4e2dd;}
@@ -2159,6 +2172,86 @@ async function moverTarjetaAFecha(drag, nuevaFecha){
   }
 }
 
+// Estado del estiramiento en curso
+let RESIZE_ACTUAL = null;
+
+// Devuelve la fecha (yyyy-mm-dd) de la celda del calendario que está bajo el puntero
+function fechaBajoPuntero(x, y){
+  const el = document.elementFromPoint(x, y);
+  if(!el) return null;
+  const celda = el.closest('.cal-cell');
+  if(celda && celda.dataset.date) return celda.dataset.date;
+  // Si el puntero está sobre la zona de carriles, usamos la columna equivalente
+  const fondo = el.closest('.md-col-bg');
+  if(fondo){
+    const carriles = fondo.parentElement;
+    const idx = Array.from(carriles.children).indexOf(fondo);
+    const semana = carriles.closest('.cal-semana');
+    if(semana && idx >= 0){
+      const celdas = semana.querySelectorAll('.cal-semana-dias .cal-cell');
+      if(celdas[idx]) return celdas[idx].dataset.date;
+    }
+  }
+  return null;
+}
+
+// Aplica el estiramiento: cambia la fecha de inicio o la de fin y guarda.
+async function aplicarResize(resize, fechaDestino){
+  const item = estado['edicion'].TODAS.find(r => String(r.ID) === String(resize.id));
+  if(!item) return;
+
+  let nuevaIni = (item.Fecha || '').toString().slice(0,10);
+  let nuevaFin = (item.FechaFin || '').toString().slice(0,10);
+
+  if(resize.lado === 'der'){
+    // El destino no puede ser antes del inicio
+    if(fechaDestino < nuevaIni) return;
+    // Si queda en el mismo día del inicio, deja de ser multi-día
+    nuevaFin = (fechaDestino === nuevaIni) ? '' : fechaDestino;
+  } else {
+    // Lado izquierdo: el destino no puede pasarse de la fecha fin
+    const finRef = nuevaFin || nuevaIni;
+    if(fechaDestino > finRef) return;
+    nuevaIni = fechaDestino;
+  }
+
+  item.Fecha = nuevaIni;
+  item.FechaFin = nuevaFin;
+  render('edicion');
+  renderPanelListosParaPublicar();
+
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo: 'produccion_actualizar', id: resize.id, campo: 'fecha', valor: nuevaIni })
+    });
+    await fetch(SHEETS_URL, {
+      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo: 'produccion_actualizar', id: resize.id, campo: 'fechaFin', valor: nuevaFin })
+    });
+  } catch(err){ console.error('No se pudo estirar la tarjeta', err); }
+}
+
+// Listeners globales del estiramiento (se registran una sola vez)
+document.addEventListener('mousemove', (e) => {
+  if(!RESIZE_ACTUAL) return;
+  e.preventDefault();
+  document.querySelectorAll('.cal-cell.resize-destino').forEach(c => c.classList.remove('resize-destino'));
+  const fecha = fechaBajoPuntero(e.clientX, e.clientY);
+  if(fecha){
+    RESIZE_ACTUAL.destino = fecha;
+    document.querySelectorAll(`.cal-cell[data-date="${fecha}"]`).forEach(c => c.classList.add('resize-destino'));
+  }
+});
+document.addEventListener('mouseup', () => {
+  if(!RESIZE_ACTUAL) return;
+  const r = RESIZE_ACTUAL;
+  RESIZE_ACTUAL = null;
+  document.body.classList.remove('resizing');
+  document.querySelectorAll('.cal-cell.resize-destino').forEach(c => c.classList.remove('resize-destino'));
+  if(r.destino) aplicarResize(r, r.destino);
+});
+
 // ============ Render calendario ============
 function render(modoKey){
   const modo = MODOS[modoKey];
@@ -2247,12 +2340,17 @@ function render(modoKey){
       const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
       copiarBtn = `<button class="c-copiar-icon" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
     }
+    // Tirador para estirar la tarjeta y convertirla en multi-día (solo Edición)
+    const tiradorHtml = modoKey === 'edicion'
+      ? `<span class="c-resize" data-resize-id="${r.ID}" data-resize-lado="der" title="Arrastra para que el video tome varios días"></span>`
+      : '';
     return `
       <div class="card${listo ? ' card-lista' : ''}" draggable="true" data-id="${r.ID}" data-modo="${modoKey}" data-fecha="${(r.Fecha || '').toString().slice(0,10)}">
         <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
         ${copyHtml}
         ${respHtml}
         <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
+        ${tiradorHtml}
       </div>`;
   }
 
@@ -2353,6 +2451,8 @@ function render(modoKey){
               <span class="md-pct">${prog}%</span>
               ${statusHtml}
             </span>
+            ${barra.empiezaAntes ? '' : `<span class="md-resize izq" data-resize-id="${r.ID}" data-resize-lado="izq" title="Arrastra para cambiar el día de inicio"></span>`}
+            ${barra.terminaDespues ? '' : `<span class="md-resize der" data-resize-id="${r.ID}" data-resize-lado="der" title="Arrastra para cambiar el día de entrega"></span>`}
           </div>`;
       });
       carrilesHtml = `<div class="md-carriles" style="grid-template-rows:repeat(${numLanes}, auto);">${fondosColHtml}${barrasHtml}</div>`;
@@ -2438,6 +2538,19 @@ function render(modoKey){
       e.stopPropagation();
       abrirModalEdicion(barraEl.dataset.modo, barraEl.dataset.id);
     });
+  });
+
+  // ===== Estirar: tiradores para alargar/acortar los días de un video (solo Edición) =====
+  grid.querySelectorAll('[data-resize-id]').forEach(tirador => {
+    tirador.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      RESIZE_ACTUAL = { id: tirador.dataset.resizeId, lado: tirador.dataset.resizeLado, destino: null };
+      document.body.classList.add('resizing');
+    });
+    // Evita que al agarrar el tirador se dispare el arrastre de la tarjeta
+    tirador.addEventListener('dragstart', (e) => { e.preventDefault(); e.stopPropagation(); });
+    tirador.addEventListener('click', (e) => e.stopPropagation());
   });
 
   // ===== Arrastrar y soltar: mover tarjetas y barras a otro día =====
