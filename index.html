@@ -85,23 +85,33 @@
 
   .calendar-wrap{padding:20px 28px 60px;}
   /* El dow-row sigue siendo grid de 7 columnas (encabezados de días) */
-  #ed-cal-dow-row, #cm-cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  #ed-cal-dow-row, #cm-cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 4px;}
   /* El grid principal ahora apila SEMANAS verticalmente */
   #ed-cal-grid, #cm-cal-grid{display:flex;flex-direction:column;gap:4px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   .cal-dow{text-align:center;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:6px;font-weight:600;}
 
-  /* Una semana = carriles multi-día (arriba) + fila de 7 días (abajo) */
-  .cal-semana{display:flex;flex-direction:column;}
+  /* Una semana = bloque unido: carriles multi-día arriba + fila de 7 días abajo.
+     El fondo claro envuelve ambos para que se lean como una sola unidad (sin negro en medio). */
+  .cal-semana{display:flex;flex-direction:column;background:#f7f5f2;border-radius:5px;padding:4px;}
+  body.dark .cal-semana{background:#141416;}
   .cal-semana-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-  /* Zona de carriles: grid de 7 columnas alineado con los días */
-  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 4px;margin-bottom:2px;}
-  .md-barra{position:relative;overflow:hidden;background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:4px;padding:3px 8px;font-size:0.72rem;font-weight:700;color:#1c1c1c;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;min-height:22px;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
+  /* Zona de carriles: MISMO grid de 7 columnas y MISMO gap que los días → alineación exacta */
+  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:3px 4px;margin-bottom:4px;}
+  .md-barra{position:relative;overflow:hidden;background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:4px;padding:3px 8px;font-size:0.72rem;font-weight:700;color:#1c1c1c;cursor:pointer;min-height:24px;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
   .md-barra:hover{filter:brightness(0.97);box-shadow:0 2px 5px rgba(0,0,0,0.12);}
   .md-barra.sin-inicio{border-left:none;border-top-left-radius:0;border-bottom-left-radius:0;}
   .md-barra.sin-fin{border-top-right-radius:0;border-bottom-right-radius:0;}
-  .md-barra-txt{position:relative;z-index:2;overflow:hidden;text-overflow:ellipsis;}
-  .md-barra-prog{position:absolute;left:0;top:0;height:100%;opacity:0.22;z-index:1;}
+  .md-barra-prog{position:absolute;left:0;top:0;height:100%;opacity:0.2;z-index:1;}
+  /* Contenido de la barra: título + copiar + editor + % + estatus, todo en una línea */
+  .md-barra-contenido{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:100%;min-width:0;}
+  .md-barra-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1;min-width:0;}
+  .md-barra .md-copiar{flex-shrink:0;}
+  .md-resp{display:flex;align-items:center;gap:4px;font-weight:600;font-size:0.7rem;color:#555;flex-shrink:0;white-space:nowrap;}
+  body.dark .md-resp{color:#b7b2a9;}
+  .md-pct{font-size:0.68rem;font-weight:800;color:#5c5850;flex-shrink:0;margin-left:auto;}
+  body.dark .md-pct{color:#c9c4b8;}
+  .md-barra .md-status{margin-top:0;flex-shrink:0;}
   body.dark .md-barra{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
   .cal-cell{background:#fff;min-height:120px;border-radius:4px;padding:6px;border:1px solid #eee;cursor:default;position:relative;}
   .cal-cell:hover{outline:1.5px dashed #d8d3c9;outline-offset:-2px;}
@@ -2236,13 +2246,34 @@ function render(modoKey){
         // Bordes redondeados: solo en inicio real (no viene de antes) y fin real (no sigue después)
         const claseInicio = barra.empiezaAntes ? 'sin-inicio' : '';
         const claseFin = barra.terminaDespues ? 'sin-fin' : '';
+
+        // Iconito de copiar (mismo que las tarjetas normales)
+        let copiarBtn = '';
+        if(modoKey === 'edicion' && folioLimpio && r.Cliente){
+          const tituloCopiable = folioLimpio + ' - ' + String(r.Cliente).toUpperCase();
+          copiarBtn = `<button class="c-copiar-icon md-copiar" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
+        }
+        // Nombre del editor con su punto de color
+        let respHtml = '';
+        if(modo.tieneResponsable && r.Responsable){
+          respHtml = `<span class="md-resp"><span class="resp-dot" style="background:${color};"></span>${r.Responsable}</span>`;
+        }
+        // Estatus clickeable (igual que en las tarjetas)
+        const statusHtml = `<span class="c-status md-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>`;
+
         barrasHtml += `
           <div class="md-barra ${claseInicio} ${claseFin}"
                style="grid-row:${barra._lane + 1};grid-column:${barra.colIni + 1}/${barra.colFin + 2};border-left-color:${color};"
                data-id="${r.ID}" data-modo="${modoKey}"
                title="${folioLimpio} — ${r.Cliente || ''} (${prog}%)">
-            <span class="md-barra-txt">${barra.empiezaAntes ? '↔ ' : ''}${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}${barra.terminaDespues ? ' →' : ''}</span>
             <span class="md-barra-prog" style="width:${prog}%;background:${prog >= 100 ? '#2e7d2e' : (prog >= 50 ? '#c8a412' : color)};"></span>
+            <span class="md-barra-contenido">
+              <span class="md-barra-txt">${barra.empiezaAntes ? '↔ ' : ''}${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}${barra.terminaDespues ? ' →' : ''}</span>
+              ${copiarBtn}
+              ${respHtml}
+              <span class="md-pct">${prog}%</span>
+              ${statusHtml}
+            </span>
           </div>`;
       });
       carrilesHtml = `<div class="md-carriles" style="grid-template-rows:repeat(${numLanes}, auto);">${barrasHtml}</div>`;
