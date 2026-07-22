@@ -93,11 +93,10 @@
 
   /* Una semana = bloque unido: carriles multi-día arriba + fila de 7 días abajo.
      El fondo claro envuelve ambos para que se lean como una sola unidad (sin negro en medio). */
-  .cal-semana{display:flex;flex-direction:column;background:#f7f5f2;border-radius:5px;padding:4px;}
-  body.dark .cal-semana{background:#141416;}
+  .cal-semana{display:flex;flex-direction:column;padding:0 4px;}
   .cal-semana-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   /* Fila de números de día, arriba de las barras multi-día */
-  .cal-semana-numeros{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:3px;}
+  .cal-semana-numeros{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   .cal-daynum-cell{background:#fff;border:1px solid #eee;border-bottom:none;border-radius:4px 4px 0 0;padding:4px 8px;font-size:0.72rem;font-weight:700;color:#333;}
   .cal-daynum-cell.outside{background:#f2f0ec;color:#a9a49a;}
   .cal-daynum-cell.finde{background:#ecebe7;color:#8a8578;}
@@ -106,8 +105,16 @@
   body.dark .cal-daynum-cell{background:#1a1a1d;border-color:#2a2a2e;color:#c9c4b8;}
   body.dark .cal-daynum-cell.outside{background:#141416;color:#6a665e;}
   body.dark .cal-daynum-cell.finde{background:#242427;color:#7a766e;}
+  /* Fondo por columna detrás de las barras: continúa el color de cada día */
+  .md-col-bg{background:#fff;border-left:1px solid #eee;border-right:1px solid #eee;}
+  .md-col-bg.outside{background:#f2f0ec;}
+  .md-col-bg.finde{background:#ecebe7;}
+  .md-col-bg.finde.outside{background:#e4e2dd;}
+  body.dark .md-col-bg{background:#1a1a1d;border-color:#2a2a2e;}
+  body.dark .md-col-bg.outside{background:#141416;}
+  body.dark .md-col-bg.finde{background:#242427;}
   /* Zona de carriles: MISMO grid de 7 columnas y MISMO gap que los días → alineación exacta */
-  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:3px 4px;margin-bottom:4px;}
+  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:3px 4px;}
   .md-barra{position:relative;overflow:hidden;background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:4px;padding:3px 8px;font-size:0.72rem;font-weight:700;color:#1c1c1c;cursor:pointer;min-height:24px;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
   .md-barra:hover{filter:brightness(0.97);box-shadow:0 2px 5px rgba(0,0,0,0.12);}
   .md-barra.sin-inicio{border-left:none;border-top-left-radius:0;border-bottom-left-radius:0;}
@@ -2244,6 +2251,11 @@ function render(modoKey){
     let carrilesHtml = '';
     if(barrasSemana.length > 0){
       const numLanes = lanes.length;
+      // Fondos por columna: cada día conserva su color (blanco, gris de finde, tenue de otro mes)
+      let fondosColHtml = '';
+      celdasSemana.forEach((ci, idx) => {
+        fondosColHtml += `<div class="md-col-bg ${ci.outside ? 'outside' : ''} ${ci.esFinDeSemana ? 'finde' : ''}" style="grid-column:${idx + 1};grid-row:1/-1;"></div>`;
+      });
       let barrasHtml = '';
       barrasSemana.forEach(barra => {
         const r = barra.r;
@@ -2286,7 +2298,7 @@ function render(modoKey){
             </span>
           </div>`;
       });
-      carrilesHtml = `<div class="md-carriles" style="grid-template-rows:repeat(${numLanes}, auto);">${barrasHtml}</div>`;
+      carrilesHtml = `<div class="md-carriles" style="grid-template-rows:repeat(${numLanes}, auto);">${fondosColHtml}${barrasHtml}</div>`;
     }
 
     // 4) Fila de números de día (va ARRIBA, para que las barras se lean bajo su día)
