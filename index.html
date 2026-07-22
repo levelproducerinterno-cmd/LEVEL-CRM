@@ -435,24 +435,26 @@
   .vp-msg{margin-left:12px;color:#666;font-size:0.82rem;}
 
   /* ============ CM LAYOUT + PANEL LISTOS PARA PUBLICAR ============ */
-  .cm-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,300px);gap:18px;padding:0 22px 30px;align-items:start;}
+  /* CM en una sola columna: el calendario ocupa todo el ancho (igual que Edición)
+     y el panel de "listos para publicar" va debajo. Así nunca se desalinea con el header. */
+  .cm-layout{display:block;padding:0 0 30px;}
   .cm-layout-main{min-width:0;}
-  .cm-listos-panel{background:var(--negro);color:#f0ede6;border-radius:8px;overflow:hidden;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
+  .cm-listos-panel{background:var(--negro);color:#f0ede6;border-radius:8px;overflow:hidden;margin:0 28px;display:flex;flex-direction:column;}
   .cm-listos-header{padding:16px 18px;background:linear-gradient(135deg,#1c1a17,#3a2a26);border-bottom:1px solid #444;}
   .cm-listos-titulo{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;letter-spacing:0.02em;color:#fff;}
   .cm-listos-sub{font-size:0.72rem;color:#b7b2a9;margin-top:4px;letter-spacing:0.06em;text-transform:uppercase;}
-  .cm-listos-filtro{width:100%;margin-top:10px;padding:7px 10px;border-radius:4px;border:1px solid #555;background:#2a2723;color:#fff;font-size:0.8rem;font-family:'Montserrat',sans-serif;}
-  .cm-listos-lista{padding:14px;overflow-y:auto;flex:1;}
-  .cm-listos-vacio{color:#8a8578;font-size:0.82rem;text-align:center;padding:30px 10px;font-style:italic;}
-  .cm-listos-card{background:#2a2723;border:1px solid #444;border-left:3px solid #e8d97a;border-radius:6px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s,border-color 0.15s;}
+  .cm-listos-filtro{max-width:320px;margin-top:10px;padding:7px 10px;border-radius:4px;border:1px solid #555;background:#2a2723;color:#fff;font-size:0.8rem;font-family:'Montserrat',sans-serif;}
+  /* Las tarjetas ahora fluyen en varias columnas porque hay ancho de sobra */
+  .cm-listos-lista{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+  .cm-listos-vacio{color:#8a8578;font-size:0.82rem;text-align:center;padding:30px 10px;font-style:italic;grid-column:1/-1;}
+  .cm-listos-card{background:#2a2723;border:1px solid #444;border-left:3px solid #e8d97a;border-radius:6px;padding:12px 14px;margin-bottom:0;cursor:pointer;transition:transform 0.15s,border-color 0.15s;}
   .cm-listos-card:hover{transform:translateY(-1px);border-color:#c72a09;border-left-color:#c72a09;background:#3a3733;}
   .cm-listos-card-titulo{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:6px;color:#fff;}
   .cm-listos-card-cliente{font-size:0.76rem;color:#b7b2a9;letter-spacing:0.04em;margin-top:4px;}
   .cm-listos-card-editor{font-size:0.68rem;color:#c72a09;margin-top:6px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;}
 
-  @media (max-width: 1200px){
-    .cm-layout{grid-template-columns:1fr;}
-    .cm-listos-panel{position:static;max-height:none;}
+  @media (max-width: 900px){
+    .cm-listos-panel{margin:0 12px;}
   }
   .vp-cal-controles{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;}
   .vp-cal-nav{background:rgba(255,255,255,0.06);color:#f0ede6;border:1px solid rgba(255,255,255,0.15);padding:8px 14px;border-radius:4px;cursor:pointer;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:0.95rem;}
