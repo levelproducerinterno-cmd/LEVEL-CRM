@@ -87,18 +87,18 @@
   /* El dow-row sigue siendo grid de 7 columnas (encabezados de días) */
   #ed-cal-dow-row, #cm-cal-dow-row{display:none;}
   /* Encabezado de días: mismo grid y padding que las semanas → siempre alineado */
-  .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 4px;}
+  .cal-dow-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:0 4px;}
   /* El grid principal ahora apila SEMANAS verticalmente */
   #ed-cal-grid, #cm-cal-grid{display:flex;flex-direction:column;gap:4px;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
   .cal-dow{text-align:center;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:#b7b2a9;padding-bottom:6px;font-weight:600;}
 
   /* Una semana = bloque unido: carriles multi-día arriba + fila de 7 días abajo.
      El fondo claro envuelve ambos para que se lean como una sola unidad (sin negro en medio). */
   .cal-semana{display:flex;flex-direction:column;padding:0 4px;}
-  .cal-semana-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-semana-dias{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
   /* Fila de números de día, arriba de las barras multi-día */
-  .cal-semana-numeros{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-semana-numeros{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
   .cal-daynum-cell{background:#fff;border:1px solid #eee;border-bottom:none;border-radius:4px 4px 0 0;padding:4px 8px;font-size:0.72rem;font-weight:700;color:#333;}
   .cal-daynum-cell.outside{background:#f2f0ec;color:#a9a49a;}
   .cal-daynum-cell.finde{background:#ecebe7;color:#8a8578;}
@@ -116,7 +116,7 @@
   body.dark .md-col-bg.outside{background:#141416;}
   body.dark .md-col-bg.finde{background:#242427;}
   /* Zona de carriles: MISMO grid de 7 columnas y MISMO gap que los días → alineación exacta */
-  .md-carriles{display:grid;grid-template-columns:repeat(7,1fr);gap:3px 4px;}
+  .md-carriles{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px 4px;}
   .md-barra{position:relative;overflow:hidden;background:#fbfaf7;border:1px solid #e4e0d6;border-left:4px solid var(--rojo);border-radius:4px;padding:3px 8px;font-size:0.72rem;font-weight:700;color:#1c1c1c;cursor:pointer;min-height:24px;display:flex;align-items:center;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
   .md-barra:hover{filter:brightness(0.97);box-shadow:0 2px 5px rgba(0,0,0,0.12);}
   .md-barra.sin-inicio{border-left:none;border-top-left-radius:0;border-bottom-left-radius:0;}
@@ -132,7 +132,7 @@
   body.dark .md-pct{color:#c9c4b8;}
   .md-barra .md-status{margin-top:0;flex-shrink:0;}
   body.dark .md-barra{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
-  .cal-cell{background:#fff;min-height:110px;border-radius:0 0 4px 4px;padding:6px;border:1px solid #eee;border-top:none;cursor:default;position:relative;}
+  .cal-cell{background:#fff;min-height:110px;border-radius:0 0 4px 4px;padding:6px;border:1px solid #eee;border-top:none;cursor:default;position:relative;min-width:0;overflow:hidden;box-sizing:border-box;}
   .cal-cell:hover{outline:1.5px dashed #d8d3c9;outline-offset:-2px;}
   body.dark .cal-cell:hover{outline-color:#48484e;}
   .cal-cell.outside{background:#f2f0ec;}
@@ -142,7 +142,7 @@
   .cal-cell.finde .daynum{color:#8a8578;}
   .cal-cell.today .daynum{color:var(--rojo);}
 
-  .card{background:#fbfaf7;border:1px solid #e4e0d6;border-left:3px solid var(--rojo);border-radius:3px;padding:5px 7px;margin-bottom:4px;font-size:0.76rem;cursor:pointer;}
+  .card{background:#fbfaf7;border:1px solid #e4e0d6;border-left:3px solid var(--rojo);border-radius:3px;padding:5px 7px;margin-bottom:4px;font-size:0.76rem;cursor:pointer;overflow-wrap:anywhere;word-break:break-word;min-width:0;}
   .card .c-top{font-weight:700;color:#1c1c1c;line-height:1.25;font-size:0.76rem;display:flex;align-items:flex-start;gap:4px;justify-content:space-between;}
   .card .c-top-txt{flex:1;min-width:0;}
   .card .c-copiar-icon{flex-shrink:0;background:none;border:none;padding:0 2px;font-size:0.72rem;cursor:pointer;opacity:0.45;line-height:1;transition:opacity 0.15s;}
@@ -468,7 +468,7 @@
   .vp-cal-leyenda-color.agendado{background:#fdecea;border:1.5px solid #c72a09;}
   .vp-cal-leyenda-color.publicado{background:#e6f4e6;border:1.5px solid #2e7d2e;}
 
-  .vp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#333;border:1px solid #333;border-radius:8px;overflow:hidden;}
+  .vp-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:#333;border:1px solid #333;border-radius:8px;overflow:hidden;}
   .vp-cal-diahead{background:#1c1a17;color:#c72a09;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:800;text-align:center;padding:10px 4px;}
   .vp-cal-celda{background:#faf8f4;color:#1c1c1c;min-height:100px;padding:6px 6px 8px;display:flex;flex-direction:column;gap:4px;}
   .vp-cal-celda.vacia{background:#f0ede6;opacity:0.5;}
