@@ -6568,7 +6568,7 @@ async function arrancarVistaPublicaCliente(token){
   const overlay = document.getElementById('login-overlay');
   if(overlay){ overlay.classList.add('hidden'); overlay.style.display = 'none'; }
   // Oculta todo el CRM y muestra solo la vista pública
-  document.querySelectorAll('body > .topbar, body > .tabs-switch, body > .modo-panel, body > .modal-bg, body > .cliente-detalle-bg, body > #exp-render-root, body > #inf-render-root, body > #login-overlay').forEach(el => {
+  document.querySelectorAll('body > .topbar, body > .app-shell, body > .tabs-switch, body > .modo-panel, body > .modal-bg, body > .cliente-detalle-bg, body > #exp-render-root, body > #inf-render-root, body > #login-overlay').forEach(el => {
     el.style.display = 'none';
   });
 
