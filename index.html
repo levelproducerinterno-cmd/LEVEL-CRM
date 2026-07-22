@@ -85,7 +85,9 @@
 
   .calendar-wrap{padding:20px 28px 60px;}
   /* El dow-row sigue siendo grid de 7 columnas (encabezados de días) */
-  #ed-cal-dow-row, #cm-cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 4px;}
+  #ed-cal-dow-row, #cm-cal-dow-row{display:none;}
+  /* Encabezado de días: mismo grid y padding que las semanas → siempre alineado */
+  .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 4px;}
   /* El grid principal ahora apila SEMANAS verticalmente */
   #ed-cal-grid, #cm-cal-grid{display:flex;flex-direction:column;gap:4px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -2113,8 +2115,10 @@ function render(modoKey){
 
   document.getElementById(p + '-month-label').textContent = `${MESES[st.viewMonth]} ${st.viewYear}`;
 
+  // El encabezado de días ahora se dibuja DENTRO del grid de semanas (misma anchura → alineación exacta)
   const dowRow = document.getElementById(p + '-cal-dow-row');
-  dowRow.innerHTML = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  dowRow.innerHTML = '';
+  dowRow.style.display = 'none';
 
   const primerDia = new Date(st.viewYear, st.viewMonth, 1);
   const inicioOffset = primerDia.getDay();
@@ -2206,7 +2210,7 @@ function render(modoKey){
     return '#c72a09';
   }
 
-  let html = '';
+  let html = `<div class="cal-dow-row">${DOW.map(d => `<div class="cal-dow">${d}</div>`).join('')}</div>`;
 
   // Dibujar SEMANA por SEMANA
   for(let s = 0; s < numSemanas; s++){
