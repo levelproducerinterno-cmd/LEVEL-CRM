@@ -148,6 +148,20 @@
     margin:36px 0 14px;
   }
 
+  .historial-item{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:12px 0;border-bottom:1px solid #ece8de;
+  }
+  .historial-item:last-child{border-bottom:none;}
+  .historial-info{min-width:0;}
+  .historial-nombre{font-weight:700;font-size:0.9rem;color:var(--negro);}
+  .historial-meta{font-size:0.78rem;color:#8a8578;}
+  .historial-link{
+    flex-shrink:0;background:var(--negro);color:#fff;text-decoration:none;padding:8px 16px;
+    border-radius:2px;font-size:0.78rem;font-weight:600;white-space:nowrap;
+  }
+  .historial-link:hover{background:#333;}
+
   /* ============ SLIDES (offscreen render targets) ============ */
   #render-root{
     position:fixed;
@@ -361,6 +375,12 @@
     <button class="generate-btn" id="btn-generar">Generar cotización PDF</button>
     <div class="status" id="status"></div>
   </div>
+
+  <div class="card">
+    <h2>Historial</h2>
+    <div class="hint" id="historial-status">Cargando...</div>
+    <div id="historial-lista"></div>
+  </div>
 </div>
 
 <!-- ============ OFFSCREEN RENDER TARGETS ============ -->
@@ -452,7 +472,7 @@ const nombreInput = document.getElementById('f-nombre');
 
 // URL de tu Google Apps Script (Web App) para la hoja "Cotizaciones".
 // Pega aquí el /exec que te da Google al desplegar el script (ver instrucciones que te mandé).
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx_uZoo8a6Ie_FOxUc9M-3lDQ35qIcmQi4xCoRAt8HwRZkAP1U8EMXJXRFCTeZb96iX/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 
 let planSeleccionado = '8';
 let folioEditadoManualmente = false;
@@ -678,7 +698,7 @@ async function generarContratoPDF({nombre, servicio, servicioLabel, precio, incl
 
   try{
     if(SHEETS_URL && SHEETS_URL.indexOf('PEGAR_AQUI') === -1){
-      await fetch(SHEETS_URL, {
+      const respDrive = await fetch(SHEETS_URL, {
         method: 'POST',
         headers: {'Content-Type': 'text/plain;charset=utf-8'},
         body: JSON.stringify({
@@ -688,6 +708,14 @@ async function generarContratoPDF({nombre, servicio, servicioLabel, precio, incl
           pdfBase64: pdf.output('datauristring')
         })
       });
+      const rawDrive = await respDrive.text().catch(() => '');
+      console.log('Respuesta subida a Drive (contrato):', respDrive.status, rawDrive);
+      let jsonDrive = null;
+      try{ jsonDrive = JSON.parse(rawDrive); } catch(e){}
+      if(!respDrive.ok || (jsonDrive && jsonDrive.status === 'error')){
+        console.error('El contrato NO se guardó en Drive:', rawDrive);
+      }
+      cargarHistorial();
     }
   } catch(err){ console.error('No se pudo subir el contrato a Drive:', err); }
 }
@@ -774,7 +802,7 @@ async function generarPDF(){
 
   try{
     if(SHEETS_URL && SHEETS_URL.indexOf('PEGAR_AQUI') === -1){
-      await fetch(SHEETS_URL, {
+      const respDrive = await fetch(SHEETS_URL, {
         method: 'POST',
         headers: {'Content-Type': 'text/plain;charset=utf-8'},
         body: JSON.stringify({
@@ -784,6 +812,14 @@ async function generarPDF(){
           pdfBase64: pdf.output('datauristring')
         })
       });
+      const rawDrive = await respDrive.text().catch(() => '');
+      console.log('Respuesta subida a Drive (propuesta):', respDrive.status, rawDrive);
+      let jsonDrive = null;
+      try{ jsonDrive = JSON.parse(rawDrive); } catch(e){}
+      if(!respDrive.ok || (jsonDrive && jsonDrive.status === 'error')){
+        console.error('La propuesta NO se guardó en Drive:', rawDrive);
+      }
+      cargarHistorial();
     }
   } catch(err){ console.error('No se pudo subir la propuesta a Drive:', err); }
 
@@ -831,6 +867,38 @@ async function generarPDF(){
 }
 
 document.getElementById('btn-generar').addEventListener('click', generarPDF);
+
+// ============ Historial (vista previa de lo ya generado) ============
+async function cargarHistorial(){
+  const cont = document.getElementById('historial-lista');
+  const status = document.getElementById('historial-status');
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=PropuestasPDFs&t=' + Date.now(), { cache:'no-store' });
+    const filas = await resp.json();
+    if(!Array.isArray(filas) || filas.length === 0){
+      status.textContent = 'Todavía no has generado ninguna propuesta o contrato.';
+      cont.innerHTML = '';
+      return;
+    }
+    status.textContent = '';
+    const ordenadas = filas.slice().sort((a,b) => new Date(b.FechaISO || 0) - new Date(a.FechaISO || 0));
+    cont.innerHTML = ordenadas.map(f => {
+      const tipo = (f.NombreArchivo || '').startsWith('Contrato_') ? '📄 Contrato' : '📝 Propuesta';
+      return `
+        <div class="historial-item">
+          <div class="historial-info">
+            <div class="historial-nombre">${tipo} — ${f.ClienteNombre || ''}</div>
+            <div class="historial-meta">${f.FechaLegible || ''}</div>
+          </div>
+          ${f.ViewURL ? `<a class="historial-link" href="${f.ViewURL}" target="_blank" rel="noopener">Ver PDF</a>` : ''}
+        </div>`;
+    }).join('');
+  } catch(err){
+    console.error('No se pudo cargar el historial:', err);
+    status.textContent = 'No se pudo cargar el historial.';
+  }
+}
+cargarHistorial();
 </script>
 
 </body>
