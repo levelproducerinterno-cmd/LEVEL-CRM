@@ -69,6 +69,15 @@
   body.dark .linea-vacia{color:#9a968e;}
   body.dark .sidebar-lineas{background:#0d0d0e;border-right-color:#2a2a2e;}
 
+  /* ============ SUB-PESTAÑAS dentro de una línea (ej. Prospección) ============ */
+  .pros-tabs-switch{display:flex;gap:2px;background:var(--negro);padding:0 28px;}
+  .pros-tab-btn{background:#1c1a17;color:#b7b2a9;border:none;padding:14px 22px;cursor:pointer;font-size:0.88rem;font-weight:600;letter-spacing:0.02em;border-radius:6px 6px 0 0;}
+  .pros-tab-btn.active{background:#f7f5f2;color:var(--negro);}
+  .pros-tab-btn:hover:not(.active){background:#2a2723;color:#fff;}
+  .pros-subpanel{display:none;}
+  .pros-subpanel.active{display:block;}
+  .pros-iframe{width:100%;border:none;display:block;min-height:calc(100vh - 130px);}
+
   .modo-panel{display:none;}
   .modo-panel.active{display:block;}
 
@@ -1239,10 +1248,11 @@
     </div>
 
     <div class="linea-panel" id="linea-panel-prospeccion">
-      <div class="linea-vacia">
-        <span class="lv-emoji">🎯</span>
-        <div class="lv-titulo">Prospección</div>
-        <div class="lv-sub">Esta sección está en construcción. Aquí vivirán prospectos, cotizaciones y contratos.</div>
+      <div class="pros-tabs-switch">
+        <button class="pros-tab-btn active" data-pros="propuesta">📝 Propuesta</button>
+      </div>
+      <div class="pros-subpanel active" id="pros-panel-propuesta">
+        <iframe class="pros-iframe" id="pros-iframe-propuesta" data-src="propuesta.html" title="Generador de Propuestas"></iframe>
       </div>
     </div>
 
@@ -6458,13 +6468,39 @@ function aplicarEstadoSidebar(colapsado){
   }
 })();
 
+// Carga perezosa: los iframes de sub-secciones solo piden su archivo la primera vez que se ven.
+function cargarIframesPerezosos(contenedor){
+  if(!contenedor) return;
+  contenedor.querySelectorAll('iframe[data-src]').forEach(f => {
+    f.src = f.dataset.src;
+    f.removeAttribute('data-src');
+  });
+}
+
 // Cambia de línea de negocio (Reclutamiento / Prospección / Operación / Administración)
 function cambiarLinea(lineaKey){
   document.querySelectorAll('.linea-btn').forEach(b => b.classList.toggle('active', b.dataset.linea === lineaKey));
   document.querySelectorAll('.linea-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('linea-panel-' + lineaKey);
-  if(panel) panel.classList.add('active');
+  if(panel){
+    panel.classList.add('active');
+    cargarIframesPerezosos(panel);
+  }
 }
+
+// Cambia de sub-pestaña dentro de Prospección (por ahora solo "Propuesta", se irán agregando más)
+function cambiarProsTab(prosKey){
+  document.querySelectorAll('.pros-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.pros === prosKey));
+  document.querySelectorAll('.pros-subpanel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('pros-panel-' + prosKey);
+  if(panel){
+    panel.classList.add('active');
+    cargarIframesPerezosos(panel);
+  }
+}
+document.querySelectorAll('.pros-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => cambiarProsTab(btn.dataset.pros));
+});
 document.querySelectorAll('.linea-btn').forEach(btn => {
   btn.addEventListener('click', () => cambiarLinea(btn.dataset.linea));
 });
