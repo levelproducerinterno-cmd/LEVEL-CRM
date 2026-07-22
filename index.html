@@ -135,6 +135,11 @@
   .cal-cell{background:#fff;min-height:110px;border-radius:0 0 4px 4px;padding:6px;border:1px solid #eee;border-top:none;cursor:default;position:relative;min-width:0;overflow:hidden;box-sizing:border-box;}
   .cal-cell:hover{outline:1.5px dashed #d8d3c9;outline-offset:-2px;}
   body.dark .cal-cell:hover{outline-color:#48484e;}
+  /* Arrastrar y soltar */
+  .card[draggable="true"], .md-barra[draggable="true"]{cursor:grab;}
+  .card.arrastrando, .md-barra.arrastrando{opacity:0.4;cursor:grabbing;}
+  .cal-cell.drop-activo{outline:2px solid var(--rojo);outline-offset:-2px;background:#fff6f4;}
+  body.dark .cal-cell.drop-activo{background:#2a1e1c;}
   .cal-cell.outside{background:#f2f0ec;}
   .cal-cell.finde{background:#ecebe7;}
   .cal-cell.finde.outside{background:#e4e2dd;}
@@ -2107,6 +2112,53 @@ function getFiltradas(modoKey){
   return st.TODAS.filter(r => (!cliente || r.Cliente === cliente) && (!responsable || r.Responsable === responsable));
 }
 
+// Estado del arrastre en curso (null cuando no se está arrastrando nada)
+let DRAG_ACTUAL = null;
+
+// Mueve una tarjeta (o barra multi-día) al día destino.
+// Si es multi-día, recorre todo el rango manteniendo la misma duración.
+async function moverTarjetaAFecha(drag, nuevaFecha){
+  const modoKey = drag.modo;
+  const item = estado[modoKey].TODAS.find(r => String(r.ID) === String(drag.id));
+  if(!item) return;
+
+  // Calcular nueva fecha fin conservando la duración
+  let nuevaFechaFin = '';
+  if(drag.fechaFin && drag.fecha){
+    const dIni = new Date(drag.fecha + 'T00:00:00');
+    const dFin = new Date(drag.fechaFin + 'T00:00:00');
+    const duracionMs = dFin.getTime() - dIni.getTime();
+    const nuevaIni = new Date(nuevaFecha + 'T00:00:00');
+    const nuevaFin = new Date(nuevaIni.getTime() + duracionMs);
+    nuevaFechaFin = nuevaFin.toISOString().slice(0,10);
+  }
+
+  // Actualizar en memoria y repintar de inmediato (respuesta instantánea)
+  item.Fecha = nuevaFecha;
+  if(nuevaFechaFin) item.FechaFin = nuevaFechaFin;
+  render(modoKey);
+  if(modoKey === 'cm' || modoKey === 'edicion') renderPanelListosParaPublicar();
+
+  // Guardar en el backend
+  const tipoActualizar = MODOS[modoKey].tipoActualizar;
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ tipo: tipoActualizar, id: drag.id, campo: 'fecha', valor: nuevaFecha })
+    });
+    if(nuevaFechaFin){
+      await fetch(SHEETS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ tipo: tipoActualizar, id: drag.id, campo: 'fechaFin', valor: nuevaFechaFin })
+      });
+    }
+  } catch(err){
+    console.error('No se pudo mover la tarjeta', err);
+  }
+}
+
 // ============ Render calendario ============
 function render(modoKey){
   const modo = MODOS[modoKey];
@@ -2196,7 +2248,7 @@ function render(modoKey){
       copiarBtn = `<button class="c-copiar-icon" data-copiar-titulo="${tituloCopiable.replace(/"/g,'&quot;')}" title="Copiar «${tituloCopiable.replace(/"/g,'&quot;')}»">📋</button>`;
     }
     return `
-      <div class="card${listo ? ' card-lista' : ''}" data-id="${r.ID}" data-modo="${modoKey}">
+      <div class="card${listo ? ' card-lista' : ''}" draggable="true" data-id="${r.ID}" data-modo="${modoKey}" data-fecha="${(r.Fecha || '').toString().slice(0,10)}">
         <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
         ${copyHtml}
         ${respHtml}
@@ -2288,7 +2340,8 @@ function render(modoKey){
         const statusHtml = `<span class="c-status md-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>`;
 
         barrasHtml += `
-          <div class="md-barra ${claseInicio} ${claseFin}"
+          <div class="md-barra ${claseInicio} ${claseFin}" draggable="true"
+               data-fecha="${r._ini}" data-fechafin="${r._fin}"
                style="grid-row:${barra._lane + 1};grid-column:${barra.colIni + 1}/${barra.colFin + 2};border-left-color:${color};"
                data-id="${r.ID}" data-modo="${modoKey}"
                title="${folioLimpio} — ${r.Cliente || ''} (${prog}%)">
@@ -2384,6 +2437,48 @@ function render(modoKey){
     barraEl.addEventListener('click', (e) => {
       e.stopPropagation();
       abrirModalEdicion(barraEl.dataset.modo, barraEl.dataset.id);
+    });
+  });
+
+  // ===== Arrastrar y soltar: mover tarjetas y barras a otro día =====
+  // Al soltar, la fecha de inicio cambia al día destino. Si es multi-día,
+  // el rango completo se recorre manteniendo su duración.
+  grid.querySelectorAll('.card[draggable="true"], .md-barra[draggable="true"]').forEach(el => {
+    el.addEventListener('dragstart', (e) => {
+      DRAG_ACTUAL = {
+        id: el.dataset.id,
+        modo: el.dataset.modo,
+        fecha: el.dataset.fecha || '',
+        fechaFin: el.dataset.fechafin || ''
+      };
+      el.classList.add('arrastrando');
+      e.dataTransfer.effectAllowed = 'move';
+      // Firefox necesita que se setee algo para iniciar el arrastre
+      try { e.dataTransfer.setData('text/plain', el.dataset.id); } catch(err){}
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('arrastrando');
+      DRAG_ACTUAL = null;
+      grid.querySelectorAll('.cal-cell.drop-activo').forEach(c => c.classList.remove('drop-activo'));
+    });
+  });
+
+  grid.querySelectorAll('.cal-cell').forEach(cell => {
+    cell.addEventListener('dragover', (e) => {
+      if(!DRAG_ACTUAL) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      cell.classList.add('drop-activo');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('drop-activo'));
+    cell.addEventListener('drop', (e) => {
+      e.preventDefault();
+      cell.classList.remove('drop-activo');
+      if(!DRAG_ACTUAL) return;
+      const nuevaFecha = cell.dataset.date;
+      if(!nuevaFecha || nuevaFecha === DRAG_ACTUAL.fecha) return;
+      moverTarjetaAFecha(DRAG_ACTUAL, nuevaFecha);
+      DRAG_ACTUAL = null;
     });
   });
 
