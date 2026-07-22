@@ -435,7 +435,7 @@
   .vp-msg{margin-left:12px;color:#666;font-size:0.82rem;}
 
   /* ============ CM LAYOUT + PANEL LISTOS PARA PUBLICAR ============ */
-  .cm-layout{display:grid;grid-template-columns:1fr 320px;gap:18px;padding:0 22px 30px;}
+  .cm-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,300px);gap:18px;padding:0 22px 30px;align-items:start;}
   .cm-layout-main{min-width:0;}
   .cm-listos-panel{background:var(--negro);color:#f0ede6;border-radius:8px;overflow:hidden;align-self:start;position:sticky;top:16px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
   .cm-listos-header{padding:16px 18px;background:linear-gradient(135deg,#1c1a17,#3a2a26);border-bottom:1px solid #444;}
@@ -450,7 +450,7 @@
   .cm-listos-card-cliente{font-size:0.76rem;color:#b7b2a9;letter-spacing:0.04em;margin-top:4px;}
   .cm-listos-card-editor{font-size:0.68rem;color:#c72a09;margin-top:6px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;}
 
-  @media (max-width: 900px){
+  @media (max-width: 1200px){
     .cm-layout{grid-template-columns:1fr;}
     .cm-listos-panel{position:static;max-height:none;}
   }
