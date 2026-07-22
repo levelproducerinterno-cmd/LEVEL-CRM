@@ -29,6 +29,46 @@
   .tab-btn.active{background:#f7f5f2;color:var(--negro);}
   .tab-btn:hover:not(.active){background:#2a2723;color:#fff;}
 
+  /* ============ SIDEBAR DE LÍNEAS DE NEGOCIO ============ */
+  .app-shell{display:flex;align-items:stretch;}
+  .sidebar-lineas{
+    width:230px;flex-shrink:0;background:#141312;border-right:1px solid #2a2825;
+    display:flex;flex-direction:column;overflow:hidden;
+    transition:width 0.18s ease,border-color 0.18s ease;
+    position:sticky;top:0;align-self:flex-start;max-height:100vh;
+  }
+  .app-shell.sidebar-collapsed .sidebar-lineas{width:0;border-right:none;}
+  .sidebar-header{padding:14px 18px;border-bottom:1px solid #2a2825;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .sidebar-header-titulo{color:#8a8578;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;white-space:nowrap;}
+  .sidebar-toggle{background:none;border:1px solid #444;color:#fff;width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:0.85rem;flex-shrink:0;}
+  .sidebar-toggle:hover{border-color:#fff;background:#232120;}
+  .linea-btn{
+    display:flex;align-items:center;gap:12px;padding:16px 18px;color:#b7b2a9;cursor:pointer;
+    font-family:'Montserrat',sans-serif;font-size:0.86rem;font-weight:600;letter-spacing:0.02em;
+    border-left:3px solid transparent;white-space:nowrap;user-select:none;
+  }
+  .linea-btn:hover{background:#1e1c19;color:#fff;}
+  .linea-btn.active{background:#232120;color:#fff;border-left-color:var(--rojo);}
+  .linea-btn .linea-emoji{font-size:1.15rem;flex-shrink:0;}
+  .linea-btn.rol-hide{display:none;}
+
+  .sidebar-floating-toggle{
+    display:none;position:fixed;left:0;top:96px;z-index:35;background:var(--negro);color:#fff;
+    border:1px solid #444;border-left:none;padding:12px 8px;border-radius:0 6px 6px 0;cursor:pointer;font-size:0.9rem;
+  }
+  .app-shell.sidebar-collapsed .sidebar-floating-toggle{display:flex;}
+  .sidebar-floating-toggle:hover{background:#232120;}
+
+  .app-content{flex:1;min-width:0;}
+  .linea-panel{display:none;}
+  .linea-panel.active{display:block;}
+  .linea-vacia{padding:120px 40px;text-align:center;color:#8a8578;}
+  .linea-vacia .lv-emoji{font-size:3.2rem;margin-bottom:18px;display:block;}
+  .linea-vacia .lv-titulo{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:#fff;margin-bottom:8px;}
+  .linea-vacia .lv-sub{font-size:0.9rem;max-width:420px;margin:0 auto;}
+  body.dark .linea-vacia{color:#9a968e;}
+  body.dark .sidebar-lineas{background:#0d0d0e;border-right-color:#2a2a2e;}
+
   .modo-panel{display:none;}
   .modo-panel.active{display:block;}
 
@@ -973,6 +1013,31 @@
   </div>
 </div>
 
+<div class="app-shell" id="app-shell">
+  <aside class="sidebar-lineas" id="sidebar-lineas">
+    <div class="sidebar-header">
+      <span class="sidebar-header-titulo">Líneas de Level</span>
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Ocultar menú">◀</button>
+    </div>
+    <div class="linea-btn" data-linea="reclutamiento" data-rol-linea="Direccion">
+      <span class="linea-emoji">📋</span><span>Reclutamiento</span>
+    </div>
+    <div class="linea-btn" data-linea="prospeccion" data-rol-linea="Direccion">
+      <span class="linea-emoji">🎯</span><span>Prospección</span>
+    </div>
+    <div class="linea-btn active" data-linea="operacion">
+      <span class="linea-emoji">🎬</span><span>Operación</span>
+    </div>
+    <div class="linea-btn" data-linea="administracion" data-rol-linea="Direccion">
+      <span class="linea-emoji">💰</span><span>Administración</span>
+    </div>
+  </aside>
+
+  <button class="sidebar-floating-toggle" id="sidebar-floating-toggle" title="Mostrar menú">▶</button>
+
+  <div class="app-content">
+    <div class="linea-panel active" id="linea-panel-operacion">
+
 <div class="tabs-switch">
   <button class="tab-btn" data-modo="team" data-rol="Direccion">🧑‍🎨 Team</button>
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
@@ -1162,6 +1227,35 @@
     </div>
   </div>
 </div>
+
+    </div><!-- cierra linea-panel-operacion -->
+
+    <div class="linea-panel" id="linea-panel-reclutamiento">
+      <div class="linea-vacia">
+        <span class="lv-emoji">📋</span>
+        <div class="lv-titulo">Reclutamiento</div>
+        <div class="lv-sub">Esta sección está en construcción. Aquí vivirá todo el proceso de candidatos y entrevistas.</div>
+      </div>
+    </div>
+
+    <div class="linea-panel" id="linea-panel-prospeccion">
+      <div class="linea-vacia">
+        <span class="lv-emoji">🎯</span>
+        <div class="lv-titulo">Prospección</div>
+        <div class="lv-sub">Esta sección está en construcción. Aquí vivirán prospectos, cotizaciones y contratos.</div>
+      </div>
+    </div>
+
+    <div class="linea-panel" id="linea-panel-administracion">
+      <div class="linea-vacia">
+        <span class="lv-emoji">💰</span>
+        <div class="lv-titulo">Administración</div>
+        <div class="lv-sub">Esta sección está en construcción.</div>
+      </div>
+    </div>
+
+  </div><!-- cierra app-content -->
+</div><!-- cierra app-shell -->
 
 <!-- ============ MODAL: nuevo/editar cliente ============ -->
 <div class="modal-bg" id="modal-cliente-bg">
@@ -5315,6 +5409,7 @@ function entrarAlCRM(){
   mostrarBadgeUsuario();
   aplicarPermisosDeTabs();
   aplicarPermisosDeSubtabs();
+  aplicarPermisosDeLineas();
   cargarTeam();
   cargarClientes();
   cargarDatos('edicion');
@@ -6327,6 +6422,66 @@ document.getElementById('linea-toggle-solo-mios').addEventListener('change', (e)
 document.querySelectorAll('.tab-btn[data-modo="linea"]').forEach(btn => {
   btn.addEventListener('click', () => cargarLineaProduccion());
 });
+
+// ============ SIDEBAR DE LÍNEAS DE NEGOCIO ============
+function leerPreferenciaSidebar(){
+  try { return localStorage.getItem('level_sidebar_collapsed') === '1'; }
+  catch(e){ return false; }
+}
+function guardarPreferenciaSidebar(colapsado){
+  try { localStorage.setItem('level_sidebar_collapsed', colapsado ? '1' : '0'); }
+  catch(e){}
+}
+function aplicarEstadoSidebar(colapsado){
+  const shell = document.getElementById('app-shell');
+  if(!shell) return;
+  shell.classList.toggle('sidebar-collapsed', colapsado);
+}
+(function(){
+  const shell = document.getElementById('app-shell');
+  if(!shell) return;
+  aplicarEstadoSidebar(leerPreferenciaSidebar());
+  const btnOcultar = document.getElementById('sidebar-toggle');
+  const btnMostrar = document.getElementById('sidebar-floating-toggle');
+  if(btnOcultar){
+    btnOcultar.addEventListener('click', () => {
+      const colapsado = !shell.classList.contains('sidebar-collapsed');
+      aplicarEstadoSidebar(colapsado);
+      guardarPreferenciaSidebar(colapsado);
+    });
+  }
+  if(btnMostrar){
+    btnMostrar.addEventListener('click', () => {
+      aplicarEstadoSidebar(false);
+      guardarPreferenciaSidebar(false);
+    });
+  }
+})();
+
+// Cambia de línea de negocio (Reclutamiento / Prospección / Operación / Administración)
+function cambiarLinea(lineaKey){
+  document.querySelectorAll('.linea-btn').forEach(b => b.classList.toggle('active', b.dataset.linea === lineaKey));
+  document.querySelectorAll('.linea-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('linea-panel-' + lineaKey);
+  if(panel) panel.classList.add('active');
+}
+document.querySelectorAll('.linea-btn').forEach(btn => {
+  btn.addEventListener('click', () => cambiarLinea(btn.dataset.linea));
+});
+
+// Oculta del sidebar las líneas que no correspondan al rol del usuario logueado.
+// Si la línea activa queda oculta, regresa a Operación.
+function aplicarPermisosDeLineas(){
+  document.querySelectorAll('.linea-btn').forEach(btn => {
+    const rol = btn.dataset.rolLinea; // sin data-rol-linea = visible para todos
+    const permitido = !rol || usuarioTieneRol(rol);
+    btn.classList.toggle('rol-hide', !permitido);
+  });
+  const activa = document.querySelector('.linea-btn.active');
+  if(activa && activa.classList.contains('rol-hide')){
+    cambiarLinea('operacion');
+  }
+}
 
 // ============================================================
 // ============ ARRANQUE ==============================
