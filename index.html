@@ -1249,9 +1249,13 @@
 
     <div class="linea-panel" id="linea-panel-prospeccion">
       <div class="pros-tabs-switch">
-        <button class="pros-tab-btn active" data-pros="propuesta">📝 Propuesta</button>
+        <button class="pros-tab-btn active" data-pros="diagnostico">🩺 Diagnóstico</button>
+        <button class="pros-tab-btn" data-pros="propuesta">📝 Propuesta</button>
       </div>
-      <div class="pros-subpanel active" id="pros-panel-propuesta">
+      <div class="pros-subpanel active" id="pros-panel-diagnostico">
+        <iframe class="pros-iframe" id="pros-iframe-diagnostico" data-src="diagnostico.html" title="Diagnóstico de Prospecto"></iframe>
+      </div>
+      <div class="pros-subpanel" id="pros-panel-propuesta">
         <iframe class="pros-iframe" id="pros-iframe-propuesta" data-src="propuesta.html" title="Generador de Propuestas"></iframe>
       </div>
     </div>
