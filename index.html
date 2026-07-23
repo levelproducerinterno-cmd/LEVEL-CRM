@@ -6709,10 +6709,12 @@ async function arrancarVistaPublicaCliente(token){
             <textarea class="vp-texto">${g.Guion || ''}</textarea>
             <label>Referencia musical</label>
             <input type="text" class="vp-musica" value="${(g.Musica || '').replace(/"/g,'&quot;')}" placeholder="Link o descripción">
+            <label>Link de referencia</label>
+            <input type="text" class="vp-inspiracion" value="${(g.Inspiracion || '').replace(/"/g,'&quot;')}" placeholder="Link de un video/ejemplo que te guste">
             ${(function(){
               const insp = String(g.Inspiracion || '').trim();
               if(insp && (insp.startsWith('http://') || insp.startsWith('https://'))){
-                return '<label>Link de inspiración (del equipo)</label><div class="vp-inspo-box"><a href="' + insp + '" target="_blank" rel="noopener">🎬 Ver video de inspiración ↗</a></div>';
+                return '<div class="vp-inspo-box"><a href="' + insp + '" target="_blank" rel="noopener">🎬 Abrir link de referencia ↗</a></div>';
               }
               return '';
             })()}
@@ -6747,6 +6749,7 @@ async function arrancarVistaPublicaCliente(token){
           titulo: item.querySelector('.vp-titulo').value.trim(),
           guion: item.querySelector('.vp-texto').value,
           musica: item.querySelector('.vp-musica').value.trim(),
+          inspiracion: item.querySelector('.vp-inspiracion').value.trim(),
           notas: item.querySelector('.vp-notas').value
         };
         try {
