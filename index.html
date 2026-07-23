@@ -2824,9 +2824,12 @@ function renderKPIs(modoKey){
     nombres.forEach(nombre => {
       const { total, listos } = porResp[nombre];
       const clave = modoKey + '-' + nombre + '-' + semanaKey;
+      const esElUsuarioActual = USUARIO_ACTUAL && USUARIO_ACTUAL.Nombre === nombre;
       if(total > 0 && listos >= total && !st.yaFelicitados.has(clave)){
         st.yaFelicitados.add(clave);
-        mostrarFelicitacion(`🎉 ¡Felicidades ${nombre}! Completaste tu objetivo de la semana.`);
+        if(esElUsuarioActual){
+          mostrarFelicitacion(`🎉 ¡Felicidades ${nombre}! Completaste tu objetivo de la semana.`);
+        }
       }
     });
   } else {
