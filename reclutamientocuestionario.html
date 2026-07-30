@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Aplicación para Editor — Level Producer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --negro:#0a0908;
+    --hueso:#f7f5f2;
+    --rojo:#c72a09;
+    --verde:#1a8f4c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:'Montserrat',sans-serif;
+    background:linear-gradient(180deg,#141312,#0a0908 60%);
+    color:var(--hueso);min-height:100vh;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:48px 24px 100px;}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:2.1rem;letter-spacing:0.02em;margin:0 0 10px;}
+  .intro{color:#cfc9bc;font-size:0.98rem;line-height:1.6;margin-bottom:36px;}
+  .card{background:var(--hueso);color:var(--negro);border-radius:2px;padding:32px 36px;margin-bottom:22px;box-shadow:0 20px 60px rgba(0,0,0,0.35);}
+  .card h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 18px;border-bottom:1px solid var(--rojo);padding-bottom:10px;}
+  label{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#555;margin-bottom:6px;font-weight:600;}
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  input[type=text], textarea{
+    width:100%;font-family:'Montserrat',sans-serif;font-size:0.95rem;padding:12px 14px;
+    border:1px solid #d8d3c9;border-radius:2px;background:#fff;color:var(--negro);
+  }
+  textarea{min-height:70px;resize:vertical;line-height:1.5;}
+  .hint{font-size:0.78rem;color:#8a8578;margin-top:6px;}
+
+  .requisitos-list{margin:0 0 16px;padding-left:22px;}
+  .requisitos-list li{margin-bottom:8px;font-weight:600;}
+
+  .choice-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .choice-btn{border:1.5px solid #d8d3c9;padding:10px 18px;text-align:center;cursor:pointer;border-radius:20px;font-size:0.85rem;user-select:none;}
+  .choice-btn.active{background:var(--negro);color:#fff;border-color:var(--negro);}
+
+  .condicional{display:none;margin-top:14px;}
+  .condicional.visible{display:block;}
+
+  .generate-btn{
+    width:100%;background:var(--rojo);color:#fff;border:none;padding:18px;font-size:1rem;
+    letter-spacing:0.05em;text-transform:uppercase;font-weight:600;border-radius:2px;cursor:pointer;margin-top:8px;
+  }
+  .generate-btn:disabled{opacity:0.5;cursor:wait;}
+  .generate-btn:hover:not(:disabled){background:#a8230a;}
+  .status{text-align:center;margin-top:14px;font-size:0.85rem;color:#cfc9bc;min-height:20px;}
+
+  .gracias{display:none;text-align:center;padding:20px 0;}
+  .gracias.visible{display:block;}
+  .gracias h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.8rem;margin:0 0 14px;border:none;text-transform:none;letter-spacing:0;}
+  .gracias p{color:#3a3a3a;line-height:1.6;margin-bottom:22px;}
+  .btn-accion{
+    display:block;width:100%;text-decoration:none;padding:16px;border-radius:2px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.04em;font-size:0.88rem;margin-bottom:14px;
+  }
+  .btn-calendly{background:var(--negro);color:#fff;}
+  .btn-whatsapp{background:var(--verde);color:#fff;}
+  .gracias .aviso{background:#fdf1cf;color:#8a6d10;padding:14px 16px;border-radius:2px;font-size:0.85rem;text-align:left;margin-top:20px;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Bienvenido a la Aplicación para ser Editor de Reels de LEVEL PRODUCER</h1>
+  <div class="intro">Este puede ser el inicio de algo muy grande entre tú y yo...</div>
+
+  <div class="card" id="card-requisitos">
+    <h2>Requisitos</h2>
+    <p style="margin-top:0;">Para este puesto solo hay 3 requisitos obligatorios:</p>
+    <ul class="requisitos-list">
+      <li>Ser una persona profesional</li>
+      <li>Disposición full time</li>
+      <li>Trabajar en equipo</li>
+    </ul>
+    <p style="margin-bottom:0;">Si cumples con estos 3 requisitos, continúa con la aplicación.</p>
+  </div>
+
+  <div id="form-secciones">
+    <div class="card">
+      <h2>🙋🏻‍♀️ Primero, me gustaría conocerte como persona</h2>
+      <div class="field"><label>¿Cuál es tu nombre?</label><input type="text" id="f-nombre"></div>
+      <div class="field"><label>¿Cuántos años tienes?</label><input type="text" id="f-edad" inputmode="numeric"></div>
+      <div class="field"><label>¿De dónde eres? (país y estado)</label><input type="text" id="f-origen"></div>
+      <div class="field"><label>¿Por qué te interesa este puesto?</label><textarea id="f-interes"></textarea></div>
+      <div class="field">
+        <label>¿Cuál es tu situación actual?</label>
+        <div class="choice-row" data-group="situacion" data-multi="true">
+          <div class="choice-btn" data-value="Actualmente tengo un empleo">Tengo un empleo</div>
+          <div class="choice-btn" data-value="Actualmente soy freelancer">Soy freelancer</div>
+          <div class="choice-btn" data-value="Actualmente estudio">Estudio</div>
+          <div class="choice-btn" data-value="Actualmente no tengo empleo">No tengo empleo</div>
+        </div>
+      </div>
+      <div class="field"><label>¿Qué es lo que consideras que te hace ser un candidato especial para formar parte del equipo?</label><textarea id="f-especial"></textarea></div>
+    </div>
+
+    <div class="card">
+      <h2>👩🏻‍💻 Ahora quiero conocerte como Editor</h2>
+      <div class="field"><label>¿Cuántos años llevas editando?</label><input type="text" id="f-anios-editando"></div>
+      <div class="field">
+        <label>¿Qué programas utilizas? (puedes elegir varios)</label>
+        <div class="choice-row" data-group="programas" data-multi="true">
+          <div class="choice-btn" data-value="Premiere Pro">Premiere Pro</div>
+          <div class="choice-btn" data-value="DaVinci">DaVinci</div>
+          <div class="choice-btn" data-value="Final Cut">Final Cut</div>
+          <div class="choice-btn" data-value="CapCut">CapCut</div>
+          <div class="choice-btn" data-value="After Effects">After Effects</div>
+          <div class="choice-btn" data-value="Otro" data-otro="cond-programa-otro">Otro</div>
+        </div>
+        <div class="condicional" id="cond-programa-otro">
+          <div class="field"><label>Especifica qué otro programa</label><input type="text" id="f-programa-otro"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Qué sistema operativo usas?</label>
+        <div class="choice-row" data-group="sistema">
+          <div class="choice-btn" data-value="Mac (Apple)">Mac (Apple)</div>
+          <div class="choice-btn" data-value="Windows">Windows</div>
+          <div class="choice-btn" data-value="Otro" data-otro="cond-sistema-otro">Otro</div>
+        </div>
+        <div class="condicional" id="cond-sistema-otro">
+          <div class="field"><label>Especifica cuál</label><input type="text" id="f-sistema-otro"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Qué nivel de editor te consideras?</label>
+        <div class="choice-row" data-group="nivel">
+          <div class="choice-btn" data-value="Principiante">Principiante</div>
+          <div class="choice-btn" data-value="Intermedio">Intermedio</div>
+          <div class="choice-btn" data-value="Avanzado">Avanzado</div>
+        </div>
+      </div>
+      <div class="field"><label>Link / URL de un video de marca personal que hayas editado</label><input type="text" id="f-video1" placeholder="https://..."></div>
+      <div class="field"><label>Link / URL de otro video de marca personal que hayas editado</label><input type="text" id="f-video2" placeholder="https://..."></div>
+    </div>
+
+    <div class="card">
+      <h2>💠 Por último, veamos cómo encajas con este puesto</h2>
+      <div class="field">
+        <label>¿Cuánto tiempo le podrías dedicar a editar?</label>
+        <div class="choice-row" data-group="tiempo">
+          <div class="choice-btn" data-value="8HRS (Tiempo Completo)">8 HRS (Tiempo Completo)</div>
+          <div class="choice-btn" data-value="4HRS (Medio Tiempo)">4 HRS (Medio Tiempo)</div>
+          <div class="choice-btn" data-value="2HRS">2 HRS</div>
+        </div>
+      </div>
+      <div class="field"><label>¿Cuántos reels podrías crear al mes?</label><input type="text" id="f-reels-mes" inputmode="numeric"></div>
+      <div class="field"><label>Link de tu Instagram</label><input type="text" id="f-instagram" placeholder="https://instagram.com/..."></div>
+    </div>
+
+    <button class="generate-btn" id="btn-enviar">Enviar aplicación</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card gracias" id="card-gracias">
+    <h2>¡Gracias por aplicar!</h2>
+    <p>Ahora agenda tu llamada. Importante: si cancelamos tu llamada es porque no pasaste a la fase 2. ¡Mucho éxito!</p>
+    <a class="btn-accion btn-calendly" id="link-calendly" href="https://calendly.com/levelproducer-interno/30min" target="_blank" rel="noopener">📅 Agendar mi llamada</a>
+    <a class="btn-accion btn-whatsapp" id="link-whatsapp" href="https://wa.link/zr2d01" target="_blank" rel="noopener">💬 Avisar por WhatsApp que ya agendé</a>
+    <div class="aviso">Después de agendar tu llamada en Calendly, manda el mensaje de WhatsApp para confirmar — así sabemos que tu aplicación está completa.</div>
+  </div>
+</div>
+
+<script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
+
+// ============ choice-buttons (single o múltiple según data-multi) ============
+const seleccion = {}; // valores simples (string) o arrays (multi)
+document.querySelectorAll('.choice-row').forEach(row => {
+  const grupo = row.dataset.group;
+  const esMulti = row.dataset.multi === 'true';
+  if(esMulti) seleccion[grupo] = [];
+  row.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(esMulti){
+        btn.classList.toggle('active');
+        const arr = seleccion[grupo];
+        const val = btn.dataset.value;
+        const idx = arr.indexOf(val);
+        if(btn.classList.contains('active') && idx === -1) arr.push(val);
+        if(!btn.classList.contains('active') && idx !== -1) arr.splice(idx, 1);
+      } else {
+        row.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        seleccion[grupo] = btn.dataset.value;
+      }
+      // Mostrar/ocultar campo "Otro: especificar" si aplica
+      if(btn.dataset.otro){
+        const cond = document.getElementById(btn.dataset.otro);
+        const activo = btn.classList.contains('active');
+        if(cond) cond.classList.toggle('visible', activo);
+      }
+    });
+  });
+});
+
+function valorSeleccion(grupo){
+  const v = seleccion[grupo];
+  if(Array.isArray(v)) return v.join(', ');
+  return v || '';
+}
+
+document.getElementById('btn-enviar').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-enviar');
+  const status = document.getElementById('status');
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if(!nombre){
+    status.textContent = 'Por favor escribe tu nombre antes de enviar.';
+    return;
+  }
+  btn.disabled = true;
+  status.textContent = 'Enviando...';
+
+  const payload = {
+    tipo: 'candidato_reclutamiento_guardar',
+    nombre: nombre,
+    edad: document.getElementById('f-edad').value.trim(),
+    origen: document.getElementById('f-origen').value.trim(),
+    interes: document.getElementById('f-interes').value.trim(),
+    situacionActual: valorSeleccion('situacion'),
+    especial: document.getElementById('f-especial').value.trim(),
+    aniosEditando: document.getElementById('f-anios-editando').value.trim(),
+    programas: valorSeleccion('programas'),
+    programaOtro: document.getElementById('f-programa-otro').value.trim(),
+    sistemaOperativo: valorSeleccion('sistema'),
+    sistemaOperativoOtro: document.getElementById('f-sistema-otro').value.trim(),
+    nivelEditor: valorSeleccion('nivel'),
+    video1: document.getElementById('f-video1').value.trim(),
+    video2: document.getElementById('f-video2').value.trim(),
+    tiempoDedicar: valorSeleccion('tiempo'),
+    reelsPorMes: document.getElementById('f-reels-mes').value.trim(),
+    instagram: document.getElementById('f-instagram').value.trim()
+  };
+
+  let ok = false;
+  try{
+    const resp = await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    ok = resp.ok;
+  } catch(err){ console.error('No se pudo enviar la aplicación:', err); }
+
+  if(ok){
+    document.getElementById('card-requisitos').style.display = 'none';
+    document.getElementById('form-secciones').style.display = 'none';
+    document.getElementById('card-gracias').classList.add('visible');
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    status.textContent = 'No se pudo enviar tu aplicación. Revisa tu conexión e intenta de nuevo.';
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
