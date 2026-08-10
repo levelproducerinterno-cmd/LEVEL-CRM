@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --negro:#0a0908;
@@ -77,6 +78,41 @@
   .pros-subpanel{display:none;}
   .pros-subpanel.active{display:block;}
   .pros-iframe{width:100%;border:none;display:block;min-height:calc(100vh - 130px);}
+
+  /* ============ RECLUTAMIENTO ============ */
+  .recl-wrap{padding:24px 28px 60px;max-width:900px;}
+  .recl-card{background:var(--hueso);color:#1c1c1c;border-radius:6px;padding:22px 26px;margin-bottom:22px;box-shadow:0 4px 14px rgba(0,0,0,0.12);}
+  .recl-card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.1rem;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 14px;border-bottom:1px solid var(--rojo);padding-bottom:8px;}
+  .recl-copy-row{display:flex;gap:10px;}
+  .recl-copy-row input{flex:1;padding:10px 12px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.88rem;background:#fff;color:#1c1c1c;}
+  .recl-msg-box{width:100%;min-height:220px;padding:14px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.88rem;line-height:1.5;resize:vertical;color:#1c1c1c;background:#fff;}
+  .recl-copy-ok{color:var(--verde);font-size:0.8rem;margin-left:10px;align-self:center;}
+  body.dark .recl-card{background:#1e1e21;color:#e4e2dd;}
+  body.dark .recl-card h3{color:#e4e2dd;}
+  body.dark .recl-copy-row input, body.dark .recl-msg-box{background:#232326;color:#e4e2dd;border-color:#3a3a3e;}
+
+  .recl-tabs-switch{display:flex;gap:2px;background:var(--negro);padding:0 28px;}
+  .recl-tab-btn{background:#1c1a17;color:#b7b2a9;border:none;padding:14px 22px;cursor:pointer;font-size:0.88rem;font-weight:600;letter-spacing:0.02em;border-radius:6px 6px 0 0;}
+  .recl-tab-btn.active{background:#f7f5f2;color:var(--negro);}
+  .recl-tab-btn:hover:not(.active){background:#2a2723;color:#fff;}
+  .recl-subpanel{display:none;}
+  .recl-subpanel.active{display:block;}
+
+  .recl-kanban{display:flex;gap:16px;padding:24px 28px 60px;overflow-x:auto;align-items:flex-start;}
+  .kanban-col{background:var(--hueso);border-radius:6px;min-width:240px;max-width:240px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,0.12);}
+  .kanban-col-header{padding:14px 16px;border-bottom:2px solid var(--rojo);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1rem;text-transform:uppercase;letter-spacing:0.04em;color:#1c1c1c;display:flex;justify-content:space-between;align-items:center;}
+  .kanban-col-count{background:var(--rojo);color:#fff;border-radius:999px;font-size:0.72rem;padding:2px 8px;font-family:'Montserrat',sans-serif;letter-spacing:0;}
+  .kanban-col-body{padding:12px;display:flex;flex-direction:column;gap:10px;min-height:60px;}
+  .kanban-card{background:#fff;border-radius:4px;padding:12px 14px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+  .kanban-card-nombre{font-weight:700;font-size:0.9rem;color:#1c1c1c;margin-bottom:4px;}
+  .kanban-card-meta{font-size:0.76rem;color:#66625a;margin-bottom:10px;line-height:1.4;}
+  .kanban-card select{width:100%;padding:6px 8px;border:1px solid #d8d3c9;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:0.78rem;background:#fff;color:#1c1c1c;}
+  .kanban-col-vacio{padding:10px 4px;font-size:0.78rem;color:#8a8578;text-align:center;}
+  body.dark .kanban-col{background:#1e1e21;}
+  body.dark .kanban-col-header{color:#e4e2dd;}
+  body.dark .kanban-card{background:#2a2a2e;}
+  body.dark .kanban-card-nombre{color:#e4e2dd;}
+  body.dark .kanban-card select{background:#232326;color:#e4e2dd;border-color:#3a3a3e;}
 
   .modo-panel{display:none;}
   .modo-panel.active{display:block;}
@@ -246,7 +282,7 @@
   .linkvid-skip:hover{color:var(--negro);}
 
   /* modal nueva/editar tarjeta */
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow-y:auto;padding:40px 16px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:65;overflow-y:auto;padding:40px 16px;}
   .modal-bg.open{display:flex;}
   .modal{background:#fff;border-radius:4px;padding:28px 30px;width:440px;max-width:92vw;margin:0 auto;}
   .modal h2{font-family:'Cormorant Garamond',serif;font-size:1.2rem;margin:0 0 18px;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--rojo);padding-bottom:10px;}
@@ -1240,10 +1276,54 @@
     </div><!-- cierra linea-panel-operacion -->
 
     <div class="linea-panel" id="linea-panel-reclutamiento">
-      <div class="linea-vacia">
-        <span class="lv-emoji">📋</span>
-        <div class="lv-titulo">Reclutamiento</div>
-        <div class="lv-sub">Esta sección está en construcción. Aquí vivirá todo el proceso de candidatos y entrevistas.</div>
+      <div class="panel-header">
+        <div class="titulo-panel">Reclutamiento — Editor de Reels</div>
+        <button class="btn ghost" id="btn-refrescar-candidatos">Refrescar</button>
+      </div>
+      <div class="recl-tabs-switch">
+        <button class="recl-tab-btn active" data-recl="general">📋 General</button>
+        <button class="recl-tab-btn" data-recl="pipeline">🗂️ Pipeline</button>
+      </div>
+
+      <div class="recl-subpanel active" id="recl-panel-general">
+        <div class="recl-wrap">
+          <div class="recl-card">
+            <h3>Link del formulario</h3>
+            <div class="recl-copy-row">
+              <input type="text" id="recl-link-form" readonly>
+              <button class="btn" id="btn-copiar-link-form">Copiar</button>
+            </div>
+            <span class="recl-copy-ok" id="recl-copy-ok-link" style="display:none;">✓ Copiado</span>
+          </div>
+
+          <div class="recl-card">
+            <h3>Mensaje para copiar</h3>
+            <textarea class="recl-msg-box" id="recl-mensaje" readonly></textarea>
+            <div style="margin-top:12px;">
+              <button class="btn" id="btn-copiar-mensaje">Copiar mensaje</button>
+              <span class="recl-copy-ok" id="recl-copy-ok-msg" style="display:none;">✓ Copiado</span>
+            </div>
+          </div>
+
+          <div class="recl-card">
+            <h3>Candidatos</h3>
+            <div class="status-msg" id="recl-status" style="margin-bottom:12px;"></div>
+            <div class="team-tabla-wrap" style="padding:0;">
+              <table class="team-tabla">
+                <thead>
+                  <tr>
+                    <th>Nombre</th><th>Edad</th><th>Origen</th><th>Nivel</th><th>Tiempo</th><th>Instagram</th><th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody id="recl-candidatos-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recl-subpanel" id="recl-panel-pipeline">
+        <div class="recl-kanban" id="recl-kanban"></div>
       </div>
     </div>
 
@@ -1265,6 +1345,17 @@
         <span class="lv-emoji">💰</span>
         <div class="lv-titulo">Administración</div>
         <div class="lv-sub">Esta sección está en construcción.</div>
+      </div>
+      <div class="recl-wrap" style="max-width:700px;">
+        <div class="recl-card">
+          <h3>Migración a Supabase (Clientes y Guiones)</h3>
+          <p style="font-size:0.85rem;color:#66625a;margin:0 0 14px;">
+            Trae los Clientes y Guiones que hoy existen en Sheets hacia la base de datos nueva (Supabase).
+            Es seguro correrla varias veces: actualiza por ID, no duplica nada.
+          </p>
+          <button class="btn" id="btn-migrar-supabase">Migrar Clientes y Guiones ahora</button>
+          <div id="admin-migracion-status" style="margin-top:12px;font-size:0.85rem;"></div>
+        </div>
       </div>
     </div>
 
@@ -2115,6 +2206,161 @@ Nombre cliente:
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
+
+// ============================================================
+// ============ SUPABASE (Clientes + Guiones — Fase 1) =========
+// ============================================================
+// Clientes y Guiones ya viven en Supabase (más rápido que Sheets/Apps Script).
+// El resto del CRM (Team, Producción, CM, Slots, PDFs, Reclutamiento, etc.) sigue en Sheets sin cambios.
+const SUPABASE_URL = 'https://jqjlxtnvjokdlhtmjnne.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxamx4dG52am9rZGxodG1qbm5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNjYwMTgsImV4cCI6MjA5OTc0MjAxOH0.7HDembCXnDK8dpcZaq7h0R6VX7UUfPOIqNHgS4kVdXM';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function _sbFilaCliente(r){
+  return {
+    ID: r.id, Nombre: r.nombre || '', Emoji: r.emoji || '', FrameLink: r.frame_link || '',
+    Tipo: r.tipo || 'Recurrente', Estado: r.estado || 'Activo', VideosMes: r.videos_mes || 0,
+    NumeracionModo: r.numeracion_modo || 'simple', EpisodiosMes: r.episodios_mes || 0,
+    ReelsPorEpisodio: r.reels_por_episodio || 0, EditorID: r.editor_id || '',
+    CMID: r.cm_id || '', Token: r.token || '', Editor2ID: r.editor2_id || '',
+    FrameLinkCliente: r.frame_link_cliente || ''
+  };
+}
+function _sbFilaGuion(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id || '', Folio: r.folio || '', Titulo: r.titulo || '',
+    Guion: r.guion || '', Musica: r.musica || '', Notas: r.notas || '',
+    Estatus: r.estatus || 'Borrador', PendienteRevision: r.pendiente_revision ? '1' : '',
+    Inspiracion: r.inspiracion || ''
+  };
+}
+function _sbGenerarToken(){
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for(let i = 0; i < 14; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+  return out;
+}
+
+async function sbCargarClientes(){
+  const { data, error } = await sb.from('clientes').select('*');
+  if(error){ console.error('Supabase clientes:', error); return []; }
+  return data.map(_sbFilaCliente);
+}
+async function sbCargarGuiones(){
+  const { data, error } = await sb.from('guiones').select('*');
+  if(error){ console.error('Supabase guiones:', error); return []; }
+  return data.map(_sbFilaGuion);
+}
+async function sbGuardarCliente(datos, esNuevo){
+  const row = {
+    id: datos.id, nombre: datos.nombre, emoji: datos.emoji || '', frame_link: datos.frameLink || '',
+    tipo: datos.tipoCliente || 'Recurrente', estado: datos.estado || 'Activo',
+    videos_mes: datos.videosMes || 0, numeracion_modo: datos.numeracionModo || 'simple',
+    episodios_mes: datos.episodiosMes || 0, reels_por_episodio: datos.reelsPorEpisodio || 0,
+    editor_id: datos.editorId || null, cm_id: datos.cmId || null,
+    editor2_id: datos.editor2Id || null, frame_link_cliente: datos.frameLinkCliente || ''
+  };
+  if(esNuevo) row.token = _sbGenerarToken();
+  const { error } = await sb.from('clientes').upsert(row, { onConflict: 'id' });
+  if(error) console.error('Supabase guardar cliente:', error);
+}
+async function sbGuionCrear(datos){
+  const { error } = await sb.from('guiones').insert({
+    id: datos.ID, cliente_id: datos.ClienteID, folio: datos.Folio || '', titulo: datos.Titulo || '',
+    guion: datos.Guion || '', musica: datos.Musica || '', notas: datos.Notas || '',
+    estatus: datos.Estatus || 'Borrador', pendiente_revision: !!datos.PendienteRevision,
+    inspiracion: datos.Inspiracion || ''
+  });
+  if(error) console.error('Supabase crear guion:', error);
+}
+async function sbGuionActualizar(datos){
+  const patch = {
+    folio: datos.folio || '', titulo: datos.titulo || '', guion: datos.guion || '',
+    musica: datos.musica || '', notas: datos.notas || '', estatus: datos.estatus || 'Borrador'
+  };
+  if(typeof datos.pendienteRevision !== 'undefined') patch.pendiente_revision = !!datos.pendienteRevision;
+  if(typeof datos.inspiracion !== 'undefined') patch.inspiracion = datos.inspiracion || '';
+  const { error } = await sb.from('guiones').update(patch).eq('id', datos.id);
+  if(error) console.error('Supabase actualizar guion:', error);
+}
+async function sbGuionMarcarRevisado(id){
+  const { error } = await sb.from('guiones').update({ pendiente_revision: false }).eq('id', id);
+  if(error) console.error('Supabase marcar revisado:', error);
+}
+async function sbGuionEliminar(id){
+  const { error } = await sb.from('guiones').delete().eq('id', id);
+  if(error) console.error('Supabase eliminar guion:', error);
+}
+// Guardado desde el portal público del cliente (link mágico): preserva Estatus si el guion ya existe,
+// y siempre marca PendienteRevision para que el equipo interno lo vea.
+async function sbGuionClienteUpsert({ id, clienteId, folio, titulo, guion, musica, notas, inspiracion }){
+  const { data: existente } = await sb.from('guiones').select('id').eq('id', id).maybeSingle();
+  if(existente){
+    await sb.from('guiones').update({
+      folio: folio || '', titulo: titulo || '', guion: guion || '', musica: musica || '',
+      notas: notas || '', inspiracion: inspiracion || '', pendiente_revision: true
+    }).eq('id', id);
+  } else {
+    await sb.from('guiones').insert({
+      id, cliente_id: clienteId, folio: folio || '', titulo: titulo || '', guion: guion || '',
+      musica: musica || '', notas: notas || '', estatus: 'Borrador',
+      pendiente_revision: true, inspiracion: inspiracion || ''
+    });
+  }
+}
+
+// Migración única (idempotente): trae Clientes y Guiones que hoy viven en Sheets hacia Supabase.
+// Se corre una vez desde el navegador de Dirección porque el link de Sheets/Apps Script no
+// siempre es alcanzable desde otros entornos; el navegador sí tiene acceso directo a ambos.
+async function migrarClientesYGuionesASupabase(){
+  const out = document.getElementById('admin-migracion-status');
+  const btn = document.getElementById('btn-migrar-supabase');
+  btn.disabled = true;
+  out.textContent = 'Leyendo Clientes y Guiones desde Sheets...';
+  try {
+    const [respCli, respGui] = await Promise.all([
+      fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' })
+    ]);
+    const clientesSheets = await respCli.json();
+    const guionesSheets = await respGui.json();
+
+    out.textContent = `Migrando ${clientesSheets.length} cliente(s)...`;
+    const filasCli = clientesSheets.map(c => ({
+      id: String(c.ID), nombre: c.Nombre || '', emoji: c.Emoji || '', frame_link: c.FrameLink || '',
+      tipo: c.Tipo || 'Recurrente', estado: c.Estado || 'Activo',
+      videos_mes: parseInt(c.VideosMes, 10) || 0, numeracion_modo: c.NumeracionModo || 'simple',
+      episodios_mes: parseInt(c.EpisodiosMes, 10) || 0, reels_por_episodio: parseInt(c.ReelsPorEpisodio, 10) || 0,
+      editor_id: c.EditorID || null, cm_id: c.CMID || null, token: c.Token || _sbGenerarToken(),
+      editor2_id: c.Editor2ID || null, frame_link_cliente: c.FrameLinkCliente || ''
+    }));
+    if(filasCli.length){
+      const { error: errCli } = await sb.from('clientes').upsert(filasCli, { onConflict: 'id' });
+      if(errCli) throw errCli;
+    }
+
+    out.textContent = `Migrando ${guionesSheets.length} guion(es)...`;
+    const filasGui = guionesSheets.map(g => ({
+      id: String(g.ID), cliente_id: String(g.ClienteID || ''), folio: g.Folio || '', titulo: g.Titulo || '',
+      guion: g.Guion || '', musica: g.Musica || '', notas: g.Notas || '',
+      estatus: g.Estatus || 'Borrador', pendiente_revision: String(g.PendienteRevision || '') === '1',
+      inspiracion: g.Inspiracion || ''
+    }));
+    for(let i = 0; i < filasGui.length; i += 500){
+      const bloque = filasGui.slice(i, i + 500);
+      const { error: errGui } = await sb.from('guiones').upsert(bloque, { onConflict: 'id' });
+      if(errGui) throw errGui;
+    }
+
+    out.innerHTML = `✓ Listo. ${filasCli.length} cliente(s) y ${filasGui.length} guion(es) migrados a Supabase.`;
+  } catch(err){
+    console.error('Migración a Supabase:', err);
+    out.innerHTML = '✗ Error en la migración: ' + (err.message || err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+document.getElementById('btn-migrar-supabase').addEventListener('click', migrarClientesYGuionesASupabase);
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -2983,8 +3229,7 @@ async function abrirModalCMPrellenadoDesdeListo(edicionCard){
   const clienteObj = (CLIENTES || []).find(c => String(c.Nombre || '').trim().toLowerCase() === nombreCli);
   if(clienteObj){
     try {
-      const resp = await fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' });
-      const todosGuiones = await resp.json();
+      const todosGuiones = await sbCargarGuiones();
       const guionMatch = todosGuiones.find(g =>
         String(g.ClienteID) === String(clienteObj.ID) &&
         String(g.Folio || '').trim() === String(edicionCard.Folio || '').trim()
@@ -3711,8 +3956,7 @@ async function eliminarMiembroTeam(id){
 // ============================================================
 async function cargarClientes(){
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' });
-    CLIENTES = await resp.json();
+    CLIENTES = await sbCargarClientes();
   } catch(err){ console.error('No se pudieron cargar los clientes', err); }
   renderClientesGrid();
 }
@@ -3856,13 +4100,7 @@ document.getElementById('btn-guardar-cliente').addEventListener('click', async (
   };
   modalClienteBg.classList.remove('open');
   try{
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(Object.assign(
-        { tipo: CLIENTE_EDITANDO_ID ? 'cliente_actualizar' : 'cliente_crear' },
-        datos
-      ))
-    });
+    await sbGuardarCliente(datos, !CLIENTE_EDITANDO_ID);
   } catch(err){ console.error(err); }
   await cargarClientes();
 });
@@ -5138,8 +5376,7 @@ document.getElementById('btn-agregar-cuenta').addEventListener('click', async ()
 // ---- Guiones ----
 async function cargarGuiones(clienteId){
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' });
-    const todas = await resp.json();
+    const todas = await sbCargarGuiones();
     GUIONES_ACTUAL = todas.filter(r => String(r.ClienteID) === String(clienteId));
   } catch(err){ console.error(err); GUIONES_ACTUAL = []; }
   actualizarLinkMagicoGuiones();
@@ -5229,10 +5466,7 @@ function renderGuionesLista(){
       e.stopPropagation();
       const id = btn.dataset.marcarRevisado;
       try {
-        await fetch(SHEETS_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo:'guion_marcar_revisado', id })
-        });
+        await sbGuionMarcarRevisado(id);
       } catch(err){ console.error(err); }
       await cargarGuiones(clienteActual.ID);
     });
@@ -5252,10 +5486,7 @@ function renderGuionesLista(){
       const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
       if(g){ Object.assign(g, { Folio:folio, Titulo:titulo, Guion:texto, Musica:musica, Inspiracion:inspiracion, Notas:notas, Estatus:estatus }); }
       try{
-        await fetch(SHEETS_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo:'guion_actualizar', id, folio, titulo, guion:texto, musica, inspiracion, notas, estatus, pendienteRevision: false })
-        });
+        await sbGuionActualizar({ id, folio, titulo, guion:texto, musica, inspiracion, notas, estatus, pendienteRevision: false });
       } catch(err){ console.error(err); }
       renderGuionesLista();
     });
@@ -5267,10 +5498,7 @@ function renderGuionesLista(){
       GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => String(g.ID) !== String(id));
       renderGuionesLista();
       try{
-        await fetch(SHEETS_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo:'guion_eliminar', id })
-        });
+        await sbGuionEliminar(id);
       } catch(err){ console.error(err); }
     });
   });
@@ -5283,10 +5511,7 @@ document.getElementById('btn-nuevo-guion').addEventListener('click', async () =>
   const el = document.querySelector(`.guion-item[data-id="${nuevo.ID}"]`);
   if(el) el.classList.add('open');
   try{
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo:'guion_crear', id: nuevo.ID, clienteId: nuevo.ClienteID, folio:nuevo.Folio, titulo:nuevo.Titulo, guion:nuevo.Guion, musica:nuevo.Musica, inspiracion:nuevo.Inspiracion, notas:nuevo.Notas, estatus:nuevo.Estatus })
-    });
+    await sbGuionCrear(nuevo);
   } catch(err){ console.error(err); }
 });
 
@@ -5646,12 +5871,11 @@ async function cargarMisGuiones(){
   if(!USUARIO_ACTUAL) return;
   try {
     // Traemos clientes y guiones frescos
-    const [respCli, respGui] = await Promise.all([
-      fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' }),
-      fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' })
+    const [todosLosClientes, guionesTodos] = await Promise.all([
+      sbCargarClientes(),
+      sbCargarGuiones()
     ]);
-    const todosLosClientes = await respCli.json();
-    MG_GUIONES_TODOS = await respGui.json();
+    MG_GUIONES_TODOS = guionesTodos;
 
     // Si es Edición, filtrar solo sus clientes asignados. Si es Dirección, ve todos.
     if(USUARIO_ACTUAL.Puesto === 'Direccion'){
@@ -6092,12 +6316,14 @@ async function lineaGenerarSlotsSiFalta(){
   if(LINEA_LAST_GENERATED_KEY === key) return;
   LINEA_LAST_GENERATED_KEY = key;
   try {
+    const clientes = await sbCargarClientes();
     await fetch(SHEETS_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({
         tipo: 'slots_generar_mes',
         year: d.getFullYear(),
-        month: d.getMonth() + 1
+        month: d.getMonth() + 1,
+        clientes
       })
     });
   } catch(err){ console.error('No se pudieron generar slots:', err); }
@@ -6113,13 +6339,13 @@ async function cargarLineaProduccion(){
   cuerpo.innerHTML = '<div class="linea-empty">Cargando...</div>';
 
   try {
-    const [respSlots, respCli, respTeam] = await Promise.all([
+    const [respSlots, todosClientes, respTeam] = await Promise.all([
       fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' }),
-      fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' }),
+      sbCargarClientes(),
       fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' })
     ]);
     LINEA_SLOTS = await respSlots.json();
-    LINEA_TODOS_CLIENTES = await respCli.json();
+    LINEA_TODOS_CLIENTES = todosClientes;
     LINEA_TODO_TEAM = await respTeam.json();
 
     renderLineaProduccion();
@@ -6366,7 +6592,7 @@ function _bindLineaBotones(){
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const clienteId = btn.dataset.regenerarCliente;
-      const cli = (CLIENTES || []).find(c => String(c.ID) === String(clienteId));
+      const cli = (LINEA_TODOS_CLIENTES || []).find(c => String(c.ID) === String(clienteId));
       const nombreCli = cli ? cli.Nombre : 'este cliente';
       const confirmar = confirm(`Esto borrará y volverá a crear los slots de "${nombreCli}" del mes que estás viendo, según su configuración actual.\n\nEl estatus (grabado/editado/publicado) de los videos que sigan existiendo se conserva.\n\n¿Continuar?`);
       if(!confirmar) return;
@@ -6383,7 +6609,8 @@ function _bindLineaBotones(){
             tipo: 'slots_regenerar_cliente',
             clienteId: clienteId,
             year: LINEA_STATE.year,
-            month: LINEA_STATE.month
+            month: LINEA_STATE.month,
+            cliente: cli || null
           })
         });
         const data = await resp.json();
@@ -6492,6 +6719,147 @@ function cambiarLinea(lineaKey){
   if(panel){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
+    if(lineaKey === 'reclutamiento') inicializarReclutamiento();
+  }
+}
+
+// ============ RECLUTAMIENTO ============
+let RECLUTAMIENTO_INICIALIZADO = false;
+function inicializarReclutamiento(){
+  const linkForm = window.location.origin + '/reclutamientocuestionario.html';
+  document.getElementById('recl-link-form').value = linkForm;
+  document.getElementById('recl-mensaje').value =
+`📣 OPORTUNIDAD LABORAL
+
+🙋🏻‍♀️Hola amigos, les platico que mi productora LEVEL PRODUCER está creciendo y busco a un editor o editora para reels que tenga talento, sea responsable y apasionado/a.
+
+🧑🏻‍💻 Puesto: Editor/a Tiempo Completo
+💸 Pago: $12,000 MXN / MES
+📍 Ubicación: 100% remoto
+
+Si te interesa ser parte de LEVEL llena este formulario para postularte 👇🏻
+${linkForm}`;
+
+  if(!RECLUTAMIENTO_INICIALIZADO){
+    RECLUTAMIENTO_INICIALIZADO = true;
+    document.getElementById('btn-copiar-link-form').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('recl-link-form').value).then(() => {
+        mostrarCopiadoOk('recl-copy-ok-link');
+      });
+    });
+    document.getElementById('btn-copiar-mensaje').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('recl-mensaje').value).then(() => {
+        mostrarCopiadoOk('recl-copy-ok-msg');
+      });
+    });
+    document.getElementById('btn-refrescar-candidatos').addEventListener('click', cargarCandidatosReclutamiento);
+    document.querySelectorAll('.recl-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => cambiarReclTab(btn.dataset.recl));
+    });
+  }
+  cargarCandidatosReclutamiento();
+}
+
+function cambiarReclTab(reclKey){
+  document.querySelectorAll('.recl-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.recl === reclKey));
+  document.querySelectorAll('.recl-subpanel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('recl-panel-' + reclKey);
+  if(panel) panel.classList.add('active');
+}
+
+function mostrarCopiadoOk(id){
+  const el = document.getElementById(id);
+  el.style.display = 'inline';
+  setTimeout(() => { el.style.display = 'none'; }, 2000);
+}
+
+let RECLUTAMIENTO_CANDIDATOS = [];
+
+async function cargarCandidatosReclutamiento(){
+  const status = document.getElementById('recl-status');
+  const tbody = document.getElementById('recl-candidatos-tbody');
+  status.textContent = 'Cargando...';
+  try{
+    const resp = await fetch(SHEETS_URL + '?hoja=CandidatosReclutamiento&t=' + Date.now(), { cache:'no-store' });
+    const filas = await resp.json();
+    RECLUTAMIENTO_CANDIDATOS = Array.isArray(filas) ? filas : [];
+    if(RECLUTAMIENTO_CANDIDATOS.length === 0){
+      status.textContent = 'Todavía no hay candidatos.';
+      tbody.innerHTML = '';
+      renderKanbanReclutamiento();
+      return;
+    }
+    status.textContent = `${RECLUTAMIENTO_CANDIDATOS.length} candidato(s).`;
+    const ordenadas = RECLUTAMIENTO_CANDIDATOS.slice().sort((a,b) => new Date(b.FechaISO || 0) - new Date(a.FechaISO || 0));
+    tbody.innerHTML = ordenadas.map(f => {
+      const fecha = f.FechaISO ? new Date(f.FechaISO).toLocaleDateString('es-MX') : '';
+      const insta = f.Instagram ? `<a href="${f.Instagram}" target="_blank" rel="noopener">Ver</a>` : '';
+      return `<tr>
+        <td>${f.Nombre || ''}</td>
+        <td>${f.Edad || ''}</td>
+        <td>${f.Origen || ''}</td>
+        <td>${f.NivelEditor || ''}</td>
+        <td>${f.TiempoDedicar || ''}</td>
+        <td>${insta}</td>
+        <td>${fecha}</td>
+      </tr>`;
+    }).join('');
+    renderKanbanReclutamiento();
+  } catch(err){
+    console.error('No se pudo cargar candidatos:', err);
+    status.textContent = 'No se pudo cargar la lista de candidatos.';
+  }
+}
+
+// ============ RECLUTAMIENTO — Pipeline Kanban (Bloque 2) ============
+const RECL_ESTATUS_COLS = ['Recibido', 'Aceptado', 'Entrevista', 'Finalista', 'Ganador', 'Rechazado'];
+
+function renderKanbanReclutamiento(){
+  const cont = document.getElementById('recl-kanban');
+  if(!cont) return;
+  const grupos = {};
+  RECL_ESTATUS_COLS.forEach(e => grupos[e] = []);
+  RECLUTAMIENTO_CANDIDATOS.forEach(f => {
+    const e = RECL_ESTATUS_COLS.includes(f.Estatus) ? f.Estatus : 'Recibido';
+    grupos[e].push(f);
+  });
+
+  cont.innerHTML = RECL_ESTATUS_COLS.map(estatus => {
+    const candidatos = grupos[estatus].slice().sort((a,b) => new Date(b.FechaISO || 0) - new Date(a.FechaISO || 0));
+    const tarjetas = candidatos.length === 0
+      ? '<div class="kanban-col-vacio">Sin candidatos</div>'
+      : candidatos.map(f => {
+          const opciones = RECL_ESTATUS_COLS.map(e =>
+            `<option value="${e}" ${e === estatus ? 'selected' : ''}>${e}</option>`
+          ).join('');
+          return `<div class="kanban-card" data-id="${f.ID}">
+            <div class="kanban-card-nombre">${f.Nombre || ''}</div>
+            <div class="kanban-card-meta">${f.NivelEditor || ''}${f.NivelEditor && f.TiempoDedicar ? ' · ' : ''}${f.TiempoDedicar || ''}</div>
+            <select class="kanban-estatus-select" data-id="${f.ID}">${opciones}</select>
+          </div>`;
+        }).join('');
+    return `<div class="kanban-col">
+      <div class="kanban-col-header"><span>${estatus}</span><span class="kanban-col-count">${candidatos.length}</span></div>
+      <div class="kanban-col-body">${tarjetas}</div>
+    </div>`;
+  }).join('');
+
+  cont.querySelectorAll('.kanban-estatus-select').forEach(sel => {
+    sel.addEventListener('change', () => actualizarEstatusCandidatoReclutamiento(sel.dataset.id, sel.value));
+  });
+}
+
+async function actualizarEstatusCandidatoReclutamiento(id, estatus){
+  const candidato = RECLUTAMIENTO_CANDIDATOS.find(f => String(f.ID) === String(id));
+  if(candidato) candidato.Estatus = estatus;
+  renderKanbanReclutamiento();
+  try{
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ tipo: 'candidato_reclutamiento_actualizar_estatus', id, estatus })
+    });
+  } catch(err){
+    console.error('No se pudo actualizar el estatus del candidato:', err);
   }
 }
 
@@ -6638,19 +7006,13 @@ async function arrancarVistaPublicaCliente(token){
 
   async function cargarVista(){
     try {
-      const resp = await fetch(SHEETS_URL + '?token=' + encodeURIComponent(token) + '&t=' + Date.now(), { cache:'no-store' });
-      const data = await resp.json();
-      if(data.status !== 'ok'){
+      // Cliente + Guiones viven en Supabase: se resuelven rápido y se muestran de inmediato.
+      const { data: cli, error: errCli } = await sb.from('clientes').select('*').eq('token', token).maybeSingle();
+      if(errCli || !cli){
         document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">Link inválido o expirado.</div>';
         return;
       }
-      VP_CLIENTE = data.cliente;
-      VP_GUIONES = data.guiones || [];
-      VP_CALENDARIO = data.calendario || [];
-      VP_EXPEDIENTE = data.expediente || null;
-      VP_EXP_PDFS = data.expedientePdfs || [];
-      VP_INFORME = data.informe || null;
-      VP_INF_PDFS = data.informesPdfs || [];
+      VP_CLIENTE = { id: cli.id, nombre: cli.nombre || '', emoji: cli.emoji || '', token: cli.token, frameLinkCliente: cli.frame_link_cliente || '' };
       document.getElementById('vp-emoji').textContent = VP_CLIENTE.emoji || '👤';
       document.getElementById('vp-nombre').textContent = VP_CLIENTE.nombre || '';
       // Pestaña "Tus videos": solo visible si el cliente tiene link de Frame configurado
@@ -6660,10 +7022,27 @@ async function arrancarVistaPublicaCliente(token){
         document.getElementById('vp-frame-btn').href = frameCli;
       }
       document.getElementById('vp-status').innerHTML = '';
+
+      const { data: guionesData } = await sb.from('guiones').select('*').eq('cliente_id', VP_CLIENTE.id);
+      VP_GUIONES = (guionesData || []).map(_sbFilaGuion);
       renderVpGuiones();
-      renderVpCalendario();
-      renderVpExpediente();
-      renderVpInformes();
+
+      // Calendario/Expediente/Informes siguen en Sheets por ahora (siguiente fase de migración);
+      // se cargan aparte para no bloquear la vista de guiones, que ya es instantánea.
+      fetch(SHEETS_URL + '?clienteIdPublico=' + encodeURIComponent(VP_CLIENTE.id) + '&nombre=' + encodeURIComponent(VP_CLIENTE.nombre) + '&t=' + Date.now(), { cache:'no-store' })
+        .then(r => r.json())
+        .then(extra => {
+          if(extra.status !== 'ok') return;
+          VP_CALENDARIO = extra.calendario || [];
+          VP_EXPEDIENTE = extra.expediente || null;
+          VP_EXP_PDFS = extra.expedientePdfs || [];
+          VP_INFORME = extra.informe || null;
+          VP_INF_PDFS = extra.informesPdfs || [];
+          renderVpCalendario();
+          renderVpExpediente();
+          renderVpInformes();
+        })
+        .catch(err => console.error('No se pudo cargar calendario/expediente/informes:', err));
     } catch(err) {
       document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">No se pudo conectar. Recarga en unos segundos.</div>';
     }
@@ -6741,21 +7120,16 @@ async function arrancarVistaPublicaCliente(token){
         const g = VP_GUIONES[idx];
         const msg = item.querySelector('.vp-msg');
         msg.textContent = 'Guardando...';
-        const body = {
-          tipo: 'guion_cliente_upsert',
-          token,
-          id: g.ID,
-          folio: item.querySelector('.vp-folio').value.trim(),
-          titulo: item.querySelector('.vp-titulo').value.trim(),
-          guion: item.querySelector('.vp-texto').value,
-          musica: item.querySelector('.vp-musica').value.trim(),
-          inspiracion: item.querySelector('.vp-inspiracion').value.trim(),
-          notas: item.querySelector('.vp-notas').value
-        };
         try {
-          await fetch(SHEETS_URL, {
-            method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify(body)
+          await sbGuionClienteUpsert({
+            id: g.ID,
+            clienteId: VP_CLIENTE.id,
+            folio: item.querySelector('.vp-folio').value.trim(),
+            titulo: item.querySelector('.vp-titulo').value.trim(),
+            guion: item.querySelector('.vp-texto').value,
+            musica: item.querySelector('.vp-musica').value.trim(),
+            inspiracion: item.querySelector('.vp-inspiracion').value.trim(),
+            notas: item.querySelector('.vp-notas').value
           });
           msg.textContent = '✓ Guardado. El equipo lo revisará.';
           setTimeout(() => { msg.textContent = ''; }, 3000);
