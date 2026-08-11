@@ -1348,12 +1348,12 @@
       </div>
       <div class="recl-wrap" style="max-width:700px;">
         <div class="recl-card">
-          <h3>Migración a Supabase (Clientes y Guiones)</h3>
+          <h3>Migración a Supabase</h3>
           <p style="font-size:0.85rem;color:#66625a;margin:0 0 14px;">
-            Trae los Clientes y Guiones que hoy existen en Sheets hacia la base de datos nueva (Supabase).
-            Es seguro correrla varias veces: actualiza por ID, no duplica nada.
+            Trae Clientes, Guiones, Team, Producción y Community Manager que hoy existen en Sheets
+            hacia la base de datos nueva (Supabase). Es seguro correrla varias veces: actualiza por ID, no duplica nada.
           </p>
-          <button class="btn" id="btn-migrar-supabase">Migrar Clientes y Guiones ahora</button>
+          <button class="btn" id="btn-migrar-supabase">Migrar a Supabase ahora</button>
           <div id="admin-migracion-status" style="margin-top:12px;font-size:0.85rem;"></div>
         </div>
       </div>
@@ -2312,18 +2312,32 @@ async function sbGuionClienteUpsert({ id, clienteId, folio, titulo, guion, music
 // Migración única (idempotente): trae Clientes y Guiones que hoy viven en Sheets hacia Supabase.
 // Se corre una vez desde el navegador de Dirección porque el link de Sheets/Apps Script no
 // siempre es alcanzable desde otros entornos; el navegador sí tiene acceso directo a ambos.
+async function _sbMigrarEnBloques(tabla, filas){
+  for(let i = 0; i < filas.length; i += 500){
+    const bloque = filas.slice(i, i + 500);
+    const { error } = await sb.from(tabla).upsert(bloque, { onConflict: 'id' });
+    if(error) throw error;
+  }
+}
+
 async function migrarClientesYGuionesASupabase(){
   const out = document.getElementById('admin-migracion-status');
   const btn = document.getElementById('btn-migrar-supabase');
   btn.disabled = true;
-  out.textContent = 'Leyendo Clientes y Guiones desde Sheets...';
+  out.textContent = 'Leyendo desde Sheets...';
   try {
-    const [respCli, respGui] = await Promise.all([
+    const [respCli, respGui, respTeam, respProd, respCm] = await Promise.all([
       fetch(SHEETS_URL + '?hoja=Clientes&t=' + Date.now(), { cache:'no-store' }),
-      fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' })
+      fetch(SHEETS_URL + '?hoja=Guiones&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=' + encodeURIComponent('Producción') + '&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=CM&t=' + Date.now(), { cache:'no-store' })
     ]);
     const clientesSheets = await respCli.json();
     const guionesSheets = await respGui.json();
+    const teamSheets = await respTeam.json();
+    const prodSheets = await respProd.json();
+    const cmSheets = await respCm.json();
 
     out.textContent = `Migrando ${clientesSheets.length} cliente(s)...`;
     const filasCli = clientesSheets.map(c => ({
@@ -2346,13 +2360,35 @@ async function migrarClientesYGuionesASupabase(){
       estatus: g.Estatus || 'Borrador', pendiente_revision: String(g.PendienteRevision || '') === '1',
       inspiracion: g.Inspiracion || ''
     }));
-    for(let i = 0; i < filasGui.length; i += 500){
-      const bloque = filasGui.slice(i, i + 500);
-      const { error: errGui } = await sb.from('guiones').upsert(bloque, { onConflict: 'id' });
-      if(errGui) throw errGui;
-    }
+    await _sbMigrarEnBloques('guiones', filasGui);
 
-    out.innerHTML = `✓ Listo. ${filasCli.length} cliente(s) y ${filasGui.length} guion(es) migrados a Supabase.`;
+    out.textContent = `Migrando ${teamSheets.length} miembro(s) del team...`;
+    const filasTeam = teamSheets.map(m => ({
+      id: String(m.ID), nombre: m.Nombre || '', puesto: m.Puesto || '', color: m.Color || '#c72a09',
+      cumpleanos: m.Cumpleanos || '', direccion: m.Direccion || '', dulce_favorito: m.DulceFavorito || '',
+      bebida_favorita: m.BebidaFavorita || '', num_tarjeta: m.NumTarjeta || '', pin: String(m.Pin || ''),
+      email: m.Email || '', tareas_semanales: m.TareasSemanales || ''
+    }));
+    await _sbMigrarEnBloques('team', filasTeam);
+
+    out.textContent = `Migrando ${prodSheets.length} tarjeta(s) de Producción...`;
+    const filasProd = prodSheets.map(r => ({
+      id: String(r.ID), fecha: r.Fecha || '', cliente: r.Cliente || '', emoji: r.Emoji || '',
+      folio: r.Folio || '', etapa: r.Etapa || '', responsable: r.Responsable || '',
+      listo: r.Listo || 'NO', fecha_fin: r.FechaFin || '', progreso: parseInt(r.Progreso, 10) || 0,
+      link_video: r.LinkVideo || ''
+    }));
+    await _sbMigrarEnBloques('produccion', filasProd);
+
+    out.textContent = `Migrando ${cmSheets.length} tarjeta(s) de CM...`;
+    const filasCm = cmSheets.map(r => ({
+      id: String(r.ID), fecha: r.Fecha || '', cliente: r.Cliente || '', emoji: r.Emoji || '',
+      folio: r.Folio || '', copy: r.Copy || '', responsable: r.Responsable || '',
+      listo: r.Listo || 'NO', palabra_clave: r.PalabraClave || ''
+    }));
+    await _sbMigrarEnBloques('cm', filasCm);
+
+    out.innerHTML = `✓ Listo. ${filasCli.length} cliente(s), ${filasGui.length} guion(es), ${filasTeam.length} miembro(s), ${filasProd.length} tarjeta(s) de Producción y ${filasCm.length} tarjeta(s) de CM migrados a Supabase.`;
   } catch(err){
     console.error('Migración a Supabase:', err);
     out.innerHTML = '✗ Error en la migración: ' + (err.message || err);
@@ -2361,6 +2397,98 @@ async function migrarClientesYGuionesASupabase(){
   }
 }
 document.getElementById('btn-migrar-supabase').addEventListener('click', migrarClientesYGuionesASupabase);
+
+// ============================================================
+// ============ SUPABASE — Producción (Edición) y CM ===========
+// ============================================================
+const MODOS_TABLA_SB = { edicion: 'produccion', cm: 'cm' };
+const MODOS_CAMPO_SB = { fecha:'fecha', fechaFin:'fecha_fin', listo:'listo', linkVideo:'link_video', progreso:'progreso' };
+
+function _sbFilaModo(r){
+  return {
+    ID: r.id, Fecha: r.fecha || '', Cliente: r.cliente || '', Emoji: r.emoji || '',
+    Folio: r.folio || '', Etapa: r.etapa || '', Responsable: r.responsable || '',
+    Listo: r.listo || 'NO', FechaFin: r.fecha_fin || '', Progreso: r.progreso || 0,
+    LinkVideo: r.link_video || '', Copy: r.copy || '', PalabraClave: r.palabra_clave || ''
+  };
+}
+async function sbCargarModo(modoKey){
+  const { data, error } = await sb.from(MODOS_TABLA_SB[modoKey]).select('*');
+  if(error){ console.error('Supabase ' + modoKey + ':', error); return []; }
+  return data.map(_sbFilaModo);
+}
+async function sbActualizarCampoModo(modoKey, id, campo, valor){
+  const col = MODOS_CAMPO_SB[campo] || campo;
+  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).update({ [col]: valor }).eq('id', id);
+  if(error) console.error('Supabase actualizar campo ' + modoKey + ':', error);
+}
+function _sbFilaModoDesdePayload(payload){
+  const row = { fecha: payload.fecha, cliente: payload.cliente, emoji: payload.emoji, folio: payload.folio, listo: payload.listo };
+  if('copy' in payload) row.copy = payload.copy;
+  if('palabraClave' in payload) row.palabra_clave = payload.palabraClave;
+  if('responsable' in payload) row.responsable = payload.responsable;
+  if('etapa' in payload) row.etapa = payload.etapa;
+  if('fechaFin' in payload) row.fecha_fin = payload.fechaFin;
+  if('progreso' in payload) row.progreso = payload.progreso;
+  return row;
+}
+async function sbActualizarModoCompleto(modoKey, id, payload){
+  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).update(_sbFilaModoDesdePayload(payload)).eq('id', id);
+  if(error) console.error('Supabase actualizar ' + modoKey + ':', error);
+}
+async function sbCrearModo(modoKey, id, payload){
+  const row = Object.assign({ id }, _sbFilaModoDesdePayload(payload));
+  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).insert(row);
+  if(error) console.error('Supabase crear ' + modoKey + ':', error);
+}
+
+// ============================================================
+// ============ SUPABASE — Team =================================
+// ============================================================
+// El cumpleaños se sigue sincronizando con Google Calendar vía Apps Script
+// (llamada aparte, ligera) porque eso requiere la cuenta de Google, no Supabase.
+function _sbFilaTeam(r){
+  return {
+    ID: r.id, Nombre: r.nombre || '', Puesto: r.puesto || '', Color: r.color || '#c72a09',
+    Cumpleanos: r.cumpleanos || '', Direccion: r.direccion || '', DulceFavorito: r.dulce_favorito || '',
+    BebidaFavorita: r.bebida_favorita || '', NumTarjeta: r.num_tarjeta || '', Pin: r.pin || '',
+    Email: r.email || '', TareasSemanales: r.tareas_semanales || ''
+  };
+}
+async function sbCargarTeam(){
+  const { data, error } = await sb.from('team').select('*');
+  if(error){ console.error('Supabase team:', error); return []; }
+  return data.map(_sbFilaTeam);
+}
+async function sbGuardarTeam(datos, esNuevo){
+  const row = {
+    id: datos.id, nombre: datos.nombre || '', puesto: datos.puesto || '',
+    color: datos.color || '#c72a09', cumpleanos: datos.cumpleanos || '',
+    direccion: datos.direccion || '', dulce_favorito: datos.dulceFavorito || '',
+    bebida_favorita: datos.bebidaFavorita || '', num_tarjeta: datos.numTarjeta || '',
+    pin: String(datos.pin || ''), email: datos.email || '', tareas_semanales: datos.tareasSemanales || ''
+  };
+  const { error } = await sb.from('team').upsert(row, { onConflict: 'id' });
+  if(error) console.error('Supabase guardar team:', error);
+  if(datos.cumpleanos){
+    try{
+      await fetch(SHEETS_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ tipo:'team_sincronizar_cumpleanos', id: datos.id, nombre: datos.nombre, cumpleanos: datos.cumpleanos })
+      });
+    } catch(err){ console.error('No se pudo sincronizar cumpleaños:', err); }
+  }
+}
+async function sbEliminarTeam(id){
+  const { error } = await sb.from('team').delete().eq('id', id);
+  if(error) console.error('Supabase eliminar team:', error);
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ tipo:'team_eliminar_calendario', id })
+    });
+  } catch(err){ console.error('No se pudo limpiar el calendario:', err); }
+}
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -2426,8 +2554,7 @@ async function cargarDatos(modoKey){
   const statusEl = document.getElementById(modo.prefix + '-status-msg');
   statusEl.textContent = 'Cargando...';
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=' + encodeURIComponent(modo.hoja) + '&t=' + Date.now(), { cache:'no-store' });
-    st.TODAS = await resp.json();
+    st.TODAS = await sbCargarModo(modoKey);
     statusEl.textContent = `Actualizado — ${st.TODAS.length} tarjeta(s).`;
   } catch(err){
     console.error(err);
@@ -2507,19 +2634,10 @@ async function moverTarjetaAFecha(drag, nuevaFecha){
   if(modoKey === 'cm' || modoKey === 'edicion') renderPanelListosParaPublicar();
 
   // Guardar en el backend
-  const tipoActualizar = MODOS[modoKey].tipoActualizar;
   try {
-    await fetch(SHEETS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tipo: tipoActualizar, id: drag.id, campo: 'fecha', valor: nuevaFecha })
-    });
+    await sbActualizarCampoModo(modoKey, drag.id, 'fecha', nuevaFecha);
     if(nuevaFechaFin){
-      await fetch(SHEETS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ tipo: tipoActualizar, id: drag.id, campo: 'fechaFin', valor: nuevaFechaFin })
-      });
+      await sbActualizarCampoModo(modoKey, drag.id, 'fechaFin', nuevaFechaFin);
     }
   } catch(err){
     console.error('No se pudo mover la tarjeta', err);
@@ -2575,14 +2693,8 @@ async function aplicarResize(resize, fechaDestino){
   renderPanelListosParaPublicar();
 
   try {
-    await fetch(SHEETS_URL, {
-      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo: 'produccion_actualizar', id: resize.id, campo: 'fecha', valor: nuevaIni })
-    });
-    await fetch(SHEETS_URL, {
-      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo: 'produccion_actualizar', id: resize.id, campo: 'fechaFin', valor: nuevaFin })
-    });
+    await sbActualizarCampoModo('edicion', resize.id, 'fecha', nuevaIni);
+    await sbActualizarCampoModo('edicion', resize.id, 'fechaFin', nuevaFin);
   } catch(err){ console.error('No se pudo estirar la tarjeta', err); }
 }
 
@@ -2873,11 +2985,7 @@ function render(modoKey){
       if(item) item.Listo = nuevo;
       renderKPIs(mk);
       try{
-        await fetch(SHEETS_URL, {
-          method:'POST',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo: MODOS[mk].tipoActualizar, id, campo:'listo', valor: nuevo })
-        });
+        await sbActualizarCampoModo(mk, id, 'listo', nuevo);
       } catch(err){ console.error('No se pudo actualizar', err); }
     });
   });
@@ -3003,19 +3111,10 @@ function pedirLinkVideoYMarcarListo(id, item, statusEl){
     // Guarda en backend: primero el link, luego el listo (2 llamadas para no perder datos)
     try{
       if(link){
-        await fetch(SHEETS_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'linkVideo', valor: link })
-        });
+        await sbActualizarCampoModo('edicion', id, 'linkVideo', link);
       }
-      await fetch(SHEETS_URL, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'progreso', valor: 100 })
-      });
-      await fetch(SHEETS_URL, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ tipo:'produccion_actualizar', id, campo:'listo', valor:'SI' })
-      });
+      await sbActualizarCampoModo('edicion', id, 'progreso', 100);
+      await sbActualizarCampoModo('edicion', id, 'listo', 'SI');
     } catch(err){ console.error('No se pudo marcar listo', err); }
     // Refresca el panel del CM (por si el video ahora aparece como listo para publicar)
     if(typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
@@ -3496,7 +3595,6 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     actualizaFiltros(modoKey);
     render(modoKey);
     const payload = {
-      tipo: modo.tipoActualizarCompleto, id: idExistente,
       fecha: datosForm.Fecha, cliente: datosForm.Cliente, emoji: datosForm.Emoji,
       folio: datosForm.Folio, listo: datosForm.Listo
     };
@@ -3505,7 +3603,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modo.etapaFija) payload.etapa = datosForm.Etapa;
     if(modoKey === 'edicion'){ payload.fechaFin = datosForm.FechaFin; payload.progreso = datosForm.Progreso; }
     try{
-      await fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+      await sbActualizarModoCompleto(modoKey, idExistente, payload);
     } catch(err){ console.error('No se pudo actualizar', err); }
   } else {
     const nueva = { ID: uuid(), ...datosForm };
@@ -3514,7 +3612,6 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     actualizaFiltros(modoKey);
     render(modoKey);
     const payload = {
-      tipo: modo.tipoCrear, id: nueva.ID,
       fecha: nueva.Fecha, cliente: nueva.Cliente, emoji: nueva.Emoji,
       folio: nueva.Folio, listo: nueva.Listo
     };
@@ -3523,7 +3620,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modo.etapaFija) payload.etapa = nueva.Etapa;
     if(modoKey === 'edicion'){ payload.fechaFin = nueva.FechaFin; payload.progreso = nueva.Progreso; }
     try{
-      await fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+      await sbCrearModo(modoKey, nueva.ID, payload);
     } catch(err){ console.error('No se pudo guardar', err); }
   }
   btn.disabled = false;
@@ -3651,8 +3748,7 @@ let GUIONES_ACTUAL = [];
 // ============================================================
 async function cargarTeam(){
   try {
-    const resp = await fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' });
-    TEAM = await resp.json();
+    TEAM = await sbCargarTeam();
   } catch(err){ console.error('No se pudo cargar Team', err); TEAM = []; }
   renderTeamTabla();
   actualizarSelectoresTeam();
@@ -3794,10 +3890,11 @@ document.getElementById('btn-invitaciones-semanales').addEventListener('click', 
   btn.disabled = true;
   btn.textContent = 'Enviando...';
   try {
+    const equipo = await sbCargarTeam();
     const resp = await fetch(SHEETS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tipo: 'team_enviar_invitaciones_semanales' })
+      body: JSON.stringify({ tipo: 'team_enviar_invitaciones_semanales', team: equipo })
     });
     const data = await resp.json();
     mostrarResultadoInvitaciones(data);
@@ -3927,13 +4024,7 @@ document.getElementById('btn-guardar-team').addEventListener('click', async () =
   };
   modalTeamBg.classList.remove('open');
   try {
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(Object.assign(
-        { tipo: TEAM_EDITANDO_ID ? 'team_actualizar' : 'team_crear' },
-        datos
-      ))
-    });
+    await sbGuardarTeam(datos, !TEAM_EDITANDO_ID);
   } catch(err){ console.error(err); }
   await cargarTeam();
 });
@@ -3943,10 +4034,7 @@ async function eliminarMiembroTeam(id){
   if(!m) return;
   if(!confirm(`¿Eliminar a ${m.Nombre} del team? (si tiene clientes asignados, siguen existiendo pero sin asignación)`)) return;
   try {
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo:'team_eliminar', id })
-    });
+    await sbEliminarTeam(id);
   } catch(err){ console.error(err); }
   await cargarTeam();
 }
@@ -5552,8 +5640,7 @@ async function llenarLoginDropdown(){
   const select = document.getElementById('login-miembro');
   select.innerHTML = '<option value="">— Selecciona tu nombre —</option>';
   try {
-    const resp = await fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' });
-    const miembros = await resp.json();
+    const miembros = await sbCargarTeam();
     miembros.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.ID;
@@ -6114,10 +6201,11 @@ async function cargarDashboard(){
   cuerpo.innerHTML = '<div class="dash-empty">Cargando...</div>';
   document.getElementById('dash-year').textContent = DASH_YEAR;
   try {
+    const [produccion, cm] = await Promise.all([sbCargarModo('edicion'), sbCargarModo('cm')]);
     const resp = await fetch(SHEETS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tipo: 'dashboard_leer', year: DASH_YEAR })
+      body: JSON.stringify({ tipo: 'dashboard_leer', year: DASH_YEAR, produccion, cm })
     });
     DASH_DATA = await resp.json();
     renderDashboard();
@@ -6339,14 +6427,14 @@ async function cargarLineaProduccion(){
   cuerpo.innerHTML = '<div class="linea-empty">Cargando...</div>';
 
   try {
-    const [respSlots, todosClientes, respTeam] = await Promise.all([
+    const [respSlots, todosClientes, todoTeam] = await Promise.all([
       fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' }),
       sbCargarClientes(),
-      fetch(SHEETS_URL + '?hoja=Team&t=' + Date.now(), { cache:'no-store' })
+      sbCargarTeam()
     ]);
     LINEA_SLOTS = await respSlots.json();
     LINEA_TODOS_CLIENTES = todosClientes;
-    LINEA_TODO_TEAM = await respTeam.json();
+    LINEA_TODO_TEAM = todoTeam;
 
     renderLineaProduccion();
   } catch(err) {
@@ -7023,26 +7111,29 @@ async function arrancarVistaPublicaCliente(token){
       }
       document.getElementById('vp-status').innerHTML = '';
 
-      const { data: guionesData } = await sb.from('guiones').select('*').eq('cliente_id', VP_CLIENTE.id);
-      VP_GUIONES = (guionesData || []).map(_sbFilaGuion);
+      const [guionesResp, calResp] = await Promise.all([
+        sb.from('guiones').select('*').eq('cliente_id', VP_CLIENTE.id),
+        sb.from('cm').select('*').ilike('cliente', VP_CLIENTE.nombre)
+      ]);
+      VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion);
       renderVpGuiones();
+      VP_CALENDARIO = (calResp.data || []).map(_sbFilaModo);
+      renderVpCalendario();
 
-      // Calendario/Expediente/Informes siguen en Sheets por ahora (siguiente fase de migración);
-      // se cargan aparte para no bloquear la vista de guiones, que ya es instantánea.
+      // Expediente/Informes siguen en Sheets por ahora (siguiente fase de migración);
+      // se cargan aparte para no bloquear guiones/calendario, que ya son instantáneos.
       fetch(SHEETS_URL + '?clienteIdPublico=' + encodeURIComponent(VP_CLIENTE.id) + '&nombre=' + encodeURIComponent(VP_CLIENTE.nombre) + '&t=' + Date.now(), { cache:'no-store' })
         .then(r => r.json())
         .then(extra => {
           if(extra.status !== 'ok') return;
-          VP_CALENDARIO = extra.calendario || [];
           VP_EXPEDIENTE = extra.expediente || null;
           VP_EXP_PDFS = extra.expedientePdfs || [];
           VP_INFORME = extra.informe || null;
           VP_INF_PDFS = extra.informesPdfs || [];
-          renderVpCalendario();
           renderVpExpediente();
           renderVpInformes();
         })
-        .catch(err => console.error('No se pudo cargar calendario/expediente/informes:', err));
+        .catch(err => console.error('No se pudo cargar expediente/informes:', err));
     } catch(err) {
       document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">No se pudo conectar. Recarga en unos segundos.</div>';
     }
