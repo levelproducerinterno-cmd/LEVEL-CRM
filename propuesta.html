@@ -528,6 +528,29 @@ async function sbCargarCotizaciones(){
     Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || ''
   }));
 }
+// Si el diagnóstico y la cotización se generan el mismo día para el mismo prospecto,
+// es la MISMA junta — se combinan las notas en una sola fila en vez de crear dos.
+async function sbRegistrarJuntaVenta({ prospecto, fecha, notas }){
+  try{
+    const { data: existentes, error: errBusqueda } = await sb.from('juntas_venta')
+      .select('*').eq('prospecto', prospecto).eq('fecha', fecha);
+    if(errBusqueda) throw errBusqueda;
+    if(existentes && existentes.length > 0){
+      const junta = existentes[0];
+      const notasNuevas = (junta.notas && !junta.notas.includes(notas))
+        ? junta.notas + ' + ' + notas
+        : (junta.notas || notas);
+      const { error } = await sb.from('juntas_venta').update({ notas: notasNuevas }).eq('id', junta.id);
+      if(error) throw error;
+      return;
+    }
+    const { error } = await sb.from('juntas_venta').insert({
+      id: 'jv_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+      prospecto: prospecto || '', fecha: fecha, notas: notas || ''
+    });
+    if(error) throw error;
+  } catch(err){ console.error('No se pudo registrar la junta de venta automática:', err); }
+}
 async function sbActualizarEstatusCotizacion(id, estatus){
   const { data, error } = await sb.from('cotizaciones')
     .update({ estatus, actualizado_iso: new Date().toISOString() })
@@ -918,6 +941,11 @@ async function generarPDF(){
     });
     guardadoOk = true;
     cargarCotizaciones();
+    // Cada cotización generada también queda como actividad en Juntas de venta.
+    sbRegistrarJuntaVenta({
+      prospecto: nombre, fecha: fechaISO,
+      notas: 'Cotización generada — ' + folio
+    });
   } catch(err){
     console.error('No se pudo registrar la cotización:', err);
   }

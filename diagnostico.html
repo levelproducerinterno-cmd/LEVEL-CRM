@@ -276,6 +276,29 @@ async function sbCargarDiagnosticosProspectos(){
     Estatus: r.estatus || 'Pendiente'
   }));
 }
+// Si el diagnóstico y la cotización se generan el mismo día para el mismo prospecto,
+// es la MISMA junta — se combinan las notas en una sola fila en vez de crear dos.
+async function sbRegistrarJuntaVenta({ prospecto, fecha, notas }){
+  try{
+    const { data: existentes, error: errBusqueda } = await sb.from('juntas_venta')
+      .select('*').eq('prospecto', prospecto).eq('fecha', fecha);
+    if(errBusqueda) throw errBusqueda;
+    if(existentes && existentes.length > 0){
+      const junta = existentes[0];
+      const notasNuevas = (junta.notas && !junta.notas.includes(notas))
+        ? junta.notas + ' + ' + notas
+        : (junta.notas || notas);
+      const { error } = await sb.from('juntas_venta').update({ notas: notasNuevas }).eq('id', junta.id);
+      if(error) throw error;
+      return;
+    }
+    const { error } = await sb.from('juntas_venta').insert({
+      id: 'jv_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+      prospecto: prospecto || '', fecha: fecha, notas: notas || ''
+    });
+    if(error) throw error;
+  } catch(err){ console.error('No se pudo registrar la junta de venta automática:', err); }
+}
 async function sbActualizarEstatusDiagnostico(id, estatus){
   const { data, error } = await sb.from('diagnosticos_prospectos').update({ estatus }).eq('id', id).select();
   if(error){ console.error('Supabase actualizar diagnostico:', error); throw error; }
@@ -433,6 +456,11 @@ async function generarDiagnostico(){
     });
     sheetsOk = true;
     cargarDiagnosticos();
+    // El diagnóstico ES la primera junta con el prospecto — se registra sola en Juntas de venta.
+    sbRegistrarJuntaVenta({
+      prospecto: negocio || nombre, fecha: new Date().toISOString().split('T')[0],
+      notas: 'Diagnóstico generado' + (negocio && nombre ? ' — ' + nombre : '')
+    });
   } catch(err){ console.error('No se pudo guardar el diagnóstico:', err); }
 
   // ---- Subir el PDF a Drive (vía Apps Script) y guardar su registro en Supabase ----
