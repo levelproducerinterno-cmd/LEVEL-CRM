@@ -1013,9 +1013,23 @@
 
   /* Genéricos de texto oscuro que deben aclararse */
   body.dark h1, body.dark h2, body.dark h3, body.dark h4{color:#f0ede6;}
+
+  /* Aviso de versión desactualizada */
+  .version-banner{position:fixed;top:0;left:0;right:0;z-index:999999;background:#c72a09;color:#fff;
+    padding:12px 20px;text-align:center;font-family:'Montserrat',sans-serif;font-size:0.88rem;font-weight:600;
+    box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+  .version-banner-btn{margin-left:14px;background:#fff;color:#c72a09;border:none;border-radius:3px;
+    padding:6px 16px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:'Montserrat',sans-serif;}
+  .version-banner-btn:hover{background:#f0ede6;}
 </style>
 </head>
 <body>
+
+<!-- ============ AVISO DE VERSIÓN DESACTUALIZADA (pestaña vieja abierta) ============ -->
+<div id="version-banner" class="version-banner" style="display:none;">
+  ⚠️ Hay una versión más nueva de este sistema. Si estás editando algo, cópialo aparte antes de continuar.
+  <button id="btn-version-recargar" class="version-banner-btn">Recargar ahora</button>
+</div>
 
 <!-- ============ PANTALLA DE LOGIN (visible mientras no hay sesión) ============ -->
 <div id="login-overlay" class="login-overlay hidden">
@@ -1350,8 +1364,10 @@
         <div class="recl-card">
           <h3>Migración a Supabase</h3>
           <p style="font-size:0.85rem;color:#66625a;margin:0 0 14px;">
-            Trae Clientes, Guiones, Team, Producción y Community Manager que hoy existen en Sheets
-            hacia la base de datos nueva (Supabase). Es seguro correrla varias veces: actualiza por ID, no duplica nada.
+            Trae todo lo que hoy existe en Sheets (Clientes, Guiones, Team, Producción, CM, Slots,
+            Junta de Aterrizaje, Cuentas, Expedientes, Informes, historial de PDFs, Reclutamiento,
+            Diagnósticos de Prospecto y Reportes semanales) hacia la base de datos nueva (Supabase).
+            Es seguro correrla varias veces: actualiza por ID, no duplica nada.
           </p>
           <button class="btn" id="btn-migrar-supabase">Migrar a Supabase ahora</button>
           <div id="admin-migracion-status" style="margin-top:12px;font-size:0.85rem;"></div>
@@ -2204,6 +2220,11 @@ Nombre cliente:
 </div>
 
 <script>
+// Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
+// quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
+// "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
+const APP_BUILD = '2026-08-11-guardado-seguro';
+
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
 
@@ -2262,7 +2283,7 @@ async function sbGuardarCliente(datos, esNuevo){
   };
   if(esNuevo) row.token = _sbGenerarToken();
   const { error } = await sb.from('clientes').upsert(row, { onConflict: 'id' });
-  if(error) console.error('Supabase guardar cliente:', error);
+  if(error){ console.error('Supabase guardar cliente:', error); throw error; }
 }
 async function sbGuionCrear(datos){
   const { error } = await sb.from('guiones').insert({
@@ -2271,7 +2292,7 @@ async function sbGuionCrear(datos){
     estatus: datos.Estatus || 'Borrador', pendiente_revision: !!datos.PendienteRevision,
     inspiracion: datos.Inspiracion || ''
   });
-  if(error) console.error('Supabase crear guion:', error);
+  if(error){ console.error('Supabase crear guion:', error); throw error; }
 }
 async function sbGuionActualizar(datos){
   const patch = {
@@ -2280,32 +2301,43 @@ async function sbGuionActualizar(datos){
   };
   if(typeof datos.pendienteRevision !== 'undefined') patch.pendiente_revision = !!datos.pendienteRevision;
   if(typeof datos.inspiracion !== 'undefined') patch.inspiracion = datos.inspiracion || '';
-  const { error } = await sb.from('guiones').update(patch).eq('id', datos.id);
-  if(error) console.error('Supabase actualizar guion:', error);
+  const { data, error } = await sb.from('guiones').update(patch).eq('id', datos.id).select();
+  if(error){ console.error('Supabase actualizar guion:', error); throw error; }
+  // Si no vino ninguna fila de vuelta, el guion no existe en la base (ej. su creación falló
+  // antes) — el update no hizo nada, aunque Supabase no lo reporta como error.
+  if(!data || data.length === 0){
+    const err = new Error('El guion ' + datos.id + ' no existe en la base de datos; no se guardó nada.');
+    console.error(err);
+    throw err;
+  }
 }
 async function sbGuionMarcarRevisado(id){
   const { error } = await sb.from('guiones').update({ pendiente_revision: false }).eq('id', id);
-  if(error) console.error('Supabase marcar revisado:', error);
+  if(error){ console.error('Supabase marcar revisado:', error); throw error; }
 }
 async function sbGuionEliminar(id){
   const { error } = await sb.from('guiones').delete().eq('id', id);
-  if(error) console.error('Supabase eliminar guion:', error);
+  if(error){ console.error('Supabase eliminar guion:', error); throw error; }
 }
 // Guardado desde el portal público del cliente (link mágico): preserva Estatus si el guion ya existe,
 // y siempre marca PendienteRevision para que el equipo interno lo vea.
 async function sbGuionClienteUpsert({ id, clienteId, folio, titulo, guion, musica, notas, inspiracion }){
-  const { data: existente } = await sb.from('guiones').select('id').eq('id', id).maybeSingle();
+  const { data: existente, error: errBusqueda } = await sb.from('guiones').select('id').eq('id', id).maybeSingle();
+  if(errBusqueda){ console.error('Supabase buscar guion (portal cliente):', errBusqueda); throw errBusqueda; }
   if(existente){
-    await sb.from('guiones').update({
+    const { data, error } = await sb.from('guiones').update({
       folio: folio || '', titulo: titulo || '', guion: guion || '', musica: musica || '',
       notas: notas || '', inspiracion: inspiracion || '', pendiente_revision: true
-    }).eq('id', id);
+    }).eq('id', id).select();
+    if(error){ console.error('Supabase actualizar guion (portal cliente):', error); throw error; }
+    if(!data || data.length === 0) throw new Error('El guion ' + id + ' no existe; no se guardó nada.');
   } else {
-    await sb.from('guiones').insert({
+    const { error } = await sb.from('guiones').insert({
       id, cliente_id: clienteId, folio: folio || '', titulo: titulo || '', guion: guion || '',
       musica: musica || '', notas: notas || '', estatus: 'Borrador',
       pendiente_revision: true, inspiracion: inspiracion || ''
     });
+    if(error){ console.error('Supabase crear guion (portal cliente):', error); throw error; }
   }
 }
 
@@ -2388,7 +2420,129 @@ async function migrarClientesYGuionesASupabase(){
     }));
     await _sbMigrarEnBloques('cm', filasCm);
 
-    out.innerHTML = `✓ Listo. ${filasCli.length} cliente(s), ${filasGui.length} guion(es), ${filasTeam.length} miembro(s), ${filasProd.length} tarjeta(s) de Producción y ${filasCm.length} tarjeta(s) de CM migrados a Supabase.`;
+    // ---- Resto de hojas (Fase 3) ----
+    out.textContent = 'Leyendo Slots, Junta, Cuentas, Expedientes, Informes...';
+    const [
+      respSlots, respJunta, respCuentas, respExp, respInf,
+      respExpPdfs, respInfPdfs, respPropPdfs, respDiagPdfs,
+      respCandidatos, respDiagProsp, respReportes
+    ] = await Promise.all([
+      fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=JuntaAterrizaje&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Cuentas&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Expedientes&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Informes&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=ExpedientesPDFs&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=InformesPDFs&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=PropuestasPDFs&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=DiagnosticosPDFs&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=CandidatosReclutamiento&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=DiagnosticosProspectos&t=' + Date.now(), { cache:'no-store' }),
+      fetch(SHEETS_URL + '?hoja=Reportes&t=' + Date.now(), { cache:'no-store' })
+    ]);
+    const slotsSheets = await respSlots.json();
+    const juntaSheets = await respJunta.json();
+    const cuentasSheets = await respCuentas.json();
+    const expSheets = await respExp.json();
+    const infSheets = await respInf.json();
+    const expPdfsSheets = await respExpPdfs.json();
+    const infPdfsSheets = await respInfPdfs.json();
+    const propPdfsSheets = await respPropPdfs.json();
+    const diagPdfsSheets = await respDiagPdfs.json();
+    const candidatosSheets = await respCandidatos.json();
+    const diagProspSheets = await respDiagProsp.json();
+    const reportesSheets = await respReportes.json();
+
+    out.textContent = `Migrando ${slotsSheets.length} slot(s)...`;
+    const filasSlots = slotsSheets.map(r => ({
+      id: String(r.ID), cliente_id: String(r.ClienteID || ''), year: parseInt(r.Year, 10) || null,
+      month: parseInt(r.Month, 10) || null, numero: parseInt(r.Numero, 10) || 0,
+      sub_numero: parseInt(r.SubNumero, 10) || 0, editor_id: r.EditorID || '', estatus: r.Estatus || 'gris'
+    }));
+    await _sbMigrarEnBloques('slots', filasSlots);
+
+    out.textContent = `Migrando Junta de Aterrizaje (${juntaSheets.length} respuesta(s))...`;
+    const clienteIdsJunta = [...new Set(juntaSheets.map(r => String(r.ClienteID)))];
+    if(clienteIdsJunta.length){
+      await sb.from('junta_aterrizaje').delete().in('cliente_id', clienteIdsJunta);
+    }
+    const filasJunta = juntaSheets.map(r => ({
+      cliente_id: String(r.ClienteID || ''), seccion: r.Seccion || '', pregunta: r.Pregunta || '', respuesta: r.Respuesta || ''
+    }));
+    if(filasJunta.length){
+      const { error: errJunta } = await sb.from('junta_aterrizaje').insert(filasJunta);
+      if(errJunta) throw errJunta;
+    }
+
+    out.textContent = `Migrando ${cuentasSheets.length} cuenta(s)...`;
+    const filasCuentas = cuentasSheets.map(r => ({
+      id: String(r.ID), cliente_id: String(r.ClienteID || ''), plataforma: r.Plataforma || '',
+      usuario: r.Usuario || '', contrasena: r.Contraseña || '', notas: r.Notas || ''
+    }));
+    await _sbMigrarEnBloques('cuentas', filasCuentas);
+
+    out.textContent = `Migrando ${expSheets.length} expediente(s)...`;
+    const filasExp = expSheets.map(r => ({
+      cliente_id: String(r.ClienteID || ''), subtitulo: r.Subtitulo || '', arq1: r.Arq1 || '', arq1_desc: r.Arq1Desc || '',
+      arq2: r.Arq2 || '', arq2_desc: r.Arq2Desc || '', arq3: r.Arq3 || '', arq3_desc: r.Arq3Desc || '',
+      redes_activas: r.RedesActivas || '', historia: r.Historia || '', obj_negocio: r.ObjNegocio || '',
+      obj_personal: r.ObjPersonal || '', tono: r.Tono || '', valores: r.Valores || '',
+      desafios: r.Desafios || '', esencia: r.Esencia || ''
+    }));
+    if(filasExp.length){
+      const { error: errExp } = await sb.from('expedientes').upsert(filasExp, { onConflict: 'cliente_id' });
+      if(errExp) throw errExp;
+    }
+
+    out.textContent = `Migrando ${infSheets.length} informe(s)...`;
+    const filasInf = infSheets.map(r => ({
+      cliente_id: String(r.ClienteID || ''), fecha_inicio: r.FechaInicio || '', barrera_views: r.BarreraViews || '',
+      formato_ganador: r.FormatoGanador || '', honor_callout: r.HonorCallout || '',
+      redes_activas: r.RedesActivas || '', tracker: r.Tracker || ''
+    }));
+    if(filasInf.length){
+      const { error: errInf } = await sb.from('informes').upsert(filasInf, { onConflict: 'cliente_id' });
+      if(errInf) throw errInf;
+    }
+
+    out.textContent = 'Migrando historial de PDFs...';
+    const mapPdf = r => ({
+      id: String(r.ID), cliente_id: String(r.ClienteID || ''), cliente_nombre: r.ClienteNombre || '',
+      fecha_iso: r.FechaISO || '', fecha_legible: r.FechaLegible || '', nombre_archivo: r.NombreArchivo || '',
+      file_id: r.FileId || '', preview_url: r.PreviewURL || '', view_url: r.ViewURL || ''
+    });
+    await _sbMigrarEnBloques('expedientes_pdfs', expPdfsSheets.map(mapPdf));
+    await _sbMigrarEnBloques('informes_pdfs', infPdfsSheets.map(mapPdf));
+    await _sbMigrarEnBloques('propuestas_pdfs', propPdfsSheets.map(mapPdf));
+    await _sbMigrarEnBloques('diagnosticos_pdfs', diagPdfsSheets.map(mapPdf));
+
+    out.textContent = `Migrando ${candidatosSheets.length} candidato(s) de reclutamiento...`;
+    const filasCandidatos = candidatosSheets.map(r => ({
+      id: String(r.ID), fecha_iso: r.FechaISO || '', nombre: r.Nombre || '', edad: r.Edad || '', origen: r.Origen || '',
+      interes: r.Interes || '', situacion_actual: r.SituacionActual || '', especial: r.Especial || '',
+      anios_editando: r.AniosEditando || '', programas: r.Programas || '', programa_otro: r.ProgramaOtro || '',
+      sistema_operativo: r.SistemaOperativo || '', sistema_operativo_otro: r.SistemaOperativoOtro || '',
+      nivel_editor: r.NivelEditor || '', video1: r.Video1 || '', video2: r.Video2 || '',
+      tiempo_dedicar: r.TiempoDedicar || '', reels_por_mes: r.ReelsPorMes || '', instagram: r.Instagram || '',
+      estatus: r.Estatus || 'Recibido'
+    }));
+    await _sbMigrarEnBloques('candidatos_reclutamiento', filasCandidatos);
+
+    out.textContent = `Migrando ${diagProspSheets.length} diagnóstico(s) de prospecto...`;
+    const filasDiagProsp = diagProspSheets.map(r => ({
+      id: String(r.ID), fecha: r.Fecha || '', nombre_completo: r.NombreCompleto || '', nombre_negocio: r.NombreNegocio || '',
+      ciudad: r.Ciudad || '', telefono: r.Telefono || '', redes: r.Redes || '', respuestas_json: r.RespuestasJSON || '{}'
+    }));
+    await _sbMigrarEnBloques('diagnosticos_prospectos', filasDiagProsp);
+
+    out.textContent = `Migrando ${reportesSheets.length} reporte(s) semanal(es)...`;
+    const filasReportes = reportesSheets.map(r => ({
+      id: String(r.ID), miembro_id: r.MiembroID || '', semana: r.Semana || '',
+      mental_reportado: r.MentalReportado || '', feedbacks_reportados: r.FeedbacksReportados || '', fecha_reporte: r.FechaReporte || ''
+    }));
+    await _sbMigrarEnBloques('reportes', filasReportes);
+
+    out.innerHTML = `✓ Listo. ${filasCli.length} cliente(s), ${filasGui.length} guion(es), ${filasTeam.length} miembro(s), ${filasProd.length} tarjeta(s) de Producción, ${filasCm.length} tarjeta(s) de CM, ${filasSlots.length} slot(s), ${filasJunta.length} respuesta(s) de junta, ${filasCuentas.length} cuenta(s), ${filasExp.length} expediente(s), ${filasInf.length} informe(s), ${expPdfsSheets.length + infPdfsSheets.length + propPdfsSheets.length + diagPdfsSheets.length} PDF(s), ${filasCandidatos.length} candidato(s) y ${filasDiagProsp.length} diagnóstico(s) de prospecto migrados a Supabase.`;
   } catch(err){
     console.error('Migración a Supabase:', err);
     out.innerHTML = '✗ Error en la migración: ' + (err.message || err);
@@ -2419,8 +2573,9 @@ async function sbCargarModo(modoKey){
 }
 async function sbActualizarCampoModo(modoKey, id, campo, valor){
   const col = MODOS_CAMPO_SB[campo] || campo;
-  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).update({ [col]: valor }).eq('id', id);
-  if(error) console.error('Supabase actualizar campo ' + modoKey + ':', error);
+  const { data, error } = await sb.from(MODOS_TABLA_SB[modoKey]).update({ [col]: valor }).eq('id', id).select();
+  if(error){ console.error('Supabase actualizar campo ' + modoKey + ':', error); throw error; }
+  if(!data || data.length === 0) throw new Error('La tarjeta ' + id + ' no existe; no se guardó el cambio de ' + campo + '.');
 }
 function _sbFilaModoDesdePayload(payload){
   const row = { fecha: payload.fecha, cliente: payload.cliente, emoji: payload.emoji, folio: payload.folio, listo: payload.listo };
@@ -2433,13 +2588,14 @@ function _sbFilaModoDesdePayload(payload){
   return row;
 }
 async function sbActualizarModoCompleto(modoKey, id, payload){
-  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).update(_sbFilaModoDesdePayload(payload)).eq('id', id);
-  if(error) console.error('Supabase actualizar ' + modoKey + ':', error);
+  const { data, error } = await sb.from(MODOS_TABLA_SB[modoKey]).update(_sbFilaModoDesdePayload(payload)).eq('id', id).select();
+  if(error){ console.error('Supabase actualizar ' + modoKey + ':', error); throw error; }
+  if(!data || data.length === 0) throw new Error('La tarjeta ' + id + ' no existe; no se guardó.');
 }
 async function sbCrearModo(modoKey, id, payload){
   const row = Object.assign({ id }, _sbFilaModoDesdePayload(payload));
   const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).insert(row);
-  if(error) console.error('Supabase crear ' + modoKey + ':', error);
+  if(error){ console.error('Supabase crear ' + modoKey + ':', error); throw error; }
 }
 
 // ============================================================
@@ -2469,7 +2625,7 @@ async function sbGuardarTeam(datos, esNuevo){
     pin: String(datos.pin || ''), email: datos.email || '', tareas_semanales: datos.tareasSemanales || ''
   };
   const { error } = await sb.from('team').upsert(row, { onConflict: 'id' });
-  if(error) console.error('Supabase guardar team:', error);
+  if(error){ console.error('Supabase guardar team:', error); throw error; }
   if(datos.cumpleanos){
     try{
       await fetch(SHEETS_URL, {
@@ -2481,13 +2637,335 @@ async function sbGuardarTeam(datos, esNuevo){
 }
 async function sbEliminarTeam(id){
   const { error } = await sb.from('team').delete().eq('id', id);
-  if(error) console.error('Supabase eliminar team:', error);
+  if(error){ console.error('Supabase eliminar team:', error); throw error; }
   try{
     await fetch(SHEETS_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({ tipo:'team_eliminar_calendario', id })
     });
   } catch(err){ console.error('No se pudo limpiar el calendario:', err); }
+}
+
+// ============================================================
+// ============ SUPABASE — Slots (Línea de Producción) ==========
+// ============================================================
+function _sbFilaSlot(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id, Year: r.year, Month: r.month,
+    Numero: r.numero, SubNumero: r.sub_numero, EditorID: r.editor_id || '', Estatus: r.estatus || 'gris'
+  };
+}
+async function sbCargarSlots(){
+  const { data, error } = await sb.from('slots').select('*');
+  if(error){ console.error('Supabase slots:', error); return []; }
+  return data.map(_sbFilaSlot);
+}
+function _slotsClavesParaCliente(cliente){
+  const modo = cliente.NumeracionModo || 'simple';
+  const claves = [];
+  if(modo === 'episodios'){
+    const eps = parseInt(cliente.EpisodiosMes, 10) || 0;
+    const reels = parseInt(cliente.ReelsPorEpisodio, 10) || 0;
+    for(let e = 1; e <= eps; e++){
+      claves.push({ num: e, sub: 0 });
+      for(let r = 1; r <= reels; r++) claves.push({ num: e, sub: r });
+    }
+  } else {
+    const vmes = parseInt(cliente.VideosMes, 10) || 0;
+    for(let n = 1; n <= vmes; n++) claves.push({ num: n, sub: 0 });
+  }
+  return claves;
+}
+function _slotIdGenerar(clienteId, year, month, num, sub){
+  return 'slot_' + clienteId + '_' + year + '_' + month + '_' + num + (sub ? '_' + sub : '') + '_' + Math.random().toString(36).slice(2,8);
+}
+// Idempotente: genera los slots faltantes del mes para todos los clientes activos.
+// Si un cliente cambió de editor, actualiza el editor de sus slots aún no grabados (gris).
+async function sbSlotsGenerarMes(year, month, clientes){
+  const { data: existentes, error } = await sb.from('slots').select('*').eq('year', year).eq('month', month);
+  if(error){ console.error('Supabase slots generar mes:', error); return; }
+  const existentesPorCliente = {};
+  (existentes || []).forEach(s => {
+    const cid = String(s.cliente_id);
+    if(!existentesPorCliente[cid]) existentesPorCliente[cid] = {};
+    existentesPorCliente[cid][String(s.numero) + '.' + String(s.sub_numero || '')] = s;
+  });
+  const nuevas = [];
+  for(const c of clientes){
+    if(String(c.Estado || 'Activo') !== 'Activo') continue;
+    const claves = _slotsClavesParaCliente(c);
+    const existentesCliente = existentesPorCliente[String(c.ID)] || {};
+    let hayGrisDesactualizado = false;
+    claves.forEach(k => {
+      const claveKey = String(k.num) + '.' + String(k.sub || '');
+      const existente = existentesCliente[claveKey];
+      if(!existente){
+        nuevas.push({
+          id: _slotIdGenerar(c.ID, year, month, k.num, k.sub),
+          cliente_id: c.ID, year, month, numero: k.num, sub_numero: k.sub || 0,
+          editor_id: c.EditorID || '', estatus: 'gris'
+        });
+      } else if(existente.estatus === 'gris' && String(existente.editor_id || '') !== String(c.EditorID || '')){
+        hayGrisDesactualizado = true;
+      }
+    });
+    if(hayGrisDesactualizado){
+      await sb.from('slots').update({ editor_id: c.EditorID || '' })
+        .eq('cliente_id', c.ID).eq('year', year).eq('month', month).eq('estatus', 'gris');
+    }
+  }
+  if(nuevas.length){
+    const { error: errIns } = await sb.from('slots').insert(nuevas);
+    if(errIns) console.error('Supabase slots insertar:', errIns);
+  }
+}
+// Borra y recrea todos los slots de UN cliente en (year, month), preservando el estatus
+// de los que sigan existiendo con la nueva configuración (por folio numero.subnumero).
+async function sbSlotsRegenerarCliente(clienteId, year, month, cliente){
+  const { data: existentes } = await sb.from('slots').select('*').eq('cliente_id', clienteId).eq('year', year).eq('month', month);
+  const estatusPrevios = {};
+  (existentes || []).forEach(s => { estatusPrevios[String(s.numero) + '.' + String(s.sub_numero || '')] = s.estatus || 'gris'; });
+  if(existentes && existentes.length){
+    await sb.from('slots').delete().eq('cliente_id', clienteId).eq('year', year).eq('month', month);
+  }
+  const claves = _slotsClavesParaCliente(cliente || {});
+  const nuevas = claves.map(k => ({
+    id: _slotIdGenerar(clienteId, year, month, k.num, k.sub),
+    cliente_id: clienteId, year, month, numero: k.num, sub_numero: k.sub || 0,
+    editor_id: (cliente && cliente.EditorID) || '',
+    estatus: estatusPrevios[String(k.num) + '.' + String(k.sub || '')] || 'gris'
+  }));
+  if(nuevas.length){
+    const { error } = await sb.from('slots').insert(nuevas);
+    if(error){ console.error('Supabase slots regenerar:', error); throw error; }
+  }
+  return { borrados: (existentes || []).length, creados: nuevas.length };
+}
+
+// ============================================================
+// ============ SUPABASE — Ficha de cliente ======================
+// ============ (Junta, Cuentas, Expedientes, Informes, PDFs) =====
+// ============================================================
+function _fechaLegibleMX(d){
+  const pad = n => String(n).padStart(2, '0');
+  return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+// ---- Junta de Aterrizaje ----
+async function sbCargarJunta(clienteId){
+  const { data, error } = await sb.from('junta_aterrizaje').select('*').eq('cliente_id', clienteId);
+  if(error){ console.error('Supabase junta_aterrizaje:', error); return []; }
+  return data.map(r => ({ ClienteID: r.cliente_id, Seccion: r.seccion, Pregunta: r.pregunta, Respuesta: r.respuesta }));
+}
+async function sbGuardarJunta(clienteId, clienteNombre, respuestas){
+  await sb.from('junta_aterrizaje').delete().eq('cliente_id', clienteId);
+  const filas = respuestas.map(r => ({ cliente_id: clienteId, seccion: r.seccion, pregunta: r.pregunta, respuesta: r.respuesta }));
+  if(filas.length){
+    const { error } = await sb.from('junta_aterrizaje').insert(filas);
+    if(error){ console.error('Supabase guardar junta:', error); throw error; }
+  }
+  const cumple = respuestas.find(r => r.pregunta === 'Fecha de cumpleaños');
+  if(cumple && cumple.respuesta){
+    try{
+      await fetch(SHEETS_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ tipo:'junta_sincronizar_cumpleanos', clienteId, clienteNombre, fecha: cumple.respuesta })
+      });
+    } catch(err){ console.error('No se pudo sincronizar cumpleaños del cliente:', err); }
+  }
+}
+
+// ---- Cuentas y contraseñas ----
+function _sbFilaCuenta(r){
+  return { ID: r.id, ClienteID: r.cliente_id, Plataforma: r.plataforma || '', Usuario: r.usuario || '', Contraseña: r.contrasena || '', Notas: r.notas || '' };
+}
+async function sbCargarCuentas(clienteId){
+  const { data, error } = await sb.from('cuentas').select('*').eq('cliente_id', clienteId);
+  if(error){ console.error('Supabase cuentas:', error); return []; }
+  return data.map(_sbFilaCuenta);
+}
+async function sbCrearCuenta({ id, clienteId, plataforma, usuario, password, notas }){
+  const { error } = await sb.from('cuentas').insert({
+    id, cliente_id: clienteId, plataforma, usuario, contrasena: password, notas: notas || ''
+  });
+  if(error){ console.error('Supabase crear cuenta:', error); throw error; }
+}
+async function sbEliminarCuenta(id){
+  const { error } = await sb.from('cuentas').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar cuenta:', error); throw error; }
+}
+
+// ---- Expediente (una fila por cliente) ----
+function _sbFilaExpediente(r){
+  return {
+    ClienteID: r.cliente_id, Subtitulo: r.subtitulo || '', Arq1: r.arq1 || '', Arq1Desc: r.arq1_desc || '',
+    Arq2: r.arq2 || '', Arq2Desc: r.arq2_desc || '', Arq3: r.arq3 || '', Arq3Desc: r.arq3_desc || '',
+    RedesActivas: r.redes_activas || '', Historia: r.historia || '', ObjNegocio: r.obj_negocio || '',
+    ObjPersonal: r.obj_personal || '', Tono: r.tono || '', Valores: r.valores || '',
+    Desafios: r.desafios || '', Esencia: r.esencia || ''
+  };
+}
+async function sbCargarExpediente(clienteId){
+  const { data, error } = await sb.from('expedientes').select('*').eq('cliente_id', clienteId).maybeSingle();
+  if(error){ console.error('Supabase expedientes:', error); return null; }
+  return data ? _sbFilaExpediente(data) : null;
+}
+async function sbGuardarExpediente(clienteId, datos){
+  const row = {
+    cliente_id: clienteId, subtitulo: datos.Subtitulo || '', arq1: datos.Arq1 || '', arq1_desc: datos.Arq1Desc || '',
+    arq2: datos.Arq2 || '', arq2_desc: datos.Arq2Desc || '', arq3: datos.Arq3 || '', arq3_desc: datos.Arq3Desc || '',
+    redes_activas: datos.RedesActivas || '', historia: datos.Historia || '', obj_negocio: datos.ObjNegocio || '',
+    obj_personal: datos.ObjPersonal || '', tono: datos.Tono || '', valores: datos.Valores || '',
+    desafios: datos.Desafios || '', esencia: datos.Esencia || ''
+  };
+  const { error } = await sb.from('expedientes').upsert(row, { onConflict: 'cliente_id' });
+  if(error){ console.error('Supabase guardar expediente:', error); throw error; }
+}
+
+// ---- Informe mensual (una fila por cliente) ----
+function _sbFilaInforme(r){
+  return {
+    ClienteID: r.cliente_id, FechaInicio: r.fecha_inicio || '', BarreraViews: r.barrera_views || '',
+    FormatoGanador: r.formato_ganador || '', HonorCallout: r.honor_callout || '',
+    RedesActivas: r.redes_activas || '', Tracker: r.tracker || ''
+  };
+}
+async function sbCargarInforme(clienteId){
+  const { data, error } = await sb.from('informes').select('*').eq('cliente_id', clienteId).maybeSingle();
+  if(error){ console.error('Supabase informes:', error); return null; }
+  return data ? _sbFilaInforme(data) : null;
+}
+async function sbGuardarInforme(clienteId, datos){
+  const row = {
+    cliente_id: clienteId, fecha_inicio: datos.FechaInicio || '', barrera_views: datos.BarreraViews || '',
+    formato_ganador: datos.FormatoGanador || '', honor_callout: datos.HonorCallout || '',
+    redes_activas: datos.RedesActivas || '', tracker: datos.Tracker || ''
+  };
+  const { error } = await sb.from('informes').upsert(row, { onConflict: 'cliente_id' });
+  if(error){ console.error('Supabase guardar informe:', error); throw error; }
+}
+
+// ---- Historial de PDFs (Expedientes/Informes/Propuestas/Diagnósticos) ----
+// El PDF en sí se sigue subiendo a Drive vía Apps Script (_subirPdfADrive ya regresa
+// id/fileId/previewUrl/viewUrl/nombreArchivo); aquí solo guardamos el registro para listarlo rápido.
+function _sbFilaPdf(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id, ClienteNombre: r.cliente_nombre, FechaISO: r.fecha_iso,
+    FechaLegible: r.fecha_legible, NombreArchivo: r.nombre_archivo, FileId: r.file_id,
+    PreviewURL: r.preview_url, ViewURL: r.view_url
+  };
+}
+async function sbCargarPdfs(tabla, clienteId){
+  const { data, error } = await sb.from(tabla).select('*').eq('cliente_id', clienteId);
+  if(error){ console.error('Supabase ' + tabla + ':', error); return []; }
+  return data.map(_sbFilaPdf);
+}
+async function sbGuardarPdfMeta(tabla, { id, clienteId, clienteNombre, nombreArchivo, fileId, previewUrl, viewUrl }){
+  const ahora = new Date();
+  const { error } = await sb.from(tabla).insert({
+    id, cliente_id: clienteId, cliente_nombre: clienteNombre || '',
+    fecha_iso: ahora.toISOString(), fecha_legible: _fechaLegibleMX(ahora),
+    nombre_archivo: nombreArchivo || '', file_id: fileId || '', preview_url: previewUrl || '', view_url: viewUrl || ''
+  });
+  if(error){ console.error('Supabase guardar pdf ' + tabla + ':', error); throw error; }
+}
+async function sbEliminarPdfMeta(tabla, id){
+  const { error } = await sb.from(tabla).delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar pdf ' + tabla + ':', error); throw error; }
+}
+
+// ============================================================
+// ============ SUPABASE — Reclutamiento (candidatos) ============
+// ============================================================
+function _sbFilaCandidato(r){
+  return {
+    ID: r.id, FechaISO: r.fecha_iso, Nombre: r.nombre || '', Edad: r.edad || '', Origen: r.origen || '',
+    Interes: r.interes || '', SituacionActual: r.situacion_actual || '', Especial: r.especial || '',
+    AniosEditando: r.anios_editando || '', Programas: r.programas || '', ProgramaOtro: r.programa_otro || '',
+    SistemaOperativo: r.sistema_operativo || '', SistemaOperativoOtro: r.sistema_operativo_otro || '',
+    NivelEditor: r.nivel_editor || '', Video1: r.video1 || '', Video2: r.video2 || '',
+    TiempoDedicar: r.tiempo_dedicar || '', ReelsPorMes: r.reels_por_mes || '', Instagram: r.instagram || '',
+    Estatus: r.estatus || 'Recibido'
+  };
+}
+async function sbCargarCandidatosReclutamiento(){
+  const { data, error } = await sb.from('candidatos_reclutamiento').select('*');
+  if(error){ console.error('Supabase candidatos_reclutamiento:', error); return []; }
+  return data.map(_sbFilaCandidato);
+}
+async function sbActualizarEstatusCandidato(id, estatus){
+  const { data, error } = await sb.from('candidatos_reclutamiento').update({ estatus }).eq('id', id).select();
+  if(error){ console.error('Supabase actualizar candidato:', error); throw error; }
+  if(!data || data.length === 0) throw new Error('El candidato ' + id + ' no existe; no se guardó el cambio de estatus.');
+}
+
+// ============================================================
+// ============ SUPABASE — Reportes (check-in semanal) ===========
+// ============================================================
+function _lunesDeSemana(fecha){
+  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  const dia = d.getDay();
+  const diasDesdeLunes = dia === 0 ? 6 : dia - 1;
+  d.setDate(d.getDate() - diasDesdeLunes);
+  return d;
+}
+function _claveSemana(fecha){
+  const lunes = _lunesDeSemana(fecha);
+  const jueves = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 3);
+  const year = jueves.getFullYear();
+  const enero1 = new Date(year, 0, 1);
+  const diaEnero1 = enero1.getDay();
+  const offset = diaEnero1 <= 4 ? diaEnero1 - 1 : diaEnero1 - 8;
+  const primerJueves = new Date(year, 0, 1 - offset + 3);
+  const diffMs = jueves.getTime() - primerJueves.getTime();
+  const semanaNum = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+  const semanaStr = semanaNum < 10 ? '0' + semanaNum : String(semanaNum);
+  return year + '-W' + semanaStr;
+}
+function _claveSemanaAnterior(fecha){
+  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate() - 7);
+  return _claveSemana(d);
+}
+function _sbFilaReporte(r){
+  return {
+    ID: r.id, MiembroID: r.miembro_id, Semana: r.semana, MentalReportado: r.mental_reportado,
+    FeedbacksReportados: r.feedbacks_reportados, FechaReporte: r.fecha_reporte
+  };
+}
+async function sbCargarReportes(){
+  const { data, error } = await sb.from('reportes').select('*');
+  if(error){ console.error('Supabase reportes:', error); return []; }
+  return data.map(_sbFilaReporte);
+}
+// Regla: si HOY es lunes >= 8am, o martes-jueves, y no hay reporte de la semana anterior → pendiente
+async function sbReportePendiente(miembroId){
+  const hoy = new Date();
+  const diaHoy = hoy.getDay();
+  const horaHoy = hoy.getHours();
+  let puedeReportarHoy = false;
+  if(diaHoy === 1 && horaHoy >= 8) puedeReportarHoy = true;
+  if(diaHoy >= 2 && diaHoy <= 4) puedeReportarHoy = true;
+  if(!puedeReportarHoy) return { pendiente: false };
+  const semanaAReportar = _claveSemanaAnterior(hoy);
+  const { data, error } = await sb.from('reportes').select('id').eq('miembro_id', miembroId).eq('semana', semanaAReportar).maybeSingle();
+  if(error){ console.error('Supabase reporte_pendiente:', error); return { pendiente: false }; }
+  if(data) return { pendiente: false, semana: semanaAReportar };
+  return { pendiente: true, semana: semanaAReportar };
+}
+async function sbGuardarReporte(miembroId, semana, mental, feedbacks){
+  const { data: existente } = await sb.from('reportes').select('id').eq('miembro_id', miembroId).eq('semana', semana).maybeSingle();
+  if(existente){
+    const { error } = await sb.from('reportes').update({
+      mental_reportado: mental, feedbacks_reportados: feedbacks, fecha_reporte: new Date().toISOString()
+    }).eq('id', existente.id);
+    if(error){ console.error('Supabase actualizar reporte:', error); throw error; }
+  } else {
+    const { error } = await sb.from('reportes').insert({
+      id: 'rep_' + Date.now().toString(36), miembro_id: miembroId, semana,
+      mental_reportado: mental, feedbacks_reportados: feedbacks, fecha_reporte: new Date().toISOString()
+    });
+    if(error){ console.error('Supabase crear reporte:', error); throw error; }
+  }
 }
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2628,6 +3106,7 @@ async function moverTarjetaAFecha(drag, nuevaFecha){
   }
 
   // Actualizar en memoria y repintar de inmediato (respuesta instantánea)
+  const respaldo = { Fecha: item.Fecha, FechaFin: item.FechaFin };
   item.Fecha = nuevaFecha;
   if(nuevaFechaFin) item.FechaFin = nuevaFechaFin;
   render(modoKey);
@@ -2641,6 +3120,10 @@ async function moverTarjetaAFecha(drag, nuevaFecha){
     }
   } catch(err){
     console.error('No se pudo mover la tarjeta', err);
+    Object.assign(item, respaldo);
+    render(modoKey);
+    if(modoKey === 'cm' || modoKey === 'edicion') renderPanelListosParaPublicar();
+    alert('⚠️ No se pudo mover esta tarjeta a la nueva fecha. Revisa tu conexión e intenta de nuevo.');
   }
 }
 
@@ -2687,6 +3170,7 @@ async function aplicarResize(resize, fechaDestino){
     nuevaIni = fechaDestino;
   }
 
+  const respaldo = { Fecha: item.Fecha, FechaFin: item.FechaFin };
   item.Fecha = nuevaIni;
   item.FechaFin = nuevaFin;
   render('edicion');
@@ -2695,7 +3179,13 @@ async function aplicarResize(resize, fechaDestino){
   try {
     await sbActualizarCampoModo('edicion', resize.id, 'fecha', nuevaIni);
     await sbActualizarCampoModo('edicion', resize.id, 'fechaFin', nuevaFin);
-  } catch(err){ console.error('No se pudo estirar la tarjeta', err); }
+  } catch(err){
+    console.error('No se pudo estirar la tarjeta', err);
+    Object.assign(item, respaldo);
+    render('edicion');
+    renderPanelListosParaPublicar();
+    alert('⚠️ No se pudo estirar esta tarjeta. Revisa tu conexión e intenta de nuevo.');
+  }
 }
 
 // Listeners globales del estiramiento (se registran una sola vez)
@@ -2982,11 +3472,20 @@ function render(modoKey){
       el.dataset.listo = nuevo;
       el.className = 'c-status ' + (nuevo === 'SI' ? 'listo' : 'pendiente');
       const item = estado[mk].TODAS.find(r => String(r.ID) === String(id));
+      const anterior = actual;
       if(item) item.Listo = nuevo;
       renderKPIs(mk);
       try{
         await sbActualizarCampoModo(mk, id, 'listo', nuevo);
-      } catch(err){ console.error('No se pudo actualizar', err); }
+      } catch(err){
+        console.error('No se pudo actualizar', err);
+        el.textContent = anterior === 'SI' ? '✓ Listo' : 'Pendiente';
+        el.dataset.listo = anterior;
+        el.className = 'c-status ' + (anterior === 'SI' ? 'listo' : 'pendiente');
+        if(item) item.Listo = anterior;
+        renderKPIs(mk);
+        alert('⚠️ No se pudo actualizar el estatus de esta tarjeta. Revisa tu conexión e intenta de nuevo.');
+      }
     });
   });
 
@@ -3101,6 +3600,8 @@ function pedirLinkVideoYMarcarListo(id, item, statusEl){
 
   async function confirmar(conLink){
     const link = conLink ? input.value.trim() : '';
+    const respaldo = item ? { Listo: item.Listo, LinkVideo: item.LinkVideo, Progreso: item.Progreso } : null;
+    const statusAnterior = { texto: statusEl.textContent, listo: statusEl.dataset.listo, clase: statusEl.className };
     // Actualiza UI
     statusEl.textContent = '✓ Listo';
     statusEl.dataset.listo = 'SI';
@@ -3115,7 +3616,15 @@ function pedirLinkVideoYMarcarListo(id, item, statusEl){
       }
       await sbActualizarCampoModo('edicion', id, 'progreso', 100);
       await sbActualizarCampoModo('edicion', id, 'listo', 'SI');
-    } catch(err){ console.error('No se pudo marcar listo', err); }
+    } catch(err){
+      console.error('No se pudo marcar listo', err);
+      statusEl.textContent = statusAnterior.texto;
+      statusEl.dataset.listo = statusAnterior.listo;
+      statusEl.className = statusAnterior.clase;
+      if(item && respaldo) Object.assign(item, respaldo);
+      renderKPIs('edicion');
+      alert('⚠️ No se pudo marcar este video como Listo. Revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
+    }
     // Refresca el panel del CM (por si el video ahora aparece como listo para publicar)
     if(typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
   }
@@ -3446,8 +3955,7 @@ async function sugerirProximoFolio(clienteId){
   hint.textContent = '';
   if(!clienteId) return;
   try {
-    const respSlots = await fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' });
-    const todos = await respSlots.json();
+    const todos = await sbCargarSlots();
     const d = new Date();
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
@@ -3590,8 +4098,8 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
 
   if(idExistente){
     const item = st.TODAS.find(r => String(r.ID) === String(idExistente));
+    const respaldo = item ? Object.assign({}, item) : null;
     if(item) Object.assign(item, datosForm);
-    modalBg.classList.remove('open');
     actualizaFiltros(modoKey);
     render(modoKey);
     const payload = {
@@ -3604,11 +4112,17 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modoKey === 'edicion'){ payload.fechaFin = datosForm.FechaFin; payload.progreso = datosForm.Progreso; }
     try{
       await sbActualizarModoCompleto(modoKey, idExistente, payload);
-    } catch(err){ console.error('No se pudo actualizar', err); }
+      modalBg.classList.remove('open');
+    } catch(err){
+      console.error('No se pudo actualizar', err);
+      if(item && respaldo) Object.assign(item, respaldo);
+      actualizaFiltros(modoKey);
+      render(modoKey);
+      alert('⚠️ No se pudo guardar esta tarjeta. Revisa tu conexión (o recarga la página con F5) e intenta de nuevo. Tu edición NO quedó guardada.');
+    }
   } else {
     const nueva = { ID: uuid(), ...datosForm };
     st.TODAS.push(nueva);
-    modalBg.classList.remove('open');
     actualizaFiltros(modoKey);
     render(modoKey);
     const payload = {
@@ -3621,7 +4135,15 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modoKey === 'edicion'){ payload.fechaFin = nueva.FechaFin; payload.progreso = nueva.Progreso; }
     try{
       await sbCrearModo(modoKey, nueva.ID, payload);
-    } catch(err){ console.error('No se pudo guardar', err); }
+      modalBg.classList.remove('open');
+    } catch(err){
+      console.error('No se pudo guardar', err);
+      const idx = st.TODAS.indexOf(nueva);
+      if(idx >= 0) st.TODAS.splice(idx, 1);
+      actualizaFiltros(modoKey);
+      render(modoKey);
+      alert('⚠️ No se pudo guardar esta tarjeta nueva. Revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
+    }
   }
   btn.disabled = false;
 });
@@ -4022,10 +4544,16 @@ document.getElementById('btn-guardar-team').addEventListener('click', async () =
     email: document.getElementById('nt-email').value.trim(),
     tareasSemanales: document.getElementById('nt-tareas').value.trim()
   };
-  modalTeamBg.classList.remove('open');
+  const btnGuardarTeam = document.getElementById('btn-guardar-team');
+  btnGuardarTeam.disabled = true;
   try {
     await sbGuardarTeam(datos, !TEAM_EDITANDO_ID);
-  } catch(err){ console.error(err); }
+    modalTeamBg.classList.remove('open');
+  } catch(err){
+    console.error(err);
+    alert('⚠️ No se pudo guardar este integrante del team. Revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
+  }
+  btnGuardarTeam.disabled = false;
   await cargarTeam();
 });
 
@@ -4035,7 +4563,10 @@ async function eliminarMiembroTeam(id){
   if(!confirm(`¿Eliminar a ${m.Nombre} del team? (si tiene clientes asignados, siguen existiendo pero sin asignación)`)) return;
   try {
     await sbEliminarTeam(id);
-  } catch(err){ console.error(err); }
+  } catch(err){
+    console.error(err);
+    alert('⚠️ No se pudo eliminar a este integrante del team. Revisa tu conexión e intenta de nuevo.');
+  }
   await cargarTeam();
 }
 
@@ -4186,10 +4717,16 @@ document.getElementById('btn-guardar-cliente').addEventListener('click', async (
     cmId: document.getElementById('nc-cm').value,
     frameLinkCliente: document.getElementById('nc-frame-cliente').value.trim()
   };
-  modalClienteBg.classList.remove('open');
+  const btnGuardarCliente = document.getElementById('btn-guardar-cliente');
+  btnGuardarCliente.disabled = true;
   try{
     await sbGuardarCliente(datos, !CLIENTE_EDITANDO_ID);
-  } catch(err){ console.error(err); }
+    modalClienteBg.classList.remove('open');
+  } catch(err){
+    console.error(err);
+    alert('⚠️ No se pudo guardar este cliente. Revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
+  }
+  btnGuardarCliente.disabled = false;
   await cargarClientes();
 });
 
@@ -4289,9 +4826,8 @@ document.querySelectorAll('.cd-subtab-btn').forEach(btn => {
 async function cargarJunta(clienteId){
   RESPUESTAS_ACTUAL = {};
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=JuntaAterrizaje&t=' + Date.now(), { cache:'no-store' });
-    const todas = await resp.json();
-    todas.filter(r => String(r.ClienteID) === String(clienteId)).forEach(r => {
+    const todas = await sbCargarJunta(clienteId);
+    todas.forEach(r => {
       RESPUESTAS_ACTUAL[r.Pregunta] = r.Respuesta;
     });
   } catch(err){ console.error(err); }
@@ -4342,10 +4878,7 @@ document.getElementById('btn-guardar-junta').addEventListener('click', async () 
     });
   });
   try{
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo:'junta_guardar', clienteId: clienteActual.ID, respuestas })
-    });
+    await sbGuardarJunta(clienteActual.ID, clienteActual.Nombre, respuestas);
     status.textContent = 'Guardado ✓ (si pusiste su cumpleaños, ya quedó agendado cada año en tu Google Calendar)';
   } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
 });
@@ -4562,9 +5095,7 @@ async function cargarExpediente(clienteId){
 
   let existente = null;
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=Expedientes&t=' + Date.now(), { cache:'no-store' });
-    const todas = await resp.json();
-    existente = todas.find(r => String(r.ClienteID) === String(clienteId));
+    existente = await sbCargarExpediente(clienteId);
   } catch(err){ console.error(err); }
 
   if(existente){
@@ -4670,10 +5201,7 @@ document.getElementById('btn-guardar-expediente').addEventListener('click', asyn
   status.textContent = 'Guardando...';
   const datos = recolectaExpedienteForm();
   try{
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(Object.assign({ tipo:'expediente_guardar', clienteId: clienteActual.ID }, datos))
-    });
+    await sbGuardarExpediente(clienteActual.ID, datos);
     status.textContent = 'Guardado ✓';
   } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
 });
@@ -4822,6 +5350,11 @@ document.getElementById('btn-generar-expediente-pdf').addEventListener('click', 
     });
     const respJson = await resp.json();
     if(respJson.status === 'ok'){
+      await sbGuardarPdfMeta('expedientes_pdfs', {
+        id: respJson.id, clienteId: clienteActual.ID, clienteNombre: nombre,
+        nombreArchivo: respJson.nombreArchivo, fileId: respJson.fileId,
+        previewUrl: respJson.previewUrl, viewUrl: respJson.viewUrl
+      });
       status.textContent = '✓ Expediente descargado y guardado en Drive. Ya aparece abajo.';
       await cargarPDFsDelCliente(clienteActual.ID);
     } else {
@@ -4840,11 +5373,8 @@ async function cargarPDFsDelCliente(clienteId){
   const lista = document.getElementById('exp-pdfs-lista');
   lista.innerHTML = '<div class="exp-pdfs-vacio">Cargando...</div>';
   try {
-    const resp = await fetch(SHEETS_URL + '?hoja=ExpedientesPDFs&t=' + Date.now(), { cache:'no-store' });
-    const todos = await resp.json();
-    EXP_PDFS_LISTA = todos
-      .filter(r => String(r.ClienteID) === String(clienteId))
-      .sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO))); // más reciente primero
+    const todos = await sbCargarPdfs('expedientes_pdfs', clienteId);
+    EXP_PDFS_LISTA = todos.sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO))); // más reciente primero
   } catch(err) {
     console.error(err);
     EXP_PDFS_LISTA = [];
@@ -4876,6 +5406,7 @@ function renderExpPDFsLista(){
           method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
           body: JSON.stringify({ tipo:'expediente_pdf_eliminar', id: pdf.ID, fileId: pdf.FileId })
         });
+        await sbEliminarPdfMeta('expedientes_pdfs', pdf.ID);
         await cargarPDFsDelCliente(clienteActual.ID);
       } catch(err) { console.error(err); alert('No se pudo eliminar.'); }
     });
@@ -4932,9 +5463,7 @@ async function cargarInforme(clienteId){
 
   let existente = null;
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=Informes&t=' + Date.now(), { cache:'no-store' });
-    const todos = await resp.json();
-    existente = todos.find(r => String(r.ClienteID) === String(clienteId));
+    existente = await sbCargarInforme(clienteId);
   } catch(err){ console.error(err); }
 
   // Redes activas: default
@@ -5131,10 +5660,7 @@ document.getElementById('btn-guardar-informe').addEventListener('click', async (
   status.textContent = 'Guardando...';
   const datos = infRecolectaFormulario();
   try {
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(Object.assign({ tipo:'informe_guardar', clienteId: clienteActual.ID }, datos))
-    });
+    await sbGuardarInforme(clienteActual.ID, datos);
     status.textContent = 'Guardado ✓';
   } catch(err){ console.error(err); status.textContent = 'No se pudo guardar.'; }
 });
@@ -5205,13 +5731,13 @@ document.getElementById('btn-generar-informe-pdf').addEventListener('click', asy
   const datos = infRecolectaFormulario();
   const mesActualLegible = infMesActualLegible();
 
-  // --- Guardado del tracker en el sheet, ANTES de generar el PDF ---
+  // --- Guardado del tracker, ANTES de generar el PDF ---
   try {
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(Object.assign({ tipo:'informe_guardar', clienteId: clienteActual.ID }, datos))
-    });
-  } catch(err){ console.error(err); }
+    await sbGuardarInforme(clienteActual.ID, datos);
+  } catch(err){
+    console.error(err);
+    alert('⚠️ No se pudo guardar el informe en la base de datos (revisa tu conexión). El PDF se va a generar de todos modos, pero estos datos NO quedaron guardados — vuelve a intentar "Generar PDF" después para que se guarden.');
+  }
 
   // --- Poblar slides ---
   document.getElementById('inf-r-nombre-cover').textContent = nombre;
@@ -5333,6 +5859,11 @@ document.getElementById('btn-generar-informe-pdf').addEventListener('click', asy
     });
     const respJson = await resp.json();
     if(respJson.status === 'ok'){
+      await sbGuardarPdfMeta('informes_pdfs', {
+        id: respJson.id, clienteId: clienteActual.ID, clienteNombre: nombre + ' - ' + mesActualLegible,
+        nombreArchivo: respJson.nombreArchivo, fileId: respJson.fileId,
+        previewUrl: respJson.previewUrl, viewUrl: respJson.viewUrl
+      });
       status.textContent = '✓ Informe descargado y guardado en Drive. Ya aparece abajo.';
       await cargarInformePDFsDelCliente(clienteActual.ID);
     } else {
@@ -5351,11 +5882,8 @@ async function cargarInformePDFsDelCliente(clienteId){
   const lista = document.getElementById('inf-pdfs-lista');
   lista.innerHTML = '<div class="exp-pdfs-vacio">Cargando...</div>';
   try {
-    const resp = await fetch(SHEETS_URL + '?hoja=InformesPDFs&t=' + Date.now(), { cache:'no-store' });
-    const todos = await resp.json();
-    INF_PDFS_LISTA = todos
-      .filter(r => String(r.ClienteID) === String(clienteId))
-      .sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO)));
+    const todos = await sbCargarPdfs('informes_pdfs', clienteId);
+    INF_PDFS_LISTA = todos.sort((a, b) => String(b.FechaISO).localeCompare(String(a.FechaISO)));
   } catch(err) {
     console.error(err);
     INF_PDFS_LISTA = [];
@@ -5387,6 +5915,7 @@ function renderInfPDFsLista(){
           method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
           body: JSON.stringify({ tipo:'informe_pdf_eliminar', id: pdf.ID, fileId: pdf.FileId })
         });
+        await sbEliminarPdfMeta('informes_pdfs', pdf.ID);
         await cargarInformePDFsDelCliente(clienteActual.ID);
       } catch(err) { console.error(err); alert('No se pudo eliminar.'); }
     });
@@ -5397,9 +5926,7 @@ function renderInfPDFsLista(){
 // ---- Cuentas y Contraseñas ----
 async function cargarCuentas(clienteId){
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=Cuentas&t=' + Date.now(), { cache:'no-store' });
-    const todas = await resp.json();
-    CUENTAS_ACTUAL = todas.filter(r => String(r.ClienteID) === String(clienteId));
+    CUENTAS_ACTUAL = await sbCargarCuentas(clienteId);
   } catch(err){ console.error(err); CUENTAS_ACTUAL = []; }
   renderCuentasTabla();
 }
@@ -5418,14 +5945,17 @@ function renderCuentasTabla(){
   tbody.querySelectorAll('[data-del-cuenta]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.delCuenta;
+      const respaldo = CUENTAS_ACTUAL;
       CUENTAS_ACTUAL = CUENTAS_ACTUAL.filter(c => String(c.ID) !== String(id));
       renderCuentasTabla();
       try{
-        await fetch(SHEETS_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({ tipo:'cuenta_eliminar', id })
-        });
-      } catch(err){ console.error(err); }
+        await sbEliminarCuenta(id);
+      } catch(err){
+        console.error(err);
+        CUENTAS_ACTUAL = respaldo;
+        renderCuentasTabla();
+        alert('⚠️ No se pudo eliminar esta cuenta. Revisa tu conexión e intenta de nuevo.');
+      }
     });
   });
 }
@@ -5449,16 +5979,18 @@ document.getElementById('btn-agregar-cuenta').addEventListener('click', async ()
   const nueva = { ID: uuid(), ClienteID: clienteActual.ID, Plataforma: plataforma, Usuario: usuario, Contraseña: password, Notas: notas };
   CUENTAS_ACTUAL.push(nueva);
   renderCuentasTabla();
-  document.getElementById('ct-plataforma').value = '';
-  document.getElementById('ct-usuario').value = '';
-  document.getElementById('ct-password').value = '';
-  document.getElementById('ct-notas').value = '';
   try{
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ tipo:'cuenta_crear', id: nueva.ID, clienteId: nueva.ClienteID, plataforma: nueva.Plataforma, usuario: nueva.Usuario, password: nueva.Contraseña, notas: nueva.Notas })
-    });
-  } catch(err){ console.error(err); }
+    await sbCrearCuenta({ id: nueva.ID, clienteId: nueva.ClienteID, plataforma: nueva.Plataforma, usuario: nueva.Usuario, password: nueva.Contraseña, notas: nueva.Notas });
+    document.getElementById('ct-plataforma').value = '';
+    document.getElementById('ct-usuario').value = '';
+    document.getElementById('ct-password').value = '';
+    document.getElementById('ct-notas').value = '';
+  } catch(err){
+    console.error(err);
+    CUENTAS_ACTUAL = CUENTAS_ACTUAL.filter(c => c.ID !== nueva.ID);
+    renderCuentasTabla();
+    alert('⚠️ No se pudo guardar esta cuenta. Revisa tu conexión e intenta de nuevo. Vuelve a intentarlo sin cerrar la ficha del cliente.');
+  }
 });
 
 // ---- Guiones ----
@@ -5540,6 +6072,7 @@ function renderGuionesLista(){
           <button class="btn ghost" data-eliminar-guion="${g.ID}">Eliminar</button>
           <button class="btn ghost" data-marcar-revisado="${g.ID}" ${String(g.PendienteRevision || '') === '1' ? '' : 'style="display:none;"'}>✓ Marcar como revisado</button>
           <button class="btn" data-guardar-guion="${g.ID}">Guardar cambios</button>
+          <span class="g-guardar-msg" data-msg-guion="${g.ID}" style="margin-left:8px;font-size:0.8rem;font-weight:600;"></span>
         </div>
       </div>
     </div>`;
@@ -5555,7 +6088,10 @@ function renderGuionesLista(){
       const id = btn.dataset.marcarRevisado;
       try {
         await sbGuionMarcarRevisado(id);
-      } catch(err){ console.error(err); }
+      } catch(err){
+        console.error(err);
+        alert('⚠️ No se pudo marcar como revisado. Revisa tu conexión (o recarga la página, F5) e intenta de nuevo.');
+      }
       await cargarGuiones(clienteActual.ID);
     });
   });
@@ -5564,6 +6100,7 @@ function renderGuionesLista(){
     btn.addEventListener('click', async () => {
       const item = btn.closest('.guion-item');
       const id = btn.dataset.guardarGuion;
+      const msg = cont.querySelector(`[data-msg-guion="${id}"]`);
       const folio = item.querySelector('.gi-folio').value.trim();
       const titulo = item.querySelector('.gi-titulo').value.trim();
       const texto = item.querySelector('.gi-texto').value;
@@ -5572,10 +6109,22 @@ function renderGuionesLista(){
       const notas = item.querySelector('.gi-notas').value;
       const estatus = item.querySelector('.gi-estatus').value;
       const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
+      const respaldo = g ? Object.assign({}, g) : null;
       if(g){ Object.assign(g, { Folio:folio, Titulo:titulo, Guion:texto, Musica:musica, Inspiracion:inspiracion, Notas:notas, Estatus:estatus }); }
+      btn.disabled = true;
+      if(msg){ msg.textContent = 'Guardando...'; msg.style.color = '#8a8578'; }
       try{
         await sbGuionActualizar({ id, folio, titulo, guion:texto, musica, inspiracion, notas, estatus, pendienteRevision: false });
-      } catch(err){ console.error(err); }
+        if(msg){ msg.textContent = '✓ Guardado'; msg.style.color = 'var(--verde)'; setTimeout(() => { if(msg) msg.textContent = ''; }, 3000); }
+      } catch(err){
+        console.error(err);
+        // No se pudo confirmar el guardado: revertimos lo que se veía en pantalla para no
+        // mostrar como "guardado" algo que en realidad no llegó a la base de datos.
+        if(g && respaldo) Object.assign(g, respaldo);
+        if(msg){ msg.textContent = ''; }
+        alert('⚠️ No se pudo guardar este guion. Copia el texto aparte por seguridad, revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
+      }
+      btn.disabled = false;
       renderGuionesLista();
     });
   });
@@ -5583,11 +6132,17 @@ function renderGuionesLista(){
   cont.querySelectorAll('[data-eliminar-guion]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.eliminarGuion;
+      const respaldo = GUIONES_ACTUAL.slice();
       GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => String(g.ID) !== String(id));
       renderGuionesLista();
       try{
         await sbGuionEliminar(id);
-      } catch(err){ console.error(err); }
+      } catch(err){
+        console.error(err);
+        GUIONES_ACTUAL = respaldo;
+        renderGuionesLista();
+        alert('⚠️ No se pudo eliminar el guion. Revisa tu conexión e intenta de nuevo.');
+      }
     });
   });
 }
@@ -5600,7 +6155,12 @@ document.getElementById('btn-nuevo-guion').addEventListener('click', async () =>
   if(el) el.classList.add('open');
   try{
     await sbGuionCrear(nuevo);
-  } catch(err){ console.error(err); }
+  } catch(err){
+    console.error(err);
+    GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => g.ID !== nuevo.ID);
+    renderGuionesLista();
+    alert('⚠️ No se pudo crear el guion nuevo. Revisa tu conexión e intenta de nuevo.');
+  }
 });
 
 // ============================================================
@@ -5849,12 +6409,7 @@ async function chequearReportePendiente(){
   const rolesConReporte = ['Edicion', 'CM', 'Filmmaker'];
   if(!rolesConReporte.includes(USUARIO_ACTUAL.Puesto)) return;
   try {
-    const resp = await fetch(SHEETS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tipo: 'reporte_pendiente', miembroId: USUARIO_ACTUAL.ID })
-    });
-    const data = await resp.json();
+    const data = await sbReportePendiente(USUARIO_ACTUAL.ID);
     if(data.pendiente && data.semana){
       mostrarPopupReporteSemanal(data.semana);
     }
@@ -5926,17 +6481,7 @@ function mostrarPopupReporteSemanal(semana){
     btn.textContent = 'Guardando...';
     errEl.textContent = '';
     try {
-      await fetch(SHEETS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          tipo: 'reporte_guardar',
-          miembroId: USUARIO_ACTUAL.ID,
-          semana: semana,
-          mental: mental,
-          feedbacks: feedbacks
-        })
-      });
+      await sbGuardarReporte(USUARIO_ACTUAL.ID, semana, mental, feedbacks);
       bg.remove();
     } catch(err) {
       console.error(err);
@@ -6201,11 +6746,13 @@ async function cargarDashboard(){
   cuerpo.innerHTML = '<div class="dash-empty">Cargando...</div>';
   document.getElementById('dash-year').textContent = DASH_YEAR;
   try {
-    const [produccion, cm] = await Promise.all([sbCargarModo('edicion'), sbCargarModo('cm')]);
+    const [produccion, cm, team, reportes] = await Promise.all([
+      sbCargarModo('edicion'), sbCargarModo('cm'), sbCargarTeam(), sbCargarReportes()
+    ]);
     const resp = await fetch(SHEETS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ tipo: 'dashboard_leer', year: DASH_YEAR, produccion, cm })
+      body: JSON.stringify({ tipo: 'dashboard_leer', year: DASH_YEAR, produccion, cm, team, reportes })
     });
     DASH_DATA = await resp.json();
     renderDashboard();
@@ -6405,15 +6952,7 @@ async function lineaGenerarSlotsSiFalta(){
   LINEA_LAST_GENERATED_KEY = key;
   try {
     const clientes = await sbCargarClientes();
-    await fetch(SHEETS_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({
-        tipo: 'slots_generar_mes',
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        clientes
-      })
-    });
+    await sbSlotsGenerarMes(d.getFullYear(), d.getMonth() + 1, clientes);
   } catch(err){ console.error('No se pudieron generar slots:', err); }
 }
 
@@ -6427,12 +6966,12 @@ async function cargarLineaProduccion(){
   cuerpo.innerHTML = '<div class="linea-empty">Cargando...</div>';
 
   try {
-    const [respSlots, todosClientes, todoTeam] = await Promise.all([
-      fetch(SHEETS_URL + '?hoja=Slots&t=' + Date.now(), { cache:'no-store' }),
+    const [slots, todosClientes, todoTeam] = await Promise.all([
+      sbCargarSlots(),
       sbCargarClientes(),
       sbCargarTeam()
     ]);
-    LINEA_SLOTS = await respSlots.json();
+    LINEA_SLOTS = slots;
     LINEA_TODOS_CLIENTES = todosClientes;
     LINEA_TODO_TEAM = todoTeam;
 
@@ -6690,24 +7229,9 @@ function _bindLineaBotones(){
       // Determinar year/month del mes ancla que se está viendo
       if(LINEA_STATE.year === null) lineaInicializarMesActual();
       try {
-        const resp = await fetch(SHEETS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            tipo: 'slots_regenerar_cliente',
-            clienteId: clienteId,
-            year: LINEA_STATE.year,
-            month: LINEA_STATE.month,
-            cliente: cli || null
-          })
-        });
-        const data = await resp.json();
-        if(data.status === 'ok'){
-          alert(`✓ Listo. Se recrearon ${data.creados} slots (se borraron ${data.borrados} viejos).`);
-          await cargarLineaProduccion();
-        } else {
-          alert('Error: ' + (data.mensaje || 'no se pudo regenerar'));
-        }
+        const data = await sbSlotsRegenerarCliente(clienteId, LINEA_STATE.year, LINEA_STATE.month, cli);
+        alert(`✓ Listo. Se recrearon ${data.creados} slots (se borraron ${data.borrados} viejos).`);
+        await cargarLineaProduccion();
       } catch(err) {
         alert('No se pudo regenerar. Revisa tu conexión.');
         console.error(err);
@@ -6868,9 +7392,7 @@ async function cargarCandidatosReclutamiento(){
   const tbody = document.getElementById('recl-candidatos-tbody');
   status.textContent = 'Cargando...';
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=CandidatosReclutamiento&t=' + Date.now(), { cache:'no-store' });
-    const filas = await resp.json();
-    RECLUTAMIENTO_CANDIDATOS = Array.isArray(filas) ? filas : [];
+    RECLUTAMIENTO_CANDIDATOS = await sbCargarCandidatosReclutamiento();
     if(RECLUTAMIENTO_CANDIDATOS.length === 0){
       status.textContent = 'Todavía no hay candidatos.';
       tbody.innerHTML = '';
@@ -6939,15 +7461,16 @@ function renderKanbanReclutamiento(){
 
 async function actualizarEstatusCandidatoReclutamiento(id, estatus){
   const candidato = RECLUTAMIENTO_CANDIDATOS.find(f => String(f.ID) === String(id));
+  const anterior = candidato ? candidato.Estatus : null;
   if(candidato) candidato.Estatus = estatus;
   renderKanbanReclutamiento();
   try{
-    await fetch(SHEETS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ tipo: 'candidato_reclutamiento_actualizar_estatus', id, estatus })
-    });
+    await sbActualizarEstatusCandidato(id, estatus);
   } catch(err){
     console.error('No se pudo actualizar el estatus del candidato:', err);
+    if(candidato) candidato.Estatus = anterior;
+    renderKanbanReclutamiento();
+    alert('⚠️ No se pudo mover este candidato. Revisa tu conexión e intenta de nuevo.');
   }
 }
 
@@ -7111,29 +7634,28 @@ async function arrancarVistaPublicaCliente(token){
       }
       document.getElementById('vp-status').innerHTML = '';
 
-      const [guionesResp, calResp] = await Promise.all([
+      const [guionesResp, calResp, expResp, expPdfsResp, infResp, infPdfsResp] = await Promise.all([
         sb.from('guiones').select('*').eq('cliente_id', VP_CLIENTE.id),
-        sb.from('cm').select('*').ilike('cliente', VP_CLIENTE.nombre)
+        sb.from('cm').select('*').ilike('cliente', VP_CLIENTE.nombre),
+        sb.from('expedientes').select('*').eq('cliente_id', VP_CLIENTE.id).maybeSingle(),
+        sb.from('expedientes_pdfs').select('*').eq('cliente_id', VP_CLIENTE.id),
+        sb.from('informes').select('*').eq('cliente_id', VP_CLIENTE.id).maybeSingle(),
+        sb.from('informes_pdfs').select('*').eq('cliente_id', VP_CLIENTE.id)
       ]);
-      VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion);
-      renderVpGuiones();
+      if(guionesResp.error){
+        document.getElementById('vp-guiones-lista').innerHTML = '<div class="vp-empty" style="color:#c72a09;">No se pudieron cargar tus guiones. Recarga la página antes de crear uno nuevo (para no duplicar).</div>';
+      } else {
+        VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion);
+        renderVpGuiones();
+      }
       VP_CALENDARIO = (calResp.data || []).map(_sbFilaModo);
       renderVpCalendario();
-
-      // Expediente/Informes siguen en Sheets por ahora (siguiente fase de migración);
-      // se cargan aparte para no bloquear guiones/calendario, que ya son instantáneos.
-      fetch(SHEETS_URL + '?clienteIdPublico=' + encodeURIComponent(VP_CLIENTE.id) + '&nombre=' + encodeURIComponent(VP_CLIENTE.nombre) + '&t=' + Date.now(), { cache:'no-store' })
-        .then(r => r.json())
-        .then(extra => {
-          if(extra.status !== 'ok') return;
-          VP_EXPEDIENTE = extra.expediente || null;
-          VP_EXP_PDFS = extra.expedientePdfs || [];
-          VP_INFORME = extra.informe || null;
-          VP_INF_PDFS = extra.informesPdfs || [];
-          renderVpExpediente();
-          renderVpInformes();
-        })
-        .catch(err => console.error('No se pudo cargar expediente/informes:', err));
+      VP_EXPEDIENTE = expResp.data ? _sbFilaExpediente(expResp.data) : null;
+      VP_EXP_PDFS = (expPdfsResp.data || []).map(_sbFilaPdf);
+      renderVpExpediente();
+      VP_INFORME = infResp.data ? _sbFilaInforme(infResp.data) : null;
+      VP_INF_PDFS = (infPdfsResp.data || []).map(_sbFilaPdf);
+      renderVpInformes();
     } catch(err) {
       document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">No se pudo conectar. Recarga en unos segundos.</div>';
     }
@@ -7495,6 +8017,29 @@ async function arrancarVistaPublicaCliente(token){
 
   await cargarVista();
 }
+
+// ============================================================
+// ============ AVISO DE VERSIÓN DESACTUALIZADA =================
+// ============================================================
+// Detecta si esta pestaña quedó abierta desde antes de una actualización del CRM
+// (comparando el APP_BUILD local contra el que está publicado ahora mismo) y avisa
+// para que nadie edite "a ciegas" sobre código viejo y pierda cambios sin darse cuenta.
+async function _chequearVersionDesactualizada(){
+  try {
+    const resp = await fetch(window.location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    const texto = await resp.text();
+    const match = texto.match(/const APP_BUILD = '([^']+)'/);
+    if(match && match[1] && match[1] !== APP_BUILD){
+      const banner = document.getElementById('version-banner');
+      if(banner) banner.style.display = 'block';
+    }
+  } catch(err){ /* si falla el chequeo, no molestamos sin certeza */ }
+}
+const _btnVersionRecargar = document.getElementById('btn-version-recargar');
+if(_btnVersionRecargar) _btnVersionRecargar.addEventListener('click', () => location.reload());
+document.addEventListener('visibilitychange', () => { if(!document.hidden) _chequearVersionDesactualizada(); });
+setInterval(_chequearVersionDesactualizada, 5 * 60 * 1000);
+setTimeout(_chequearVersionDesactualizada, 15000);
 </script>
 
 </body>
