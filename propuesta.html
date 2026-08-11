@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --negro:#0a0908;
@@ -161,6 +162,14 @@
     border-radius:2px;font-size:0.78rem;font-weight:600;white-space:nowrap;
   }
   .historial-link:hover{background:#333;}
+  .cot-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #ece8de;flex-wrap:wrap;}
+  .cot-item:last-child{border-bottom:none;}
+  .cot-info{min-width:0;flex:1;}
+  .cot-nombre{font-weight:700;font-size:0.9rem;color:var(--negro);}
+  .cot-meta{font-size:0.78rem;color:#8a8578;}
+  .cot-estatus{padding:8px 10px;border-radius:4px;border:1px solid #d8d3c9;font-size:0.78rem;font-family:'Montserrat',sans-serif;background:#fff;color:var(--negro);}
+  .cot-estatus[data-est="Cerrada"]{background:#e6f4e6;border-color:#a4d0a4;}
+  .cot-estatus[data-est="Perdida"]{background:#fdecea;border-color:#f5c9c1;}
 
   /* ============ SLIDES (offscreen render targets) ============ */
   #render-root{
@@ -377,6 +386,12 @@
   </div>
 
   <div class="card">
+    <h2>Cotizaciones</h2>
+    <div class="hint" id="cot-status">Cargando...</div>
+    <div id="cot-lista"></div>
+  </div>
+
+  <div class="card">
     <h2>Historial</h2>
     <div class="hint" id="historial-status">Cargando...</div>
     <div id="historial-lista"></div>
@@ -473,6 +488,53 @@ const nombreInput = document.getElementById('f-nombre');
 // URL de tu Google Apps Script (Web App) para la hoja "Cotizaciones".
 // Pega aquí el /exec que te da Google al desplegar el script (ver instrucciones que te mandé).
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
+
+// Historial de PDFs (PropuestasPDFs) ya vive en Supabase; el PDF en sí se sigue subiendo
+// a Drive vía Apps Script (SHEETS_URL, arriba) igual que siempre.
+const SUPABASE_URL = 'https://jqjlxtnvjokdlhtmjnne.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxamx4dG52am9rZGxodG1qbm5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNjYwMTgsImV4cCI6MjA5OTc0MjAxOH0.7HDembCXnDK8dpcZaq7h0R6VX7UUfPOIqNHgS4kVdXM';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function _fechaLegibleMX(d){
+  const pad = n => String(n).padStart(2, '0');
+  return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function uuid(){
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+}
+async function sbGuardarPropuestaPdfMeta({ id, clienteId, clienteNombre, nombreArchivo, fileId, previewUrl, viewUrl }){
+  const ahora = new Date();
+  const { error } = await sb.from('propuestas_pdfs').insert({
+    id, cliente_id: clienteId, cliente_nombre: clienteNombre || '',
+    fecha_iso: ahora.toISOString(), fecha_legible: _fechaLegibleMX(ahora),
+    nombre_archivo: nombreArchivo || '', file_id: fileId || '', preview_url: previewUrl || '', view_url: viewUrl || ''
+  });
+  if(error){ console.error('Supabase guardar propuesta pdf:', error); throw error; }
+}
+
+// ============ Cotizaciones (Supabase) ============
+async function sbGuardarCotizacion({ id, folio, fecha, proyecto, servicio, plan, precio, incluye }){
+  const { error } = await sb.from('cotizaciones').insert({
+    id, folio, fecha, proyecto, servicio, plan: plan || '', precio,
+    incluye: incluye || '', estatus: 'Pendiente'
+  });
+  if(error){ console.error('Supabase guardar cotizacion:', error); throw error; }
+}
+async function sbCargarCotizaciones(){
+  const { data, error } = await sb.from('cotizaciones').select('*');
+  if(error){ console.error('Supabase cotizaciones:', error); return []; }
+  return data.map(r => ({
+    ID: r.id, Folio: r.folio || '', Fecha: r.fecha || '', Proyecto: r.proyecto || '',
+    Servicio: r.servicio || '', Plan: r.plan || '', Precio: r.precio || 0, Incluye: r.incluye || '',
+    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || ''
+  }));
+}
+async function sbActualizarEstatusCotizacion(id, estatus){
+  const { data, error } = await sb.from('cotizaciones')
+    .update({ estatus, actualizado_iso: new Date().toISOString() })
+    .eq('id', id).select();
+  if(error){ console.error('Supabase actualizar cotizacion:', error); throw error; }
+  if(!data || data.length === 0) throw new Error('La cotización ' + id + ' no existe; no se guardó el cambio.');
+}
 
 let planSeleccionado = '8';
 let folioEditadoManualmente = false;
@@ -714,6 +776,12 @@ async function generarContratoPDF({nombre, servicio, servicioLabel, precio, incl
       try{ jsonDrive = JSON.parse(rawDrive); } catch(e){}
       if(!respDrive.ok || (jsonDrive && jsonDrive.status === 'error')){
         console.error('El contrato NO se guardó en Drive:', rawDrive);
+      } else if(jsonDrive && jsonDrive.status === 'ok'){
+        await sbGuardarPropuestaPdfMeta({
+          id: jsonDrive.id, clienteId: folio, clienteNombre: nombre,
+          nombreArchivo: jsonDrive.nombreArchivo, fileId: jsonDrive.fileId,
+          previewUrl: jsonDrive.previewUrl, viewUrl: jsonDrive.viewUrl
+        });
       }
       cargarHistorial();
     }
@@ -818,6 +886,12 @@ async function generarPDF(){
       try{ jsonDrive = JSON.parse(rawDrive); } catch(e){}
       if(!respDrive.ok || (jsonDrive && jsonDrive.status === 'error')){
         console.error('La propuesta NO se guardó en Drive:', rawDrive);
+      } else if(jsonDrive && jsonDrive.status === 'ok'){
+        await sbGuardarPropuestaPdfMeta({
+          id: jsonDrive.id, clienteId: folio, clienteNombre: nombre,
+          nombreArchivo: jsonDrive.nombreArchivo, fileId: jsonDrive.fileId,
+          previewUrl: jsonDrive.previewUrl, viewUrl: jsonDrive.viewUrl
+        });
       }
       cargarHistorial();
     }
@@ -833,36 +907,24 @@ async function generarPDF(){
     }
   }
 
-  // ---- registrar en Google Sheets (KPI de cierre lo llenas tú manualmente después) ----
+  // ---- registrar la cotización en Supabase (el estatus de cierre se marca luego en el historial) ----
   status.textContent = 'Guardando en tu base de datos...';
-  let sheetsOk = false;
+  let guardadoOk = false;
   try{
-    if(SHEETS_URL && SHEETS_URL.indexOf('PEGAR_AQUI') === -1){
-      const resp = await fetch(SHEETS_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
-        body: JSON.stringify({
-          tipo: 'cotizacion',
-          folio: folio,
-          fecha: fechaISO,
-          proyecto: nombre,
-          servicio: servicioLabel,
-          plan: servicio === 'contenido' ? (planSeleccionado + ' videos') : '',
-          precio: precio,
-          incluye: incluyeLines.join(' | ')
-        })
-      });
-      const raw = await resp.text().catch(() => '');
-      console.log('Respuesta de Sheets:', resp.status, raw);
-      sheetsOk = resp.ok;
-    }
+    await sbGuardarCotizacion({
+      id: uuid(), folio: folio, fecha: fechaISO, proyecto: nombre,
+      servicio: servicioLabel, plan: servicio === 'contenido' ? (planSeleccionado + ' videos') : '',
+      precio: precio, incluye: incluyeLines.join(' | ')
+    });
+    guardadoOk = true;
+    cargarCotizaciones();
   } catch(err){
-    console.error('No se pudo registrar en Sheets:', err);
+    console.error('No se pudo registrar la cotización:', err);
   }
 
-  status.textContent = sheetsOk
+  status.textContent = guardadoOk
     ? 'Listo. Se descargó el PDF y se guardó el registro.'
-    : 'Se descargó el PDF, pero no se pudo confirmar el guardado en Sheets (revisa la consola del navegador con F12).';
+    : 'Se descargó el PDF, pero no se pudo guardar el registro de la cotización (revisa tu conexión y vuelve a intentar).';
   btn.disabled = false;
 }
 
@@ -873,9 +935,14 @@ async function cargarHistorial(){
   const cont = document.getElementById('historial-lista');
   const status = document.getElementById('historial-status');
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=PropuestasPDFs&t=' + Date.now(), { cache:'no-store' });
-    const filas = await resp.json();
-    if(!Array.isArray(filas) || filas.length === 0){
+    const { data, error } = await sb.from('propuestas_pdfs').select('*');
+    if(error) throw error;
+    const filas = (data || []).map(r => ({
+      ID: r.id, ClienteID: r.cliente_id, ClienteNombre: r.cliente_nombre, FechaISO: r.fecha_iso,
+      FechaLegible: r.fecha_legible, NombreArchivo: r.nombre_archivo, FileId: r.file_id,
+      PreviewURL: r.preview_url, ViewURL: r.view_url
+    }));
+    if(filas.length === 0){
       status.textContent = 'Todavía no has generado ninguna propuesta o contrato.';
       cont.innerHTML = '';
       return;
@@ -899,6 +966,55 @@ async function cargarHistorial(){
   }
 }
 cargarHistorial();
+
+// ============ Cotizaciones: lista + estatus cerrada/perdida ============
+async function cargarCotizaciones(){
+  const cont = document.getElementById('cot-lista');
+  const status = document.getElementById('cot-status');
+  try{
+    const cotizaciones = await sbCargarCotizaciones();
+    if(cotizaciones.length === 0){
+      status.textContent = 'Todavía no has generado ninguna cotización.';
+      cont.innerHTML = '';
+      return;
+    }
+    status.textContent = '';
+    const ordenadas = cotizaciones.slice().sort((a,b) => new Date(b.Fecha || 0) - new Date(a.Fecha || 0));
+    cont.innerHTML = ordenadas.map(c => `
+      <div class="cot-item" data-id="${c.ID}">
+        <div class="cot-info">
+          <div class="cot-nombre">${c.Folio ? c.Folio + ' — ' : ''}${c.Proyecto}</div>
+          <div class="cot-meta">${c.Servicio}${c.Plan ? ' (' + c.Plan + ')' : ''} · $${(c.Precio || 0).toLocaleString('es-MX')}</div>
+        </div>
+        <select class="cot-estatus" data-est="${c.Estatus}" data-id="${c.ID}">
+          <option value="Pendiente" ${c.Estatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+          <option value="Cerrada" ${c.Estatus === 'Cerrada' ? 'selected' : ''}>✓ Cerrada</option>
+          <option value="Perdida" ${c.Estatus === 'Perdida' ? 'selected' : ''}>✕ Perdida</option>
+        </select>
+      </div>`).join('');
+    cont.querySelectorAll('.cot-estatus').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id = sel.dataset.id;
+        const anterior = sel.dataset.est;
+        const nuevo = sel.value;
+        sel.disabled = true;
+        try{
+          await sbActualizarEstatusCotizacion(id, nuevo);
+          sel.dataset.est = nuevo;
+        } catch(err){
+          console.error(err);
+          sel.value = anterior;
+          alert('⚠️ No se pudo actualizar el estatus de esta cotización. Revisa tu conexión e intenta de nuevo.');
+        }
+        sel.disabled = false;
+      });
+    });
+  } catch(err){
+    console.error('No se pudo cargar las cotizaciones:', err);
+    status.textContent = 'No se pudieron cargar las cotizaciones.';
+  }
+}
+cargarCotizaciones();
 </script>
 
 </body>

@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --negro:#0a0908;
@@ -54,6 +55,14 @@
     border-radius:2px;font-size:0.78rem;font-weight:600;white-space:nowrap;
   }
   .historial-link:hover{background:#333;}
+  .cot-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #ece8de;flex-wrap:wrap;}
+  .cot-item:last-child{border-bottom:none;}
+  .cot-info{min-width:0;flex:1;}
+  .cot-nombre{font-weight:700;font-size:0.9rem;color:var(--negro);}
+  .cot-meta{font-size:0.78rem;color:#8a8578;}
+  .cot-estatus{padding:8px 10px;border-radius:4px;border:1px solid #d8d3c9;font-size:0.78rem;font-family:'Montserrat',sans-serif;background:#fff;color:var(--negro);}
+  .cot-estatus[data-est="Cerrado"]{background:#e6f4e6;border-color:#a4d0a4;}
+  .cot-estatus[data-est="Perdido"]{background:#fdecea;border-color:#f5c9c1;}
 
   .choice-row{display:flex;gap:10px;flex-wrap:wrap;}
   .choice-btn{border:1.5px solid #d8d3c9;padding:10px 18px;text-align:center;cursor:pointer;border-radius:20px;font-size:0.85rem;user-select:none;}
@@ -213,6 +222,12 @@
   <div class="status" id="status"></div>
 
   <div class="card">
+    <h2>Prospectos</h2>
+    <div class="hint" id="diag-status">Cargando...</div>
+    <div id="diag-lista"></div>
+  </div>
+
+  <div class="card">
     <h2>Historial</h2>
     <div class="hint" id="historial-status">Cargando...</div>
     <div id="historial-lista"></div>
@@ -226,6 +241,46 @@
 <script>
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
+
+// DiagnosticosProspectos y el historial de PDFs ya viven en Supabase; el PDF en sí se
+// sigue subiendo a Drive vía Apps Script (SHEETS_URL, arriba) igual que siempre.
+const SUPABASE_URL = 'https://jqjlxtnvjokdlhtmjnne.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxamx4dG52am9rZGxodG1qbm5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNjYwMTgsImV4cCI6MjA5OTc0MjAxOH0.7HDembCXnDK8dpcZaq7h0R6VX7UUfPOIqNHgS4kVdXM';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function _fechaLegibleMX(d){
+  const pad = n => String(n).padStart(2, '0');
+  return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+async function sbGuardarDiagnosticoProspecto({ id, nombreCompleto, nombreNegocio, ciudad, telefono, redes, respuestasJson }){
+  const { error } = await sb.from('diagnosticos_prospectos').insert({
+    id, fecha: new Date().toISOString(), nombre_completo: nombreCompleto || '',
+    nombre_negocio: nombreNegocio || '', ciudad: ciudad || '', telefono: telefono || '',
+    redes: redes || '', respuestas_json: respuestasJson || '{}', estatus: 'Pendiente'
+  });
+  if(error){ console.error('Supabase guardar diagnostico prospecto:', error); throw error; }
+}
+async function sbGuardarDiagnosticoPdfMeta({ id, clienteId, clienteNombre, nombreArchivo, fileId, previewUrl, viewUrl }){
+  const ahora = new Date();
+  const { error } = await sb.from('diagnosticos_pdfs').insert({
+    id, cliente_id: clienteId, cliente_nombre: clienteNombre || '',
+    fecha_iso: ahora.toISOString(), fecha_legible: _fechaLegibleMX(ahora),
+    nombre_archivo: nombreArchivo || '', file_id: fileId || '', preview_url: previewUrl || '', view_url: viewUrl || ''
+  });
+  if(error){ console.error('Supabase guardar diagnostico pdf:', error); throw error; }
+}
+async function sbCargarDiagnosticosProspectos(){
+  const { data, error } = await sb.from('diagnosticos_prospectos').select('*');
+  if(error){ console.error('Supabase diagnosticos_prospectos:', error); return []; }
+  return data.map(r => ({
+    ID: r.id, Fecha: r.fecha || '', NombreCompleto: r.nombre_completo || '', NombreNegocio: r.nombre_negocio || '',
+    Estatus: r.estatus || 'Pendiente'
+  }));
+}
+async function sbActualizarEstatusDiagnostico(id, estatus){
+  const { data, error } = await sb.from('diagnosticos_prospectos').update({ estatus }).eq('id', id).select();
+  if(error){ console.error('Supabase actualizar diagnostico:', error); throw error; }
+  if(!data || data.length === 0) throw new Error('El diagnóstico ' + id + ' no existe; no se guardó el cambio.');
+}
 
 // ============ choice-buttons (Sí/No, opciones múltiples) ============
 const seleccion = {};
@@ -362,31 +417,25 @@ async function generarDiagnostico(){
   const nombreSlug = nombre.replace(/[^\w\s.-]+/g, '_');
   pdf.save(`Diagnostico_${nombreSlug}.pdf`);
 
-  // ---- Guardar respuestas en Sheets ----
+  // ---- Guardar respuestas en Supabase ----
   status.textContent = 'Guardando en tu base de datos...';
   const respuestasPlano = {};
   secciones.forEach(sec => sec.items.forEach(it => { respuestasPlano[it[0]] = it[1]; }));
   let sheetsOk = false;
+  const clienteIdDiag = 'diag_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   try{
-    if(SHEETS_URL && SHEETS_URL.indexOf('PEGAR_AQUI') === -1){
-      const resp = await fetch(SHEETS_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
-        body: JSON.stringify({
-          tipo: 'diagnostico_guardar',
-          nombreCompleto: nombre,
-          nombreNegocio: negocio,
-          ciudad: document.getElementById('f-ciudad').value.trim(),
-          telefono: document.getElementById('f-telefono').value.trim(),
-          redes: document.getElementById('f-redes').value.trim(),
-          respuestas: JSON.stringify(respuestasPlano)
-        })
-      });
-      sheetsOk = resp.ok;
-    }
-  } catch(err){ console.error('No se pudo guardar el diagnóstico en Sheets:', err); }
+    await sbGuardarDiagnosticoProspecto({
+      id: clienteIdDiag, nombreCompleto: nombre, nombreNegocio: negocio,
+      ciudad: document.getElementById('f-ciudad').value.trim(),
+      telefono: document.getElementById('f-telefono').value.trim(),
+      redes: document.getElementById('f-redes').value.trim(),
+      respuestasJson: JSON.stringify(respuestasPlano)
+    });
+    sheetsOk = true;
+    cargarDiagnosticos();
+  } catch(err){ console.error('No se pudo guardar el diagnóstico:', err); }
 
-  // ---- Subir el PDF a Drive ----
+  // ---- Subir el PDF a Drive (vía Apps Script) y guardar su registro en Supabase ----
   try{
     if(SHEETS_URL && SHEETS_URL.indexOf('PEGAR_AQUI') === -1){
       const respDrive = await fetch(SHEETS_URL, {
@@ -394,7 +443,7 @@ async function generarDiagnostico(){
         headers: {'Content-Type': 'text/plain;charset=utf-8'},
         body: JSON.stringify({
           tipo: 'diagnostico_pdf_guardar',
-          clienteId: 'diag_' + Date.now(),
+          clienteId: clienteIdDiag,
           clienteNombre: nombre,
           pdfBase64: pdf.output('datauristring')
         })
@@ -405,6 +454,12 @@ async function generarDiagnostico(){
       try{ jsonDrive = JSON.parse(rawDrive); } catch(e){}
       if(!respDrive.ok || (jsonDrive && jsonDrive.status === 'error')){
         console.error('El diagnóstico NO se guardó en Drive:', rawDrive);
+      } else if(jsonDrive && jsonDrive.status === 'ok'){
+        await sbGuardarDiagnosticoPdfMeta({
+          id: jsonDrive.id, clienteId: clienteIdDiag, clienteNombre: nombre,
+          nombreArchivo: jsonDrive.nombreArchivo, fileId: jsonDrive.fileId,
+          previewUrl: jsonDrive.previewUrl, viewUrl: jsonDrive.viewUrl
+        });
       }
       cargarHistorial();
     }
@@ -423,9 +478,14 @@ async function cargarHistorial(){
   const cont = document.getElementById('historial-lista');
   const status = document.getElementById('historial-status');
   try{
-    const resp = await fetch(SHEETS_URL + '?hoja=DiagnosticosPDFs&t=' + Date.now(), { cache:'no-store' });
-    const filas = await resp.json();
-    if(!Array.isArray(filas) || filas.length === 0){
+    const { data, error } = await sb.from('diagnosticos_pdfs').select('*');
+    if(error) throw error;
+    const filas = (data || []).map(r => ({
+      ID: r.id, ClienteID: r.cliente_id, ClienteNombre: r.cliente_nombre, FechaISO: r.fecha_iso,
+      FechaLegible: r.fecha_legible, NombreArchivo: r.nombre_archivo, FileId: r.file_id,
+      PreviewURL: r.preview_url, ViewURL: r.view_url
+    }));
+    if(filas.length === 0){
       status.textContent = 'Todavía no has generado ningún diagnóstico.';
       cont.innerHTML = '';
       return;
@@ -446,6 +506,55 @@ async function cargarHistorial(){
   }
 }
 cargarHistorial();
+
+// ============ Prospectos: lista + estatus cerrado/perdido ============
+async function cargarDiagnosticos(){
+  const cont = document.getElementById('diag-lista');
+  const status = document.getElementById('diag-status');
+  try{
+    const prospectos = await sbCargarDiagnosticosProspectos();
+    if(prospectos.length === 0){
+      status.textContent = 'Todavía no has generado ningún diagnóstico.';
+      cont.innerHTML = '';
+      return;
+    }
+    status.textContent = '';
+    const ordenados = prospectos.slice().sort((a,b) => new Date(b.Fecha || 0) - new Date(a.Fecha || 0));
+    cont.innerHTML = ordenados.map(p => `
+      <div class="cot-item" data-id="${p.ID}">
+        <div class="cot-info">
+          <div class="cot-nombre">${p.NombreCompleto || '(sin nombre)'}</div>
+          <div class="cot-meta">${p.NombreNegocio || ''}</div>
+        </div>
+        <select class="cot-estatus" data-est="${p.Estatus}" data-id="${p.ID}">
+          <option value="Pendiente" ${p.Estatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+          <option value="Cerrado" ${p.Estatus === 'Cerrado' ? 'selected' : ''}>✓ Cerrado</option>
+          <option value="Perdido" ${p.Estatus === 'Perdido' ? 'selected' : ''}>✕ Perdido</option>
+        </select>
+      </div>`).join('');
+    cont.querySelectorAll('.cot-estatus').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id = sel.dataset.id;
+        const anterior = sel.dataset.est;
+        const nuevo = sel.value;
+        sel.disabled = true;
+        try{
+          await sbActualizarEstatusDiagnostico(id, nuevo);
+          sel.dataset.est = nuevo;
+        } catch(err){
+          console.error(err);
+          sel.value = anterior;
+          alert('⚠️ No se pudo actualizar el estatus de este prospecto. Revisa tu conexión e intenta de nuevo.');
+        }
+        sel.disabled = false;
+      });
+    });
+  } catch(err){
+    console.error('No se pudo cargar los prospectos:', err);
+    status.textContent = 'No se pudieron cargar los prospectos.';
+  }
+}
+cargarDiagnosticos();
 </script>
 
 </body>

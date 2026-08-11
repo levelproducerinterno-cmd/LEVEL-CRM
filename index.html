@@ -1298,6 +1298,23 @@
       <button class="dash-nav-btn dash-hoy" data-dash-nav="hoy">Este año</button>
     </div>
   </div>
+  <div id="dash-kpis-direccion" style="display:none;padding:20px 28px 0;">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <div class="linea-kpi-card">
+        <div class="kpi-numero" id="dkd-juntas">0</div>
+        <div class="kpi-label">Juntas esta semana</div>
+      </div>
+      <div class="linea-kpi-card">
+        <div class="kpi-numero" id="dkd-cotizaciones">0</div>
+        <div class="kpi-label">Cotizaciones esta semana</div>
+      </div>
+      <div class="linea-kpi-card kpi-publicado">
+        <div class="kpi-numero" id="dkd-cierres">0</div>
+        <div class="kpi-label">Cierres esta semana</div>
+      </div>
+    </div>
+    <div id="dkd-insight" style="margin:14px 0 0;font-size:0.85rem;color:#b7b2a9;font-style:italic;"></div>
+  </div>
   <div class="dash-cuerpo" id="dash-cuerpo">
     <div class="dash-empty">Cargando...</div>
   </div>
@@ -1388,12 +1405,45 @@
       <div class="pros-tabs-switch">
         <button class="pros-tab-btn active" data-pros="diagnostico">🩺 Diagnóstico</button>
         <button class="pros-tab-btn" data-pros="propuesta">📝 Propuesta</button>
+        <button class="pros-tab-btn" data-pros="juntas">🤝 Juntas</button>
       </div>
       <div class="pros-subpanel active" id="pros-panel-diagnostico">
         <iframe class="pros-iframe" id="pros-iframe-diagnostico" data-src="diagnostico.html" title="Diagnóstico de Prospecto"></iframe>
       </div>
       <div class="pros-subpanel" id="pros-panel-propuesta">
         <iframe class="pros-iframe" id="pros-iframe-propuesta" data-src="propuesta.html" title="Generador de Propuestas"></iframe>
+      </div>
+      <div class="pros-subpanel" id="pros-panel-juntas">
+        <div class="recl-wrap">
+          <div class="recl-card">
+            <h3>Registrar junta con prospecto</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div class="field">
+                <label>Prospecto / negocio</label>
+                <input type="text" id="junta-prospecto" placeholder="Ej. College Bar">
+              </div>
+              <div class="field">
+                <label>Fecha</label>
+                <input type="date" id="junta-fecha">
+              </div>
+            </div>
+            <div class="field">
+              <label>Notas (opcional)</label>
+              <textarea id="junta-notas" style="min-height:60px;"></textarea>
+            </div>
+            <button class="btn" id="btn-registrar-junta">+ Registrar junta</button>
+            <div class="status-msg" id="junta-status" style="margin-top:10px;"></div>
+          </div>
+          <div class="recl-card">
+            <h3>Juntas registradas</h3>
+            <div class="team-tabla-wrap" style="padding:0;">
+              <table class="team-tabla">
+                <thead><tr><th>Fecha</th><th>Prospecto</th><th>Notas</th><th></th></tr></thead>
+                <tbody id="juntas-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1474,6 +1524,12 @@
   <div class="modal" style="max-width:480px;">
     <h2>Nuevo recibo</h2>
     <div class="hint" style="margin-bottom:14px;">Se genera el PDF y se guarda en el registro automáticamente.</div>
+    <div class="field">
+      <label>Cargar desde cotización cerrada (opcional)</label>
+      <select id="rec-desde-cotizacion">
+        <option value="">— Ninguna, llenar manualmente —</option>
+      </select>
+    </div>
     <div class="field">
       <label>Nombre del negocio / empresa</label>
       <input type="text" id="rec-empresa" placeholder="Ej. College Bar">
@@ -3437,6 +3493,35 @@ if(modalReciboBg){
   document.getElementById('rec-empresa').addEventListener('input', _actualizarFolioPreview);
   document.getElementById('rec-fecha').addEventListener('input', _actualizarFolioPreview);
 
+  let COTIZACIONES_CERRADAS_RECIBO = [];
+
+  async function _cargarCotizacionesCerradasParaRecibo(){
+    const sel = document.getElementById('rec-desde-cotizacion');
+    sel.innerHTML = '<option value="">— Ninguna, llenar manualmente —</option>';
+    try{
+      const todas = await sbCargarCotizaciones();
+      COTIZACIONES_CERRADAS_RECIBO = todas.filter(c => c.Estatus === 'Cerrada');
+      COTIZACIONES_CERRADAS_RECIBO.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.ID;
+        opt.textContent = (c.Folio ? c.Folio + ' — ' : '') + c.Proyecto + ' ($' + (c.Precio || 0).toLocaleString('es-MX') + ')';
+        sel.appendChild(opt);
+      });
+    } catch(err){ console.error(err); }
+  }
+
+  document.getElementById('rec-desde-cotizacion').addEventListener('change', (e) => {
+    const cot = COTIZACIONES_CERRADAS_RECIBO.find(c => String(c.ID) === String(e.target.value));
+    if(!cot) return;
+    document.getElementById('rec-empresa').value = cot.Proyecto;
+    document.getElementById('rec-monto').value = cot.Precio || '';
+    document.getElementById('rec-descripcion').value = cot.Incluye ? cot.Incluye.split(' | ').join(', ') : '';
+    const selCat = document.getElementById('rec-categoria');
+    const match = Array.from(selCat.options).find(o => o.value.toLowerCase() === (cot.Servicio || '').toLowerCase());
+    if(match) selCat.value = match.value;
+    _actualizarFolioPreview();
+  });
+
   document.getElementById('btn-nuevo-recibo').addEventListener('click', () => {
     document.getElementById('rec-empresa').value = '';
     document.getElementById('rec-contacto').value = '';
@@ -3446,6 +3531,8 @@ if(modalReciboBg){
     document.getElementById('rec-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('rec-error').textContent = '';
     document.getElementById('rec-folio-preview').textContent = '';
+    document.getElementById('rec-desde-cotizacion').value = '';
+    _cargarCotizacionesCerradasParaRecibo();
     modalReciboBg.classList.add('open');
   });
   document.getElementById('btn-cancelar-recibo').addEventListener('click', () => modalReciboBg.classList.remove('open'));
@@ -3894,6 +3981,120 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     if(panel) panel.classList.add('active');
   });
 });
+
+// ============================================================
+// ============ SUPABASE — Cotizaciones (lectura desde el CRM) ===
+// ============================================================
+// El alta/edición de cotizaciones vive en propuesta.html (se genera junto con el PDF).
+// Aquí solo las leemos: para autollenar Recibos desde una cotización cerrada, y para
+// los KPIs de ventas del Dashboard.
+async function sbCargarCotizaciones(){
+  const { data, error } = await sb.from('cotizaciones').select('*');
+  if(error){ console.error('Supabase cotizaciones:', error); return []; }
+  return data.map(r => ({
+    ID: r.id, Folio: r.folio || '', Fecha: r.fecha || '', Proyecto: r.proyecto || '',
+    Servicio: r.servicio || '', Plan: r.plan || '', Precio: r.precio || 0, Incluye: r.incluye || '',
+    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || ''
+  }));
+}
+
+// ============================================================
+// ============ SUPABASE — Juntas de venta (reuniones con prospectos) ====
+// ============================================================
+function _sbFilaJuntaVenta(r){
+  return { ID: r.id, Prospecto: r.prospecto || '', Fecha: r.fecha || '', Notas: r.notas || '' };
+}
+async function sbCargarJuntasVenta(){
+  const { data, error } = await sb.from('juntas_venta').select('*');
+  if(error){ console.error('Supabase juntas_venta:', error); return []; }
+  return data.map(_sbFilaJuntaVenta);
+}
+async function sbCrearJuntaVenta(datos){
+  const { error } = await sb.from('juntas_venta').insert({
+    id: datos.id, prospecto: datos.prospecto, fecha: datos.fecha, notas: datos.notas || ''
+  });
+  if(error){ console.error('Supabase crear junta_venta:', error); throw error; }
+}
+async function sbEliminarJuntaVenta(id){
+  const { error } = await sb.from('juntas_venta').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar junta_venta:', error); throw error; }
+}
+
+let JUNTAS_VENTA_ACTUAL = [];
+
+async function cargarJuntasVenta(){
+  const status = document.getElementById('junta-status');
+  try{
+    JUNTAS_VENTA_ACTUAL = await sbCargarJuntasVenta();
+  } catch(err){
+    console.error(err);
+    if(status) status.textContent = 'No se pudieron cargar las juntas.';
+  }
+  renderJuntasVentaTabla();
+}
+
+function renderJuntasVentaTabla(){
+  const tbody = document.getElementById('juntas-tbody');
+  if(!tbody) return;
+  const ordenadas = JUNTAS_VENTA_ACTUAL.slice().sort((a, b) => new Date(b.Fecha) - new Date(a.Fecha));
+  tbody.innerHTML = ordenadas.map(j => `
+    <tr data-id="${j.ID}">
+      <td>${_fechaLargaRecibo(j.Fecha)}</td>
+      <td>${j.Prospecto}</td>
+      <td>${j.Notas || '—'}</td>
+      <td><button class="del-btn" data-eliminar-junta="${j.ID}">Eliminar</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-eliminar-junta]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.eliminarJunta;
+      const respaldo = JUNTAS_VENTA_ACTUAL;
+      JUNTAS_VENTA_ACTUAL = JUNTAS_VENTA_ACTUAL.filter(j => String(j.ID) !== String(id));
+      renderJuntasVentaTabla();
+      try{
+        await sbEliminarJuntaVenta(id);
+      } catch(err){
+        console.error(err);
+        JUNTAS_VENTA_ACTUAL = respaldo;
+        renderJuntasVentaTabla();
+        alert('⚠️ No se pudo eliminar esta junta. Revisa tu conexión e intenta de nuevo.');
+      }
+    });
+  });
+}
+
+const btnRegistrarJunta = document.getElementById('btn-registrar-junta');
+if(btnRegistrarJunta){
+  btnRegistrarJunta.addEventListener('click', async () => {
+    const prospecto = document.getElementById('junta-prospecto').value.trim();
+    const fecha = document.getElementById('junta-fecha').value;
+    const notas = document.getElementById('junta-notas').value.trim();
+    const status = document.getElementById('junta-status');
+    if(!prospecto || !fecha){
+      status.textContent = 'Completa el prospecto y la fecha.';
+      status.style.color = 'var(--rojo)';
+      return;
+    }
+    const datos = { id: uuid(), prospecto, fecha, notas };
+    btnRegistrarJunta.disabled = true;
+    status.textContent = 'Guardando...';
+    status.style.color = '#8a8578';
+    try{
+      await sbCrearJuntaVenta(datos);
+      document.getElementById('junta-prospecto').value = '';
+      document.getElementById('junta-notas').value = '';
+      status.textContent = '✓ Junta registrada';
+      status.style.color = 'var(--verde)';
+      setTimeout(() => { if(status) status.textContent = ''; }, 3000);
+      await cargarJuntasVenta();
+    } catch(err){
+      console.error(err);
+      status.textContent = '⚠️ No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+      status.style.color = 'var(--rojo)';
+    }
+    btnRegistrarJunta.disabled = false;
+  });
+}
 
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -7717,6 +7918,43 @@ async function cargarDashboard(){
     console.error(err);
     cuerpo.innerHTML = '<div class="dash-empty">Error al cargar. Revisa tu conexión.</div>';
   }
+  renderKpisDireccion();
+}
+
+// KPIs de Dirección: solo se muestran para el rol Dirección. Miden esta semana
+// (lunes a domingo) usando Juntas de venta y Cotizaciones, ambas en Supabase.
+async function renderKpisDireccion(){
+  const cont = document.getElementById('dash-kpis-direccion');
+  if(!cont) return;
+  if(!usuarioTieneRol('Direccion')){ cont.style.display = 'none'; return; }
+  cont.style.display = 'block';
+  try{
+    const [juntas, cotizaciones] = await Promise.all([sbCargarJuntasVenta(), sbCargarCotizaciones()]);
+    const lunes = _lunesDeSemana(new Date());
+    const domingo = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6, 23, 59, 59);
+    const enEstaSemana = (fechaStr) => {
+      if(!fechaStr) return false;
+      const d = new Date(fechaStr.length <= 10 ? fechaStr + 'T12:00:00' : fechaStr);
+      return d >= lunes && d <= domingo;
+    };
+    const juntasSemana = juntas.filter(j => enEstaSemana(j.Fecha)).length;
+    const cotizacionesSemana = cotizaciones.filter(c => enEstaSemana(c.Fecha)).length;
+    const cierresSemana = cotizaciones.filter(c => c.Estatus === 'Cerrada' && enEstaSemana(c.ActualizadoISO)).length;
+    document.getElementById('dkd-juntas').textContent = juntasSemana;
+    document.getElementById('dkd-cotizaciones').textContent = cotizacionesSemana;
+    document.getElementById('dkd-cierres').textContent = cierresSemana;
+
+    const insight = document.getElementById('dkd-insight');
+    if(cotizacionesSemana === 0 && juntasSemana === 0){
+      insight.textContent = '💡 Esta semana no se registraron juntas ni cotizaciones nuevas — agenda al menos una junta con un prospecto.';
+    } else if(cotizacionesSemana > 0){
+      const tasa = Math.round((cierresSemana / cotizacionesSemana) * 100);
+      insight.textContent = `💡 Tasa de cierre de esta semana: ${tasa}% (${cierresSemana} de ${cotizacionesSemana}). ` +
+        (tasa < 30 ? 'Considera dar seguimiento a las cotizaciones pendientes.' : '¡Buen ritmo, sigue así!');
+    } else {
+      insight.textContent = '💡 Tuviste juntas esta semana pero aún ninguna cotización — dales seguimiento para no perder el impulso.';
+    }
+  } catch(err){ console.error(err); }
 }
 
 function renderDashboard(){
@@ -8471,6 +8709,7 @@ function cambiarProsTab(prosKey){
   if(panel){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
+    if(prosKey === 'juntas') cargarJuntasVenta();
   }
 }
 document.querySelectorAll('.pros-tab-btn').forEach(btn => {
