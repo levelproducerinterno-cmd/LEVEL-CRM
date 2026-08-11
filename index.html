@@ -646,6 +646,7 @@
   .mg-guion-card[data-estatus="Borrador"]{background:#fdecea;border-color:#f5c9c1;}
   .mg-guion-card[data-estatus="Aprobado"]{background:#fff8e0;border-color:#e8d97a;}
   .mg-guion-card[data-estatus="Grabado"]{background:#e6f4e6;border-color:#a4d0a4;}
+  .mg-guion-card[data-estatus="Editado"]{background:#eaeef3;border-color:#b9c4d1;}
   .mg-guion-card .mgc-head{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-weight:700;gap:10px;cursor:pointer;}
   .mg-guion-card .mgc-body{display:none;padding:0 18px 18px;font-size:0.88rem;color:#1c1c1c;}
   .mg-guion-card.open .mgc-body{display:block;}
@@ -660,6 +661,7 @@
   .mg-guion-card .mgc-estatus{background:#c72a09;color:#fff;padding:3px 10px;border-radius:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;}
   .mg-guion-card[data-estatus="Aprobado"] .mgc-estatus{background:#c08b00;}
   .mg-guion-card[data-estatus="Grabado"] .mgc-estatus{background:#2e7d2e;}
+  .mg-guion-card[data-estatus="Editado"] .mgc-estatus{background:#3e5a78;}
   .mg-vacio-guiones{text-align:center;padding:60px 20px;color:#8a8578;font-style:italic;background:#fbfaf7;border:1px dashed #d8d3c9;border-radius:4px;}
 
   /* ============ LOGIN ============ */
@@ -756,12 +758,17 @@
   .guion-item[data-estatus="Borrador"]{background:#fdecea;border-color:#f5c9c1;}
   .guion-item[data-estatus="Aprobado"]{background:#fff8e0;border-color:#e8d97a;}
   .guion-item[data-estatus="Grabado"]{background:#e6f4e6;border-color:#a4d0a4;}
+  .guion-item[data-estatus="Editado"]{background:#eaeef3;border-color:#b9c4d1;}
   .guion-item .g-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:700;font-size:0.9rem;gap:10px;}
   .guion-item .g-head .g-badges{display:flex;gap:6px;align-items:center;}
   .guion-item .g-badge-est{padding:3px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;}
   .guion-item .g-badge-est.borrador{background:#c72a09;color:#fff;}
   .guion-item .g-badge-est.aprobado{background:#c08b00;color:#fff;}
   .guion-item .g-badge-est.grabado{background:#2e7d2e;color:#fff;}
+  .guion-item .g-badge-est.editado{background:#3e5a78;color:#fff;}
+  .g-editados-toggle{margin-top:10px;padding:10px 14px;background:#f2efe9;border:1px dashed #c9c2b3;border-radius:6px;font-size:0.82rem;font-weight:700;color:#5a5748;cursor:pointer;text-align:center;}
+  .g-editados-toggle:hover{background:#eae6dc;}
+  .g-editados-cont{margin-top:10px;}
   .guion-item .g-badge-pendiente{background:#8a4c9c;color:#fff;padding:3px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;animation:g-pulso 1.6s infinite;}
   @keyframes g-pulso{0%,100%{opacity:1;}50%{opacity:0.55;}}
   .guion-item .g-body{display:none;padding:0 16px 18px;}
@@ -1271,6 +1278,7 @@
         <option value="aprobado_grabado">Listos para editar (aprobados + grabados)</option>
         <option value="Aprobado">Solo aprobados</option>
         <option value="Grabado">Solo grabados</option>
+        <option value="Editado">Solo editados</option>
         <option value="">Todos</option>
       </select>
     </div>
@@ -6026,24 +6034,12 @@ function renderGuionesBannerPendientes(){
     </div>`;
 }
 
-function renderGuionesLista(){
-  const cont = document.getElementById('guiones-lista');
-  if(GUIONES_ACTUAL.length === 0){
-    cont.innerHTML = '<div style="color:#999;margin-bottom:16px;">Aún no hay guiones para este cliente.</div>';
-    return;
-  }
-  // Ordenamos: pendientes de revisión primero
-  const ordenados = GUIONES_ACTUAL.slice().sort((a, b) => {
-    const pa = String(a.PendienteRevision || '') === '1' ? 0 : 1;
-    const pb = String(b.PendienteRevision || '') === '1' ? 0 : 1;
-    return pa - pb;
-  });
-  cont.innerHTML = ordenados.map(g => {
-    const est = g.Estatus || 'Borrador';
-    const badgeEst = `<span class="g-badge-est ${est.toLowerCase()}">${est}</span>`;
-    const badgePend = String(g.PendienteRevision || '') === '1'
-      ? '<span class="g-badge-pendiente">🔔 Revisar</span>' : '';
-    return `
+function _guionItemHtml(g){
+  const est = g.Estatus || 'Borrador';
+  const badgeEst = `<span class="g-badge-est ${est.toLowerCase()}">${est}</span>`;
+  const badgePend = String(g.PendienteRevision || '') === '1'
+    ? '<span class="g-badge-pendiente">🔔 Revisar</span>' : '';
+  return `
     <div class="guion-item" data-id="${g.ID}" data-estatus="${est}">
       <div class="g-head">
         <span>${g.Folio ? g.Folio + ' — ' : ''}${g.Titulo || '(sin título)'}</span>
@@ -6067,6 +6063,7 @@ function renderGuionesLista(){
           <option value="Borrador" ${est === 'Borrador' ? 'selected' : ''}>Borrador</option>
           <option value="Aprobado" ${est === 'Aprobado' ? 'selected' : ''}>Aprobado</option>
           <option value="Grabado" ${est === 'Grabado' ? 'selected' : ''}>Grabado</option>
+          <option value="Editado" ${est === 'Editado' ? 'selected' : ''}>Editado</option>
         </select>
         <div class="g-actions">
           <button class="btn ghost" data-eliminar-guion="${g.ID}">Eliminar</button>
@@ -6076,7 +6073,47 @@ function renderGuionesLista(){
         </div>
       </div>
     </div>`;
-  }).join('');
+}
+
+function renderGuionesLista(){
+  const cont = document.getElementById('guiones-lista');
+  if(GUIONES_ACTUAL.length === 0){
+    cont.innerHTML = '<div style="color:#999;margin-bottom:16px;">Aún no hay guiones para este cliente.</div>';
+    return;
+  }
+  // Los guiones "Editados" (ya se hizo el video final) se guardan aparte para no estorbar
+  // visualmente — se pueden ver dando clic en el contador de abajo.
+  const activos = GUIONES_ACTUAL.filter(g => (g.Estatus || 'Borrador') !== 'Editado');
+  const editados = GUIONES_ACTUAL.filter(g => (g.Estatus || 'Borrador') === 'Editado');
+
+  // Ordenamos: pendientes de revisión primero
+  const ordenados = activos.slice().sort((a, b) => {
+    const pa = String(a.PendienteRevision || '') === '1' ? 0 : 1;
+    const pb = String(b.PendienteRevision || '') === '1' ? 0 : 1;
+    return pa - pb;
+  });
+
+  let html = ordenados.length > 0
+    ? ordenados.map(_guionItemHtml).join('')
+    : '<div style="color:#999;margin-bottom:16px;">No hay guiones activos. Revisa "Guiones editados" abajo si buscas uno archivado.</div>';
+
+  if(editados.length > 0){
+    html += `
+      <div class="g-editados-toggle" id="g-editados-toggle">📁 Guiones editados (${editados.length}) — dar clic para ver/ocultar</div>
+      <div class="g-editados-cont" id="g-editados-cont" style="display:none;">
+        ${editados.map(_guionItemHtml).join('')}
+      </div>`;
+  }
+
+  cont.innerHTML = html;
+
+  const toggleEditados = document.getElementById('g-editados-toggle');
+  if(toggleEditados){
+    toggleEditados.addEventListener('click', () => {
+      const c = document.getElementById('g-editados-cont');
+      if(c) c.style.display = c.style.display === 'none' ? 'block' : 'none';
+    });
+  }
 
   cont.querySelectorAll('.g-head').forEach(head => {
     head.addEventListener('click', () => head.closest('.guion-item').classList.toggle('open'));
@@ -7664,6 +7701,7 @@ async function arrancarVistaPublicaCliente(token){
   function estatusColor(est){
     if(est === 'Aprobado') return { bg:'#fff8e0', border:'#e8d97a', badge:'#c08b00' };
     if(est === 'Grabado')  return { bg:'#e6f4e6', border:'#a4d0a4', badge:'#2e7d2e' };
+    if(est === 'Editado')  return { bg:'#eaeef3', border:'#b9c4d1', badge:'#3e5a78' };
     return { bg:'#fdecea', border:'#f5c9c1', badge:'#c72a09' };
   }
 
