@@ -2497,7 +2497,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-links-dominio-fijo';
+const APP_BUILD = '2026-08-12-orden-folios';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4296,6 +4296,20 @@ const estado = {
   edicion: { TODAS:[], viewYear:hoy.getFullYear(), viewMonth:hoy.getMonth(), yaFelicitados:new Set() },
   cm:      { TODAS:[], viewYear:hoy.getFullYear(), viewMonth:hoy.getMonth(), yaFelicitados:new Set() }
 };
+
+// Orden numérico "natural" para folios tipo "8.1", "8.10", "9.1": compara segmento por
+// segmento como número (así 8.2 queda antes de 8.10, y no como texto donde "8.10" < "8.2").
+function _compararFolios(folioA, folioB){
+  const a = String(folioA || '').split('.').map(s => parseInt(s, 10));
+  const b = String(folioB || '').split('.').map(s => parseInt(s, 10));
+  const len = Math.max(a.length, b.length);
+  for(let i = 0; i < len; i++){
+    const na = isNaN(a[i]) ? -Infinity : a[i];
+    const nb = isNaN(b[i]) ? -Infinity : b[i];
+    if(na !== nb) return na - nb;
+  }
+  return String(folioA || '').localeCompare(String(folioB || ''));
+}
 
 function uuid(){
   return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
@@ -7613,22 +7627,24 @@ function renderGuionesLista(){
   const activos = GUIONES_ACTUAL.filter(g => (g.Estatus || 'Borrador') !== 'Editado');
   const editados = GUIONES_ACTUAL.filter(g => (g.Estatus || 'Borrador') === 'Editado');
 
-  // Ordenamos: pendientes de revisión primero
+  // Ordenamos: pendientes de revisión primero, y dentro de cada grupo por folio (8.1, 8.2...)
   const ordenados = activos.slice().sort((a, b) => {
     const pa = String(a.PendienteRevision || '') === '1' ? 0 : 1;
     const pb = String(b.PendienteRevision || '') === '1' ? 0 : 1;
-    return pa - pb;
+    if(pa !== pb) return pa - pb;
+    return _compararFolios(a.Folio, b.Folio);
   });
+  const editadosOrdenados = editados.slice().sort((a, b) => _compararFolios(a.Folio, b.Folio));
 
   let html = ordenados.length > 0
     ? ordenados.map(_guionItemHtml).join('')
     : '<div style="color:#999;margin-bottom:16px;">No hay guiones activos. Revisa "Guiones editados" abajo si buscas uno archivado.</div>';
 
-  if(editados.length > 0){
+  if(editadosOrdenados.length > 0){
     html += `
-      <div class="g-editados-toggle" id="g-editados-toggle">📁 Guiones editados (${editados.length}) — dar clic para ver/ocultar</div>
+      <div class="g-editados-toggle" id="g-editados-toggle">📁 Guiones editados (${editadosOrdenados.length}) — dar clic para ver/ocultar</div>
       <div class="g-editados-cont" id="g-editados-cont" style="display:none;">
-        ${editados.map(_guionItemHtml).join('')}
+        ${editadosOrdenados.map(_guionItemHtml).join('')}
       </div>`;
   }
 
@@ -9364,7 +9380,7 @@ async function arrancarVistaPublicaCliente(token){
       if(guionesResp.error){
         document.getElementById('vp-guiones-lista').innerHTML = '<div class="vp-empty" style="color:#c72a09;">No se pudieron cargar tus guiones. Recarga la página antes de crear uno nuevo (para no duplicar).</div>';
       } else {
-        VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion);
+        VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion).sort((a, b) => _compararFolios(a.Folio, b.Folio));
         renderVpGuiones();
       }
       VP_CALENDARIO = (calResp.data || []).map(_sbFilaModo);
