@@ -2497,7 +2497,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-notificaciones-clientes';
+const APP_BUILD = '2026-08-12-fix-links-magicos';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
@@ -2660,12 +2660,22 @@ async function migrarClientesYGuionesASupabase(){
     const cmSheets = await respCm.json();
 
     out.textContent = `Migrando ${clientesSheets.length} cliente(s)...`;
+    // IMPORTANTE: el link mágico de cada cliente depende de su token, y esta migración puede
+    // volver a correrse más de una vez (es idempotente a propósito). Sheets nunca tuvo columna
+    // de Token, así que si generáramos uno "porque venía vacío" en cada corrida, le pisaríamos
+    // el link real ya repartido a TODOS los clientes cada vez que alguien la ejecute de nuevo.
+    // Por eso primero leemos los tokens que YA existen en Supabase y los conservamos tal cual;
+    // solo se genera uno nuevo para clientes que de verdad son nuevos en Supabase.
+    const { data: clientesExistentes } = await sb.from('clientes').select('id, token');
+    const tokensExistentes = {};
+    (clientesExistentes || []).forEach(c => { if(c.token) tokensExistentes[String(c.id)] = c.token; });
     const filasCli = clientesSheets.map(c => ({
       id: String(c.ID), nombre: c.Nombre || '', emoji: c.Emoji || '', frame_link: c.FrameLink || '',
       tipo: c.Tipo || 'Recurrente', estado: c.Estado || 'Activo',
       videos_mes: parseInt(c.VideosMes, 10) || 0, numeracion_modo: c.NumeracionModo || 'simple',
       episodios_mes: parseInt(c.EpisodiosMes, 10) || 0, reels_por_episodio: parseInt(c.ReelsPorEpisodio, 10) || 0,
-      editor_id: c.EditorID || null, cm_id: c.CMID || null, token: c.Token || _sbGenerarToken(),
+      editor_id: c.EditorID || null, cm_id: c.CMID || null,
+      token: tokensExistentes[String(c.ID)] || c.Token || _sbGenerarToken(),
       editor2_id: c.Editor2ID || null, frame_link_cliente: c.FrameLinkCliente || ''
     }));
     if(filasCli.length){
