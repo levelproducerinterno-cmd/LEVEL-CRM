@@ -352,7 +352,8 @@
   /* ============ POPUP REPORTE SEMANAL (obligatorio) ============ */
   .reporte-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;animation:reportefadein 0.2s ease-out;}
   @keyframes reportefadein{from{opacity:0;}to{opacity:1;}}
-  .reporte-modal{background:#fff;color:#1c1c1c;max-width:520px;width:100%;border-radius:12px;padding:44px 44px 36px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
+  .reporte-modal{background:#fff;color:#1c1c1c;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;border-radius:12px;padding:44px 44px 36px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
+  .reporte-textarea{width:100%;padding:12px 14px;border:1px solid #d8d3c9;border-radius:6px;font-family:'Montserrat',sans-serif;font-size:0.9rem;color:#1c1c1c;background:#faf8f4;min-height:70px;resize:vertical;}
   .reporte-titulo{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--negro);line-height:1.1;}
   .reporte-sub{color:#666;font-size:0.95rem;margin-top:8px;line-height:1.5;}
   .reporte-semana-tag{display:inline-block;background:#f0ede6;color:#8a8578;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:12px;margin-top:14px;}
@@ -1435,6 +1436,7 @@
         <div class="admin-tabs-switch">
           <button class="admin-tab-btn active" data-admin="recibos">🧾 Recibos</button>
           <button class="admin-tab-btn" data-admin="renta">🎥 Renta de Equipo</button>
+          <button class="admin-tab-btn" data-admin="kpis">📋 KPI's semanales</button>
         </div>
 
         <div class="admin-subpanel active" id="admin-panel-recibos">
@@ -1487,6 +1489,19 @@
                 <tr><th>Folio</th><th>Renta</th><th>Devolución</th><th>Cliente</th><th>Equipo</th><th>Total a cobrar</th><th></th></tr>
               </thead>
               <tbody id="rentas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-subpanel" id="admin-panel-kpis">
+          <div class="hint" style="margin-bottom:14px;">Respuestas abiertas del check-in semanal de Edición y Community Manager (lo numérico ya está en el Dashboard). Descarga el PDF de cualquier semana para leerlas.</div>
+          <div class="status-msg" id="kpis-status" style="margin:10px 0;"></div>
+          <div class="team-tabla-wrap" style="padding:0;">
+            <table class="team-tabla">
+              <thead>
+                <tr><th>Miembro</th><th>Puesto</th><th>Semana</th><th>Fecha</th><th></th></tr>
+              </thead>
+              <tbody id="kpis-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -2164,7 +2179,11 @@ Nombre cliente:
         </div>
         <div id="guiones-pendientes-banner"></div>
         <div id="guiones-lista"></div>
-        <button class="btn" id="btn-nuevo-guion">+ Nuevo guion</button>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn" id="btn-nuevo-guion">+ Nuevo guion</button>
+          <button class="btn" id="btn-guardar-todos-guiones" style="display:none;">💾 Guardar todos los cambios</button>
+          <span id="guiones-guardar-todos-msg" style="font-size:0.82rem;color:#666;"></span>
+        </div>
       </div>
 
     </div>
@@ -2442,7 +2461,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-11-guardado-seguro';
+const APP_BUILD = '2026-08-12-guiones-sin-guardar';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
@@ -3147,8 +3166,11 @@ function _claveSemanaAnterior(fecha){
 }
 function _sbFilaReporte(r){
   return {
-    ID: r.id, MiembroID: r.miembro_id, Semana: r.semana, MentalReportado: r.mental_reportado,
-    FeedbacksReportados: r.feedbacks_reportados, FechaReporte: r.fecha_reporte
+    ID: r.id, MiembroID: r.miembro_id, Semana: r.semana, Puesto: r.puesto || '',
+    MentalReportado: r.mental_reportado, FeedbacksReportados: r.feedbacks_reportados,
+    GrabacionReportado: r.grabacion_reportado, DireccionReportado: r.direccion_reportado,
+    RendimientoReportado: r.rendimiento_reportado, RespuestasTexto: r.respuestas_texto || '',
+    FechaReporte: r.fecha_reporte
   };
 }
 async function sbCargarReportes(){
@@ -3171,18 +3193,24 @@ async function sbReportePendiente(miembroId){
   if(data) return { pendiente: false, semana: semanaAReportar };
   return { pendiente: true, semana: semanaAReportar };
 }
-async function sbGuardarReporte(miembroId, semana, mental, feedbacks){
+async function sbGuardarReporte(miembroId, semana, mental, feedbacks, extra){
+  extra = extra || {};
+  const patch = {
+    mental_reportado: (mental === null || mental === undefined) ? null : mental,
+    feedbacks_reportados: (feedbacks === null || feedbacks === undefined) ? null : feedbacks,
+    grabacion_reportado: (extra.grabacion === undefined) ? null : extra.grabacion,
+    direccion_reportado: (extra.direccion === undefined) ? null : extra.direccion,
+    rendimiento_reportado: (extra.rendimiento === undefined) ? null : extra.rendimiento,
+    respuestas_texto: extra.respuestasTexto || '',
+    puesto: extra.puesto || '',
+    fecha_reporte: new Date().toISOString()
+  };
   const { data: existente } = await sb.from('reportes').select('id').eq('miembro_id', miembroId).eq('semana', semana).maybeSingle();
   if(existente){
-    const { error } = await sb.from('reportes').update({
-      mental_reportado: mental, feedbacks_reportados: feedbacks, fecha_reporte: new Date().toISOString()
-    }).eq('id', existente.id);
+    const { error } = await sb.from('reportes').update(patch).eq('id', existente.id);
     if(error){ console.error('Supabase actualizar reporte:', error); throw error; }
   } else {
-    const { error } = await sb.from('reportes').insert({
-      id: 'rep_' + Date.now().toString(36), miembro_id: miembroId, semana,
-      mental_reportado: mental, feedbacks_reportados: feedbacks, fecha_reporte: new Date().toISOString()
-    });
+    const { error } = await sb.from('reportes').insert(Object.assign({ id: 'rep_' + Date.now().toString(36), miembro_id: miembroId, semana }, patch));
     if(error){ console.error('Supabase crear reporte:', error); throw error; }
   }
 }
@@ -3964,6 +3992,108 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     if(panel) panel.classList.add('active');
   });
 });
+
+// ============================================================
+// ============ KPI's semanales — respuestas de texto libre del check-in ====
+// ============================================================
+// Lo numérico del check-in (mental, feedbacks, grabación, dirección, rendimiento)
+// ya se ve en el Dashboard. Aquí solo viven las respuestas abiertas, listas para
+// bajarse en PDF por si Dirección las quiere leer con calma.
+let KPIS_SEMANALES_ACTUAL = [];
+
+async function cargarKpisSemanales(){
+  const status = document.getElementById('kpis-status');
+  if(status) status.textContent = 'Cargando...';
+  try{
+    const todos = await sbCargarReportes();
+    KPIS_SEMANALES_ACTUAL = todos.filter(r => {
+      if(!r.RespuestasTexto) return false;
+      try{
+        const arr = JSON.parse(r.RespuestasTexto);
+        return Array.isArray(arr) && arr.some(p => (p.respuesta || '').trim());
+      } catch(e){ return false; }
+    });
+    if(status) status.textContent = '';
+  } catch(err){
+    console.error(err);
+    if(status) status.textContent = 'No se pudieron cargar los KPI\'s semanales.';
+  }
+  renderKpisSemanalesTabla();
+}
+
+function renderKpisSemanalesTabla(){
+  const tbody = document.getElementById('kpis-tbody');
+  if(!tbody) return;
+  if(KPIS_SEMANALES_ACTUAL.length === 0){
+    tbody.innerHTML = '';
+    const status = document.getElementById('kpis-status');
+    if(status) status.textContent = 'Todavía no hay respuestas de check-in con texto libre.';
+    return;
+  }
+  const ordenados = KPIS_SEMANALES_ACTUAL.slice().sort((a, b) => new Date(b.FechaReporte || 0) - new Date(a.FechaReporte || 0));
+  tbody.innerHTML = ordenados.map(r => {
+    const miembro = TEAM.find(m => String(m.ID) === String(r.MiembroID));
+    const nombre = miembro ? miembro.Nombre : '(miembro eliminado)';
+    const puestoLabel = r.Puesto === 'Direccion' ? 'Dirección' : r.Puesto;
+    return `
+      <tr data-id="${r.ID}">
+        <td>${nombre}</td>
+        <td>${puestoLabel}</td>
+        <td>${r.Semana}</td>
+        <td>${r.FechaReporte ? new Date(r.FechaReporte).toLocaleDateString('es-MX') : ''}</td>
+        <td><button class="btn ghost" data-descargar-kpi="${r.ID}" style="padding:5px 12px;font-size:0.75rem;">Descargar PDF</button></td>
+      </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-descargar-kpi]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = KPIS_SEMANALES_ACTUAL.find(x => String(x.ID) === String(btn.dataset.descargarKpi));
+      if(!r) return;
+      const miembro = TEAM.find(m => String(m.ID) === String(r.MiembroID));
+      generarReporteTextoPDF(r, miembro ? miembro.Nombre : '(miembro eliminado)');
+    });
+  });
+}
+
+function generarReporteTextoPDF(reporte, nombreMiembro){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  const margin = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 25;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(20); doc.setTextColor(20,20,20);
+  doc.text('Check-in semanal', margin, y);
+  y += 10;
+  doc.setDrawColor(220,210,200); doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(60,55,50);
+  const puestoLabel = reporte.Puesto === 'Direccion' ? 'Dirección' : reporte.Puesto;
+  doc.text(`${nombreMiembro} — ${puestoLabel}`, margin, y);
+  y += 6;
+  doc.text(`Semana ${reporte.Semana}`, margin, y);
+  y += 12;
+
+  let preguntas = [];
+  try{ preguntas = JSON.parse(reporte.RespuestasTexto || '[]'); } catch(e){ preguntas = []; }
+
+  preguntas.forEach(p => {
+    if(!p.respuesta || !p.respuesta.trim()) return;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(20,20,20);
+    const preguntaLines = doc.splitTextToSize(p.pregunta, pageWidth - margin * 2);
+    if(y + preguntaLines.length * 5 + 20 > 260){ doc.addPage(); y = 25; }
+    doc.text(preguntaLines, margin, y);
+    y += preguntaLines.length * 5 + 3;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(70,65,58);
+    const respuestaLines = doc.splitTextToSize(p.respuesta, pageWidth - margin * 2);
+    if(y + respuestaLines.length * 5 > 260){ doc.addPage(); y = 25; }
+    doc.text(respuestaLines, margin, y);
+    y += respuestaLines.length * 5 + 10;
+  });
+
+  doc.save(`Checkin_${nombreMiembro.replace(/\s+/g,'-')}_${reporte.Semana}.pdf`);
+}
 
 // ============================================================
 // ============ SUPABASE — Cotizaciones (lectura desde el CRM) ===
@@ -5376,6 +5506,7 @@ let clienteActual = null;
 let RESPUESTAS_ACTUAL = {};
 let CUENTAS_ACTUAL = [];
 let GUIONES_ACTUAL = [];
+let GUIONES_DIRTY = new Set(); // IDs de guiones con cambios sin guardar (vista interna del equipo)
 
 // ============================================================
 // ============ TEAM (dar de alta al equipo) ==================
@@ -5922,6 +6053,11 @@ document.getElementById('btn-copiar-link-magico').addEventListener('click', asyn
 });
 
 document.getElementById('btn-cerrar-cliente').addEventListener('click', () => {
+  if(GUIONES_DIRTY.size > 0){
+    const seguir = confirm('Tienes guion(es) sin guardar en este cliente. Si cierras ahora, se perderán los cambios. ¿Cerrar de todas formas?');
+    if(!seguir) return;
+  }
+  GUIONES_DIRTY.clear();
   document.getElementById('cliente-detalle-bg').classList.remove('open');
 });
 
@@ -7143,11 +7279,13 @@ function _guionItemHtml(g){
   const badgeEst = `<span class="g-badge-est ${est.toLowerCase()}">${est}</span>`;
   const badgePend = String(g.PendienteRevision || '') === '1'
     ? '<span class="g-badge-pendiente">🔔 Revisar</span>' : '';
+  const sinGuardar = GUIONES_DIRTY.has(g.ID);
+  const badgeSinGuardar = `<span class="g-badge-pendiente g-badge-singuardar" style="background:#c72a09;display:${sinGuardar ? '' : 'none'};">⚠️ Sin guardar</span>`;
   return `
     <div class="guion-item" data-id="${g.ID}" data-estatus="${est}">
       <div class="g-head">
         <span>${g.Folio ? g.Folio + ' — ' : ''}${g.Titulo || '(sin título)'}</span>
-        <span class="g-badges">${badgePend}${badgeEst}<span>▾</span></span>
+        <span class="g-badges">${badgeSinGuardar}${badgePend}${badgeEst}<span>▾</span></span>
       </div>
       <div class="g-body">
         <label>Folio</label>
@@ -7179,8 +7317,60 @@ function _guionItemHtml(g){
     </div>`;
 }
 
+// Marca/desmarca un guion como "sin guardar" y refleja el badge + el botón "Guardar todos"
+// sin tener que reconstruir toda la lista (evitaría perder el foco/cursor mientras se escribe).
+function _guionMarcarSinGuardar(id, sinGuardar){
+  if(sinGuardar) GUIONES_DIRTY.add(id); else GUIONES_DIRTY.delete(id);
+  const badge = document.querySelector(`.guion-item[data-id="${CSS.escape(id)}"] .g-badge-singuardar`);
+  if(badge) badge.style.display = sinGuardar ? '' : 'none';
+  const btnTodos = document.getElementById('btn-guardar-todos-guiones');
+  if(btnTodos) btnTodos.style.display = GUIONES_DIRTY.size > 0 ? '' : 'none';
+}
+
+// IMPORTANTE: sincroniza cada tecleo de vuelta a GUIONES_ACTUAL. Sin esto, un re-render
+// disparado por otra acción (crear/eliminar/marcar revisado otro guion) reconstruye el HTML
+// desde GUIONES_ACTUAL y borra cualquier texto que solo vivía en el textarea sin guardar.
+function _guionBindCampos(item, id){
+  const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
+  if(!g) return;
+  const campos = [
+    ['.gi-folio', 'Folio'], ['.gi-titulo', 'Titulo'], ['.gi-texto', 'Guion'],
+    ['.gi-musica', 'Musica'], ['.gi-inspiracion', 'Inspiracion'], ['.gi-notas', 'Notas']
+  ];
+  campos.forEach(([sel, campo]) => {
+    const el = item.querySelector(sel);
+    if(!el) return;
+    el.addEventListener('input', () => { g[campo] = el.value; _guionMarcarSinGuardar(id, true); });
+  });
+  const selEstatus = item.querySelector('.gi-estatus');
+  if(selEstatus) selEstatus.addEventListener('change', () => { g.Estatus = selEstatus.value; _guionMarcarSinGuardar(id, true); });
+}
+
+async function _guionGuardarUno(id, msgEl){
+  const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
+  if(!g) return false;
+  if(msgEl){ msgEl.textContent = 'Guardando...'; msgEl.style.color = '#8a8578'; }
+  try{
+    await sbGuionActualizar({
+      id, folio: (g.Folio || '').trim(), titulo: (g.Titulo || '').trim(), guion: g.Guion || '',
+      musica: (g.Musica || '').trim(), inspiracion: (g.Inspiracion || '').trim(), notas: g.Notas || '',
+      estatus: g.Estatus || 'Borrador', pendienteRevision: false
+    });
+    g.PendienteRevision = '';
+    _guionMarcarSinGuardar(id, false);
+    if(msgEl){ msgEl.textContent = '✓ Guardado'; msgEl.style.color = 'var(--verde)'; setTimeout(() => { if(msgEl) msgEl.textContent = ''; }, 3000); }
+    return true;
+  } catch(err){
+    console.error(err);
+    if(msgEl){ msgEl.textContent = ''; }
+    return false;
+  }
+}
+
 function renderGuionesLista(){
   const cont = document.getElementById('guiones-lista');
+  const btnTodosFuera = document.getElementById('btn-guardar-todos-guiones');
+  if(btnTodosFuera) btnTodosFuera.style.display = GUIONES_DIRTY.size > 0 ? '' : 'none';
   if(GUIONES_ACTUAL.length === 0){
     cont.innerHTML = '<div style="color:#999;margin-bottom:16px;">Aún no hay guiones para este cliente.</div>';
     return;
@@ -7223,50 +7413,40 @@ function renderGuionesLista(){
     head.addEventListener('click', () => head.closest('.guion-item').classList.toggle('open'));
   });
 
+  cont.querySelectorAll('.guion-item').forEach(item => {
+    _guionBindCampos(item, item.dataset.id);
+  });
+
   cont.querySelectorAll('[data-marcar-revisado]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const id = btn.dataset.marcarRevisado;
       try {
         await sbGuionMarcarRevisado(id);
+        // Actualizamos solo este guion en memoria (NO recargamos todo desde el servidor):
+        // un cargarGuiones() completo aquí pisaría cualquier edición sin guardar que el
+        // usuario tenga abierta en OTRO guion de la lista.
+        const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
+        if(g) g.PendienteRevision = '';
+        renderGuionesBannerPendientes();
+        renderGuionesLista();
       } catch(err){
         console.error(err);
         alert('⚠️ No se pudo marcar como revisado. Revisa tu conexión (o recarga la página, F5) e intenta de nuevo.');
       }
-      await cargarGuiones(clienteActual.ID);
     });
   });
 
   cont.querySelectorAll('[data-guardar-guion]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const item = btn.closest('.guion-item');
       const id = btn.dataset.guardarGuion;
       const msg = cont.querySelector(`[data-msg-guion="${id}"]`);
-      const folio = item.querySelector('.gi-folio').value.trim();
-      const titulo = item.querySelector('.gi-titulo').value.trim();
-      const texto = item.querySelector('.gi-texto').value;
-      const musica = item.querySelector('.gi-musica').value.trim();
-      const inspiracion = item.querySelector('.gi-inspiracion').value.trim();
-      const notas = item.querySelector('.gi-notas').value;
-      const estatus = item.querySelector('.gi-estatus').value;
-      const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
-      const respaldo = g ? Object.assign({}, g) : null;
-      if(g){ Object.assign(g, { Folio:folio, Titulo:titulo, Guion:texto, Musica:musica, Inspiracion:inspiracion, Notas:notas, Estatus:estatus }); }
       btn.disabled = true;
-      if(msg){ msg.textContent = 'Guardando...'; msg.style.color = '#8a8578'; }
-      try{
-        await sbGuionActualizar({ id, folio, titulo, guion:texto, musica, inspiracion, notas, estatus, pendienteRevision: false });
-        if(msg){ msg.textContent = '✓ Guardado'; msg.style.color = 'var(--verde)'; setTimeout(() => { if(msg) msg.textContent = ''; }, 3000); }
-      } catch(err){
-        console.error(err);
-        // No se pudo confirmar el guardado: revertimos lo que se veía en pantalla para no
-        // mostrar como "guardado" algo que en realidad no llegó a la base de datos.
-        if(g && respaldo) Object.assign(g, respaldo);
-        if(msg){ msg.textContent = ''; }
+      const ok = await _guionGuardarUno(id, msg);
+      if(!ok){
         alert('⚠️ No se pudo guardar este guion. Copia el texto aparte por seguridad, revisa tu conexión (o recarga la página con F5) e intenta de nuevo.');
       }
       btn.disabled = false;
-      renderGuionesLista();
     });
   });
 
@@ -7275,6 +7455,7 @@ function renderGuionesLista(){
       const id = btn.dataset.eliminarGuion;
       const respaldo = GUIONES_ACTUAL.slice();
       GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => String(g.ID) !== String(id));
+      GUIONES_DIRTY.delete(id);
       renderGuionesLista();
       try{
         await sbGuionEliminar(id);
@@ -7301,6 +7482,34 @@ document.getElementById('btn-nuevo-guion').addEventListener('click', async () =>
     GUIONES_ACTUAL = GUIONES_ACTUAL.filter(g => g.ID !== nuevo.ID);
     renderGuionesLista();
     alert('⚠️ No se pudo crear el guion nuevo. Revisa tu conexión e intenta de nuevo.');
+  }
+});
+
+document.getElementById('btn-guardar-todos-guiones').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-guardar-todos-guiones');
+  const msg = document.getElementById('guiones-guardar-todos-msg');
+  const idsAGuardar = Array.from(GUIONES_DIRTY);
+  if(idsAGuardar.length === 0) return;
+  btn.disabled = true;
+  msg.textContent = `Guardando ${idsAGuardar.length} guion(es)...`;
+  let ok = 0, fallo = 0;
+  for(const id of idsAGuardar){
+    const exito = await _guionGuardarUno(id, null);
+    if(exito) ok++; else fallo++;
+  }
+  btn.disabled = false;
+  renderGuionesLista();
+  msg.textContent = fallo > 0
+    ? `Se guardaron ${ok}, fallaron ${fallo}. Revisa tu conexión e intenta de nuevo.`
+    : `✓ Se guardaron ${ok} guion(es).`;
+  setTimeout(() => { msg.textContent = ''; }, 4000);
+});
+
+// Advertencia al salir/recargar si hay guiones sin guardar en la ficha del cliente
+window.addEventListener('beforeunload', (e) => {
+  if(GUIONES_DIRTY.size > 0){
+    e.preventDefault();
+    e.returnValue = '';
   }
 });
 
@@ -7559,70 +7768,149 @@ async function chequearReportePendiente(){
   }
 }
 
+// Bloques reutilizables para armar el formulario del check-in semanal.
+function _reporteSliderBloque(campo, label){
+  return `
+    <div class="reporte-pregunta">
+      <label>${label}</label>
+      <div class="reporte-slider-wrap">
+        <span class="reporte-emoji" data-emoji-de="${campo}">😐</span>
+        <input type="range" class="reporte-slider-generic" data-campo="${campo}" min="1" max="10" value="7" step="1">
+        <span class="reporte-valor" data-valor-de="${campo}">7</span>
+      </div>
+      <div class="reporte-slider-scale"><span>😔 1</span><span>😐 5</span><span>😄 10</span></div>
+    </div>`;
+}
+function _reporteNumeroBloque(campo, label, hint){
+  return `
+    <div class="reporte-pregunta">
+      <label>${label}</label>
+      <input type="number" class="reporte-numero" data-campo="${campo}" min="0" max="50" value="0" step="1">
+      ${hint ? `<div class="reporte-hint">${hint}</div>` : ''}
+    </div>`;
+}
+function _reporteTextoBloque(campo, label){
+  return `
+    <div class="reporte-pregunta">
+      <label>${label}</label>
+      <textarea class="reporte-textarea" data-campo="${campo}"></textarea>
+    </div>`;
+}
+
+// Preguntas de texto libre por rol (van al PDF de "KPI's semanales", no al Dashboard).
+const PREGUNTAS_TEXTO_REPORTE = {
+  Edicion: [
+    { campo: 'mejora_edicion', label: '¿Qué mejorarías de tu edición?' },
+    { campo: 'aprender', label: '¿Qué te gustaría aprender o editar en esta agencia?' },
+    { campo: 'mejora_grabacion', label: '¿Qué mejorarías de la grabación?' },
+    { campo: 'mejora_direccion', label: '¿Qué mejorarías de Dirección?' },
+    { campo: 'crecimiento', label: '¿Qué te gustaría ver para tu crecimiento en esta agencia?' }
+  ],
+  CM: [
+    { campo: 'mejora_general', label: '¿Qué mejorarías?' },
+    { campo: 'mejora_sistema', label: '¿Qué mejorarías del sistema (CRM)?' },
+    { campo: 'mejora_servicio', label: '¿Qué mejorarías del servicio?' }
+  ],
+  Filmmaker: []
+};
+
 function mostrarPopupReporteSemanal(semana){
+  const puesto = USUARIO_ACTUAL.Puesto;
+  let bloques = '';
+  if(puesto === 'Edicion'){
+    bloques =
+      _reporteSliderBloque('mental', '¿Cómo te sentiste esta semana?') +
+      _reporteNumeroBloque('feedbacks', '¿Cuántos feedbacks recibiste esta semana?', 'Cuenta cada vez que un cliente o Dirección te pidió cambios.') +
+      _reporteTextoBloque('mejora_edicion', '¿Qué mejorarías de tu edición?') +
+      _reporteTextoBloque('aprender', '¿Qué te gustaría aprender o editar en esta agencia?') +
+      _reporteSliderBloque('grabacion', 'Del 1 al 10, ¿qué calificación le pondrías a la grabación que recibiste?') +
+      _reporteTextoBloque('mejora_grabacion', '¿Qué mejorarías de la grabación?') +
+      _reporteSliderBloque('direccion', 'Del 1 al 10, ¿cómo calificarías a Dirección esta semana?') +
+      _reporteTextoBloque('mejora_direccion', '¿Qué mejorarías de Dirección?') +
+      _reporteTextoBloque('crecimiento', '¿Qué te gustaría ver para tu crecimiento en esta agencia?');
+  } else if(puesto === 'CM'){
+    bloques =
+      _reporteSliderBloque('mental', '¿Cómo te sentiste esta semana?') +
+      _reporteTextoBloque('mejora_general', '¿Qué mejorarías?') +
+      _reporteSliderBloque('rendimiento', 'Del 1 al 10, ¿cómo calificarías tu rendimiento esta semana?') +
+      _reporteSliderBloque('direccion', 'Del 1 al 10, ¿cómo calificarías a Dirección esta semana?') +
+      _reporteTextoBloque('mejora_sistema', '¿Qué mejorarías del sistema (CRM)?') +
+      _reporteTextoBloque('mejora_servicio', '¿Qué mejorarías del servicio?');
+  } else {
+    // Filmmaker: se queda con el formulario simple original.
+    bloques =
+      _reporteSliderBloque('mental', '¿Cómo te sentiste esta semana?') +
+      _reporteNumeroBloque('feedbacks', '¿Cuántos feedbacks recibiste esta semana?', 'Cuenta cada vez que un cliente o Dirección te pidió cambios.');
+  }
+
   // No se puede cerrar. Solo se sale respondiendo.
   const bg = document.createElement('div');
   bg.className = 'reporte-modal-bg';
   bg.innerHTML = `
     <div class="reporte-modal">
       <div class="reporte-titulo">Cierre de semana</div>
-      <div class="reporte-sub">Antes de arrancar la semana, cuéntanos cómo te fue la pasada. Toma 20 segundos.</div>
+      <div class="reporte-sub">Antes de arrancar la semana, cuéntanos cómo te fue la pasada. Toma un minuto.</div>
       <div class="reporte-semana-tag">Reportando: semana ${semana}</div>
-
-      <div class="reporte-pregunta">
-        <label>¿Cómo te sentiste esta semana?</label>
-        <div class="reporte-slider-wrap">
-          <span class="reporte-emoji" id="reporte-emoji">😐</span>
-          <input type="range" id="reporte-mental" min="1" max="10" value="7" step="1">
-          <span class="reporte-valor" id="reporte-mental-valor">7</span>
-        </div>
-        <div class="reporte-slider-scale">
-          <span>😔 1</span><span>😐 5</span><span>😄 10</span>
-        </div>
-      </div>
-
-      <div class="reporte-pregunta">
-        <label>¿Cuántos feedbacks recibiste esta semana?</label>
-        <input type="number" id="reporte-feedbacks" min="0" max="50" value="0" step="1" class="reporte-numero">
-        <div class="reporte-hint">Cuenta cada vez que un cliente o Dirección te pidió cambios.</div>
-      </div>
-
+      ${bloques}
       <button class="reporte-btn" id="reporte-guardar">Guardar y descansar 🌴</button>
       <div class="reporte-error" id="reporte-error"></div>
     </div>
   `;
   document.body.appendChild(bg);
 
-  const mentalInput = document.getElementById('reporte-mental');
-  const mentalValor = document.getElementById('reporte-mental-valor');
-  const mentalEmoji = document.getElementById('reporte-emoji');
-  function actualizarSliderVisual(){
-    const v = parseInt(mentalInput.value, 10);
-    mentalValor.textContent = v;
-    let emoji = '😐';
-    if(v >= 9) emoji = '😄';
-    else if(v >= 7) emoji = '🙂';
-    else if(v >= 4) emoji = '😐';
-    else emoji = '😔';
-    mentalEmoji.textContent = emoji;
+  function _actualizarSliderVisual(slider){
+    const campo = slider.dataset.campo;
+    const v = parseInt(slider.value, 10);
+    const valorEl = bg.querySelector(`[data-valor-de="${campo}"]`);
+    const emojiEl = bg.querySelector(`[data-emoji-de="${campo}"]`);
+    if(valorEl) valorEl.textContent = v;
+    if(emojiEl){
+      let emoji = '😐';
+      if(v >= 9) emoji = '😄';
+      else if(v >= 7) emoji = '🙂';
+      else if(v >= 4) emoji = '😐';
+      else emoji = '😔';
+      emojiEl.textContent = emoji;
+    }
   }
-  mentalInput.addEventListener('input', actualizarSliderVisual);
-  actualizarSliderVisual();
+  bg.querySelectorAll('.reporte-slider-generic').forEach(slider => {
+    slider.addEventListener('input', () => _actualizarSliderVisual(slider));
+    _actualizarSliderVisual(slider);
+  });
 
   document.getElementById('reporte-guardar').addEventListener('click', async () => {
     const btn = document.getElementById('reporte-guardar');
     const errEl = document.getElementById('reporte-error');
-    const mental = parseInt(mentalInput.value, 10);
-    const feedbacks = parseInt(document.getElementById('reporte-feedbacks').value, 10);
-    if(isNaN(feedbacks) || feedbacks < 0){
-      errEl.textContent = 'Escribe un número de feedbacks válido (0 o más).';
-      return;
+    const mental = parseInt((bg.querySelector('[data-campo="mental"]') || {}).value, 10);
+    const feedbacksEl = bg.querySelector('.reporte-numero[data-campo="feedbacks"]');
+    let feedbacks = null;
+    if(feedbacksEl){
+      feedbacks = parseInt(feedbacksEl.value, 10);
+      if(isNaN(feedbacks) || feedbacks < 0){
+        errEl.textContent = 'Escribe un número de feedbacks válido (0 o más).';
+        return;
+      }
     }
+    const grabacionEl = bg.querySelector('[data-campo="grabacion"]');
+    const direccionEl = bg.querySelector('[data-campo="direccion"]');
+    const rendimientoEl = bg.querySelector('[data-campo="rendimiento"]');
+    const preguntasTexto = PREGUNTAS_TEXTO_REPORTE[puesto] || [];
+    const respuestasTexto = JSON.stringify(preguntasTexto.map(p => ({
+      pregunta: p.label,
+      respuesta: (bg.querySelector(`[data-campo="${p.campo}"]`) || {}).value || ''
+    })));
+
     btn.disabled = true;
     btn.textContent = 'Guardando...';
     errEl.textContent = '';
     try {
-      await sbGuardarReporte(USUARIO_ACTUAL.ID, semana, mental, feedbacks);
+      await sbGuardarReporte(USUARIO_ACTUAL.ID, semana, mental, feedbacks, {
+        puesto,
+        grabacion: grabacionEl ? parseInt(grabacionEl.value, 10) : undefined,
+        direccion: direccionEl ? parseInt(direccionEl.value, 10) : undefined,
+        rendimiento: rendimientoEl ? parseInt(rendimientoEl.value, 10) : undefined,
+        respuestasTexto
+      });
       bg.remove();
     } catch(err) {
       console.error(err);
@@ -7809,7 +8097,9 @@ const DASH_METRICAS = {
     { key: 'agendados', label: 'Agendados', invertida: false },
     { key: 'feedbacks', label: 'Feedbacks', invertida: true, esReportada: true },
     { key: 'atrasados', label: 'Atrasados', invertida: true },
-    { key: 'mental', label: 'Mental', invertida: false, esReportada: true }
+    { key: 'mental', label: 'Mental', invertida: false, esReportada: true },
+    { key: 'grabacion', label: 'Grabación', invertida: false, esReportada: true },
+    { key: 'direccion', label: 'Dirección', invertida: false, esReportada: true }
   ],
   Filmmaker: [
     { key: 'entregados', label: 'Entregados', invertida: false },
@@ -7823,7 +8113,9 @@ const DASH_METRICAS = {
     { key: 'expedientes', label: 'Expedientes', invertida: false },
     { key: 'informes', label: 'Informes', invertida: false },
     { key: 'atrasados', label: 'Atrasados', invertida: true },
-    { key: 'mental', label: 'Mental', invertida: false, esReportada: true }
+    { key: 'mental', label: 'Mental', invertida: false, esReportada: true },
+    { key: 'rendimiento', label: 'Rendimiento', invertida: false, esReportada: true },
+    { key: 'direccion', label: 'Dirección', invertida: false, esReportada: true }
   ],
   Direccion: [
     { key: 'juntas', label: 'Juntas', invertida: false },
@@ -7917,9 +8209,12 @@ function renderDashboard(){
   }
   // Filtrar solo miembros con rol que tiene métricas
   const rolesConMetricas = Object.keys(DASH_METRICAS);
-  const miembros = DASH_DATA.miembros.filter(m => rolesConMetricas.includes(m.puesto));
+  // Dirección siempre va al final de la tabla, después del resto del equipo.
+  const miembros = DASH_DATA.miembros
+    .filter(m => rolesConMetricas.includes(m.puesto))
+    .sort((a, b) => (a.puesto === 'Direccion' ? 1 : 0) - (b.puesto === 'Direccion' ? 1 : 0));
   if(miembros.length === 0){
-    cuerpo.innerHTML = '<div class="dash-empty">No hay miembros con rol Edición, Filmmaker o CM configurados.</div>';
+    cuerpo.innerHTML = '<div class="dash-empty">No hay miembros con rol Edición, Filmmaker, CM o Dirección configurados.</div>';
     return;
   }
 
@@ -8479,7 +8774,7 @@ function cambiarLinea(lineaKey){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
-    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); }
+    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); }
   }
 }
 
@@ -8764,7 +9059,11 @@ async function arrancarVistaPublicaCliente(token){
       <div id="vp-status" style="text-align:center;color:#8a8578;padding:20px;"></div>
       <div class="vp-seccion" id="vp-seccion-guiones">
         <div id="vp-guiones-lista"></div>
-        <button id="vp-nuevo" class="vp-btn-primario">+ Nuevo guion</button>
+        <div class="vp-guiones-acciones" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
+          <button id="vp-nuevo" class="vp-btn-primario">+ Nuevo guion</button>
+          <button id="vp-guardar-todos" class="vp-btn-secundario" style="display:none;">💾 Guardar todos los cambios</button>
+          <span id="vp-guardar-todos-msg" class="vp-msg"></span>
+        </div>
       </div>
       <div class="vp-seccion" id="vp-seccion-calendario" style="display:none;">
         <div id="vp-calendario-lista"></div>
@@ -8789,6 +9088,7 @@ async function arrancarVistaPublicaCliente(token){
 
   let VP_CLIENTE = null;
   let VP_GUIONES = [];
+  let VP_GUIONES_DIRTY = new Set(); // IDs de guiones con cambios sin guardar en Supabase
   let VP_CALENDARIO = [];
   let VP_EXPEDIENTE = null;
   let VP_EXP_PDFS = [];
@@ -8855,6 +9155,36 @@ async function arrancarVistaPublicaCliente(token){
   }
 
   // ============ GUIONES (editable) ============
+  // IMPORTANTE: cada input/textarea sincroniza sus cambios de vuelta a VP_GUIONES[idx]
+  // en cada tecleo (ver _vpBindCamposGuion). Esto es lo que evita que un re-render
+  // (p. ej. al dar "+ Nuevo guion" mientras otro guion sigue abierto sin guardar)
+  // borre lo que el cliente ya había escrito: sin este sync, renderVpGuiones()
+  // reconstruye todo el HTML a partir de VP_GUIONES, y cualquier texto que solo
+  // vivía en el DOM (sin guardar en Supabase todavía) desaparecía.
+  function _vpMarcarSinGuardar(id, sinGuardar){
+    if(sinGuardar) VP_GUIONES_DIRTY.add(id); else VP_GUIONES_DIRTY.delete(id);
+    const badge = document.querySelector(`.vp-guion[data-id="${CSS.escape(id)}"] .vp-badge-singuardar`);
+    if(badge) badge.style.display = sinGuardar ? '' : 'none';
+    const btnTodos = document.getElementById('vp-guardar-todos');
+    if(btnTodos) btnTodos.style.display = VP_GUIONES_DIRTY.size > 0 ? '' : 'none';
+  }
+
+  function _vpBindCamposGuion(item, idx){
+    const g = VP_GUIONES[idx];
+    const campos = [
+      ['.vp-folio', 'Folio'], ['.vp-titulo', 'Titulo'], ['.vp-texto', 'Guion'],
+      ['.vp-musica', 'Musica'], ['.vp-inspiracion', 'Inspiracion'], ['.vp-notas', 'Notas']
+    ];
+    campos.forEach(([sel, campo]) => {
+      const el = item.querySelector(sel);
+      if(!el) return;
+      el.addEventListener('input', () => {
+        g[campo] = el.value;
+        _vpMarcarSinGuardar(g.ID, true);
+      });
+    });
+  }
+
   function renderVpGuiones(){
     const lista = document.getElementById('vp-guiones-lista');
     if(VP_GUIONES.length === 0){
@@ -8864,11 +9194,13 @@ async function arrancarVistaPublicaCliente(token){
     lista.innerHTML = VP_GUIONES.map((g, idx) => {
       const est = g.Estatus || 'Borrador';
       const col = estatusColor(est);
+      const sinGuardar = VP_GUIONES_DIRTY.has(g.ID);
       return `
-        <div class="vp-guion" data-idx="${idx}" style="background:${col.bg};border:1px solid ${col.border};">
+        <div class="vp-guion" data-idx="${idx}" data-id="${g.ID}" style="background:${col.bg};border:1px solid ${col.border};">
           <div class="vp-head">
             <span>${g.Folio ? g.Folio + ' — ' : ''}${g.Titulo || '(sin título)'}</span>
             <span class="vp-head-right">
+              <span class="vp-badge vp-badge-singuardar" style="background:#c72a09;display:${sinGuardar ? '' : 'none'};">⚠️ Sin guardar</span>
               <span class="vp-badge" style="background:${col.badge};">${est}</span>
               <span>▾</span>
             </span>
@@ -8906,32 +9238,45 @@ async function arrancarVistaPublicaCliente(token){
         body.style.display = body.style.display === 'block' ? 'none' : 'block';
       });
     });
+    lista.querySelectorAll('.vp-guion').forEach(item => {
+      _vpBindCamposGuion(item, parseInt(item.dataset.idx, 10));
+    });
     lista.querySelectorAll('.vp-guardar').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const idx = parseInt(btn.dataset.idx, 10);
         const item = btn.closest('.vp-guion');
-        const g = VP_GUIONES[idx];
-        const msg = item.querySelector('.vp-msg');
-        msg.textContent = 'Guardando...';
-        try {
-          await sbGuionClienteUpsert({
-            id: g.ID,
-            clienteId: VP_CLIENTE.id,
-            folio: item.querySelector('.vp-folio').value.trim(),
-            titulo: item.querySelector('.vp-titulo').value.trim(),
-            guion: item.querySelector('.vp-texto').value,
-            musica: item.querySelector('.vp-musica').value.trim(),
-            inspiracion: item.querySelector('.vp-inspiracion').value.trim(),
-            notas: item.querySelector('.vp-notas').value
-          });
-          msg.textContent = '✓ Guardado. El equipo lo revisará.';
-          setTimeout(() => { msg.textContent = ''; }, 3000);
-        } catch(err) {
-          msg.textContent = 'No se pudo guardar. Revisa tu conexión.';
-        }
+        await _vpGuardarGuion(idx, item.querySelector('.vp-msg'));
       });
     });
+    const btnTodos = document.getElementById('vp-guardar-todos');
+    if(btnTodos) btnTodos.style.display = VP_GUIONES_DIRTY.size > 0 ? '' : 'none';
+  }
+
+  async function _vpGuardarGuion(idx, msgEl){
+    const g = VP_GUIONES[idx];
+    if(msgEl) msgEl.textContent = 'Guardando...';
+    try {
+      await sbGuionClienteUpsert({
+        id: g.ID,
+        clienteId: VP_CLIENTE.id,
+        folio: (g.Folio || '').trim(),
+        titulo: (g.Titulo || '').trim(),
+        guion: g.Guion || '',
+        musica: (g.Musica || '').trim(),
+        inspiracion: (g.Inspiracion || '').trim(),
+        notas: g.Notas || ''
+      });
+      _vpMarcarSinGuardar(g.ID, false);
+      if(msgEl){
+        msgEl.textContent = '✓ Guardado. El equipo lo revisará.';
+        setTimeout(() => { msgEl.textContent = ''; }, 3000);
+      }
+      return true;
+    } catch(err) {
+      if(msgEl) msgEl.textContent = 'No se pudo guardar. Revisa tu conexión.';
+      return false;
+    }
   }
 
   // ============ CALENDARIO DE PUBLICACIONES (solo lectura) ============
@@ -9182,8 +9527,9 @@ async function arrancarVistaPublicaCliente(token){
   // Nuevo guion
   document.getElementById('vp-nuevo').addEventListener('click', () => {
     if(!VP_CLIENTE){ alert('Espera a que cargue tu perfil.'); return; }
+    const nuevoId = uuid();
     VP_GUIONES.unshift({
-      ID: uuid(),
+      ID: nuevoId,
       Folio: '',
       Titulo: 'Nuevo guion',
       Guion: '',
@@ -9191,9 +9537,41 @@ async function arrancarVistaPublicaCliente(token){
       Notas: '',
       Estatus: 'Borrador'
     });
+    VP_GUIONES_DIRTY.add(nuevoId);
     renderVpGuiones();
     const first = document.querySelector('.vp-guion .vp-body');
     if(first) first.style.display = 'block';
+  });
+
+  // Guardar todos los guiones con cambios pendientes de un solo clic
+  document.getElementById('vp-guardar-todos').addEventListener('click', async () => {
+    const btn = document.getElementById('vp-guardar-todos');
+    const msg = document.getElementById('vp-guardar-todos-msg');
+    const idsAGuardar = Array.from(VP_GUIONES_DIRTY);
+    if(idsAGuardar.length === 0) return;
+    btn.disabled = true;
+    msg.textContent = `Guardando ${idsAGuardar.length} guion(es)...`;
+    let ok = 0, fallo = 0;
+    for(const id of idsAGuardar){
+      const idx = VP_GUIONES.findIndex(g => g.ID === id);
+      if(idx === -1) continue;
+      const exito = await _vpGuardarGuion(idx, null);
+      if(exito) ok++; else fallo++;
+    }
+    btn.disabled = false;
+    renderVpGuiones();
+    msg.textContent = fallo > 0
+      ? `Se guardaron ${ok}, fallaron ${fallo}. Revisa tu conexión e intenta de nuevo.`
+      : `✓ Se guardaron ${ok} guion(es).`;
+    setTimeout(() => { msg.textContent = ''; }, 4000);
+  });
+
+  // Advertencia al salir/recargar si hay guiones sin guardar
+  window.addEventListener('beforeunload', (e) => {
+    if(VP_GUIONES_DIRTY.size > 0){
+      e.preventDefault();
+      e.returnValue = '';
+    }
   });
 
   await cargarVista();
