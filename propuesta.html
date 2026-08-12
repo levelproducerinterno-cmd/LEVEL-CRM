@@ -553,6 +553,17 @@ async function sbRegistrarJuntaVenta({ prospecto, fecha, notas }){
     if(error) throw error;
   } catch(err){ console.error('No se pudo registrar la junta de venta automática:', err); }
 }
+// Alimenta el recuadro de notificaciones de la página Clientes en index.html.
+// No truena el flujo principal si falla: es un aviso adicional, no una operación crítica.
+async function registrarActividad({ tipo, clienteNombre, descripcion }){
+  try{
+    const { error } = await sb.from('actividad').insert({
+      id: 'act_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8),
+      tipo, cliente_id: null, cliente_nombre: clienteNombre || '', descripcion, autor: '', leido: false
+    });
+    if(error) console.error('No se pudo registrar actividad:', error);
+  } catch(err){ console.error('No se pudo registrar actividad:', err); }
+}
 async function sbActualizarEstatusCotizacion(id, estatus){
   const { data, error } = await sb.from('cotizaciones')
     .update({ estatus, actualizado_iso: new Date().toISOString() })
@@ -1036,6 +1047,14 @@ async function cargarCotizaciones(){
         try{
           await sbActualizarEstatusCotizacion(id, nuevo);
           sel.dataset.est = nuevo;
+          if(nuevo === 'Cerrada' || nuevo === 'Perdida'){
+            const cot = ordenadas.find(c => String(c.ID) === String(id));
+            const nombre = cot ? (cot.Folio ? cot.Folio + ' — ' + cot.Proyecto : cot.Proyecto) : '';
+            registrarActividad({
+              tipo: 'cotizacion_estatus', clienteNombre: cot ? cot.Proyecto : '',
+              descripcion: nuevo === 'Cerrada' ? `💰 Cotización cerrada ✓: ${nombre}` : `💰 Cotización perdida ✕: ${nombre}`
+            });
+          }
         } catch(err){
           console.error(err);
           sel.value = anterior;
