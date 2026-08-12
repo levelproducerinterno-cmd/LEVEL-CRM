@@ -63,6 +63,8 @@
   .cot-estatus{padding:8px 10px;border-radius:4px;border:1px solid #d8d3c9;font-size:0.78rem;font-family:'Montserrat',sans-serif;background:#fff;color:var(--negro);}
   .cot-estatus[data-est="Cerrado"]{background:#e6f4e6;border-color:#a4d0a4;}
   .cot-estatus[data-est="Perdido"]{background:#fdecea;border-color:#f5c9c1;}
+  .cot-del-btn{background:transparent;border:none;color:#c8c2b4;cursor:pointer;font-size:1rem;padding:4px 6px;}
+  .cot-del-btn:hover{color:var(--rojo);}
 
   .choice-row{display:flex;gap:10px;flex-wrap:wrap;}
   .choice-btn{border:1.5px solid #d8d3c9;padding:10px 18px;text-align:center;cursor:pointer;border-radius:20px;font-size:0.85rem;user-select:none;}
@@ -303,6 +305,10 @@ async function sbActualizarEstatusDiagnostico(id, estatus){
   const { data, error } = await sb.from('diagnosticos_prospectos').update({ estatus }).eq('id', id).select();
   if(error){ console.error('Supabase actualizar diagnostico:', error); throw error; }
   if(!data || data.length === 0) throw new Error('El diagnóstico ' + id + ' no existe; no se guardó el cambio.');
+}
+async function sbEliminarDiagnosticoProspecto(id){
+  const { error } = await sb.from('diagnosticos_prospectos').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar diagnostico prospecto:', error); throw error; }
 }
 
 // ============ choice-buttons (Sí/No, opciones múltiples) ============
@@ -559,6 +565,7 @@ async function cargarDiagnosticos(){
           <option value="Cerrado" ${p.Estatus === 'Cerrado' ? 'selected' : ''}>✓ Cerrado</option>
           <option value="Perdido" ${p.Estatus === 'Perdido' ? 'selected' : ''}>✕ Perdido</option>
         </select>
+        <button class="cot-del-btn" data-eliminar-diag="${p.ID}" title="Eliminar">✕</button>
       </div>`).join('');
     cont.querySelectorAll('.cot-estatus').forEach(sel => {
       sel.addEventListener('change', async () => {
@@ -575,6 +582,27 @@ async function cargarDiagnosticos(){
           alert('⚠️ No se pudo actualizar el estatus de este prospecto. Revisa tu conexión e intenta de nuevo.');
         }
         sel.disabled = false;
+      });
+    });
+    cont.querySelectorAll('[data-eliminar-diag]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.eliminarDiag;
+        if(!confirm('¿Eliminar este prospecto del registro?')) return;
+        const item = btn.closest('.cot-item');
+        item.style.opacity = '0.4';
+        btn.disabled = true;
+        try{
+          await sbEliminarDiagnosticoProspecto(id);
+          item.remove();
+          if(!cont.querySelector('.cot-item')){
+            document.getElementById('diag-status').textContent = 'Todavía no has generado ningún diagnóstico.';
+          }
+        } catch(err){
+          console.error(err);
+          item.style.opacity = '1';
+          btn.disabled = false;
+          alert('⚠️ No se pudo eliminar este prospecto. Revisa tu conexión e intenta de nuevo.');
+        }
       });
     });
   } catch(err){
