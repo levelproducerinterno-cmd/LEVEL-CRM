@@ -2461,7 +2461,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-guiones-sin-guardar';
+const APP_BUILD = '2026-08-12-guiones-autoguardado';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 const { jsPDF } = window.jspdf;
@@ -7327,6 +7327,21 @@ function _guionMarcarSinGuardar(id, sinGuardar){
   if(btnTodos) btnTodos.style.display = GUIONES_DIRTY.size > 0 ? '' : 'none';
 }
 
+// Autoguardado: además del botón manual, cada guion se guarda solo ~2.5s después de que
+// el usuario deja de teclear, para que nunca dependa de que alguien se acuerde de dar clic.
+const GUIONES_AUTOSAVE_TIMERS = {};
+const GUIONES_GUARDANDO = new Set();
+const GUION_AUTOSAVE_MS = 2500;
+
+function _guionProgramarAutoguardado(id){
+  if(GUIONES_AUTOSAVE_TIMERS[id]) clearTimeout(GUIONES_AUTOSAVE_TIMERS[id]);
+  GUIONES_AUTOSAVE_TIMERS[id] = setTimeout(() => {
+    delete GUIONES_AUTOSAVE_TIMERS[id];
+    const msgEl = document.querySelector(`[data-msg-guion="${CSS.escape(id)}"]`);
+    _guionGuardarUno(id, msgEl);
+  }, GUION_AUTOSAVE_MS);
+}
+
 // IMPORTANTE: sincroniza cada tecleo de vuelta a GUIONES_ACTUAL. Sin esto, un re-render
 // disparado por otra acción (crear/eliminar/marcar revisado otro guion) reconstruye el HTML
 // desde GUIONES_ACTUAL y borra cualquier texto que solo vivía en el textarea sin guardar.
@@ -7340,15 +7355,31 @@ function _guionBindCampos(item, id){
   campos.forEach(([sel, campo]) => {
     const el = item.querySelector(sel);
     if(!el) return;
-    el.addEventListener('input', () => { g[campo] = el.value; _guionMarcarSinGuardar(id, true); });
+    el.addEventListener('input', () => {
+      g[campo] = el.value;
+      _guionMarcarSinGuardar(id, true);
+      _guionProgramarAutoguardado(id);
+    });
   });
   const selEstatus = item.querySelector('.gi-estatus');
-  if(selEstatus) selEstatus.addEventListener('change', () => { g.Estatus = selEstatus.value; _guionMarcarSinGuardar(id, true); });
+  if(selEstatus) selEstatus.addEventListener('change', () => {
+    g.Estatus = selEstatus.value;
+    _guionMarcarSinGuardar(id, true);
+    _guionProgramarAutoguardado(id);
+  });
 }
 
 async function _guionGuardarUno(id, msgEl){
   const g = GUIONES_ACTUAL.find(x => String(x.ID) === String(id));
   if(!g) return false;
+  if(GUIONES_GUARDANDO.has(id)){
+    // Ya hay un guardado en curso para este guion: reintentamos en breve para no perder
+    // lo último que se tecleó mientras esa petición seguía en vuelo.
+    _guionProgramarAutoguardado(id);
+    return false;
+  }
+  GUIONES_GUARDANDO.add(id);
+  if(GUIONES_AUTOSAVE_TIMERS[id]){ clearTimeout(GUIONES_AUTOSAVE_TIMERS[id]); delete GUIONES_AUTOSAVE_TIMERS[id]; }
   if(msgEl){ msgEl.textContent = 'Guardando...'; msgEl.style.color = '#8a8578'; }
   try{
     await sbGuionActualizar({
@@ -7364,6 +7395,8 @@ async function _guionGuardarUno(id, msgEl){
     console.error(err);
     if(msgEl){ msgEl.textContent = ''; }
     return false;
+  } finally {
+    GUIONES_GUARDANDO.delete(id);
   }
 }
 
@@ -9169,6 +9202,23 @@ async function arrancarVistaPublicaCliente(token){
     if(btnTodos) btnTodos.style.display = VP_GUIONES_DIRTY.size > 0 ? '' : 'none';
   }
 
+  // Autoguardado: además del botón manual, cada guion se guarda solo ~2.5s después de que
+  // el cliente deja de teclear, para que nunca dependa de que se acuerde de dar clic.
+  const VP_AUTOSAVE_TIMERS = {};
+  const VP_GUARDANDO = new Set();
+  const VP_AUTOSAVE_MS = 2500;
+
+  function _vpProgramarAutoguardado(id){
+    if(VP_AUTOSAVE_TIMERS[id]) clearTimeout(VP_AUTOSAVE_TIMERS[id]);
+    VP_AUTOSAVE_TIMERS[id] = setTimeout(() => {
+      delete VP_AUTOSAVE_TIMERS[id];
+      const idx = VP_GUIONES.findIndex(x => x.ID === id);
+      if(idx === -1) return;
+      const item = document.querySelector(`.vp-guion[data-id="${CSS.escape(id)}"]`);
+      _vpGuardarGuion(idx, item ? item.querySelector('.vp-msg') : null);
+    }, VP_AUTOSAVE_MS);
+  }
+
   function _vpBindCamposGuion(item, idx){
     const g = VP_GUIONES[idx];
     const campos = [
@@ -9181,6 +9231,7 @@ async function arrancarVistaPublicaCliente(token){
       el.addEventListener('input', () => {
         g[campo] = el.value;
         _vpMarcarSinGuardar(g.ID, true);
+        _vpProgramarAutoguardado(g.ID);
       });
     });
   }
@@ -9255,6 +9306,14 @@ async function arrancarVistaPublicaCliente(token){
 
   async function _vpGuardarGuion(idx, msgEl){
     const g = VP_GUIONES[idx];
+    if(VP_GUARDANDO.has(g.ID)){
+      // Ya hay un guardado en curso para este guion: reintentamos en breve para no perder
+      // lo último que se escribió mientras esa petición seguía en vuelo.
+      _vpProgramarAutoguardado(g.ID);
+      return false;
+    }
+    VP_GUARDANDO.add(g.ID);
+    if(VP_AUTOSAVE_TIMERS[g.ID]){ clearTimeout(VP_AUTOSAVE_TIMERS[g.ID]); delete VP_AUTOSAVE_TIMERS[g.ID]; }
     if(msgEl) msgEl.textContent = 'Guardando...';
     try {
       await sbGuionClienteUpsert({
@@ -9276,6 +9335,8 @@ async function arrancarVistaPublicaCliente(token){
     } catch(err) {
       if(msgEl) msgEl.textContent = 'No se pudo guardar. Revisa tu conexión.';
       return false;
+    } finally {
+      VP_GUARDANDO.delete(g.ID);
     }
   }
 
@@ -9538,6 +9599,7 @@ async function arrancarVistaPublicaCliente(token){
       Estatus: 'Borrador'
     });
     VP_GUIONES_DIRTY.add(nuevoId);
+    _vpProgramarAutoguardado(nuevoId);
     renderVpGuiones();
     const first = document.querySelector('.vp-guion .vp-body');
     if(first) first.style.display = 'block';
