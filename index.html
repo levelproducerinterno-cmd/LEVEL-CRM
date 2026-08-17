@@ -612,6 +612,21 @@
   .vp-pdf-hist-item a:hover{text-decoration:underline;}
 
   .vp-videos-card{background:#fff;color:#1c1c1c;padding:60px 40px;border-radius:8px;text-align:center;max-width:560px;margin:0 auto;}
+
+  .conectar-card{background:#fff;color:#1c1c1c;padding:24px 26px;border-radius:8px;margin-bottom:20px;}
+  .conectar-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .conectar-card-titulo{font-size:1.15rem;font-weight:800;}
+  .conectar-badge{padding:4px 12px;border-radius:12px;font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;}
+  .conectar-badge.no{background:#fdecea;color:#c72a09;}
+  .conectar-badge.si{background:#e6f4e6;color:#2e7d2e;}
+  .conectar-pasos{margin:0 0 16px;padding-left:20px;font-size:0.9rem;line-height:1.7;color:#333;}
+  .conectar-pasos li{margin-bottom:4px;}
+  .conectar-copiable{display:inline-flex;align-items:center;gap:8px;background:#f7f5f2;border:1px solid #e4e0d6;border-radius:4px;padding:6px 10px;font-family:monospace;font-size:0.85rem;margin:4px 0 12px;}
+  .conectar-copiable button{border:none;background:var(--negro);color:#fff;border-radius:3px;padding:4px 10px;font-size:0.72rem;cursor:pointer;font-family:'Montserrat',sans-serif;}
+  .conectar-qr-box{text-align:center;padding:10px 0;}
+  .conectar-qr-box img{width:200px;height:200px;object-fit:contain;border:1px solid #e4e0d6;border-radius:6px;}
+  .conectar-qr-vacio{color:#8a8578;font-style:italic;font-size:0.88rem;}
+  .conectar-resumen{background:rgba(255,255,255,0.05);border-radius:8px;padding:16px 20px;margin-bottom:24px;color:#f0ede6;font-size:0.9rem;}
   .vp-inspo-box{background:#eef4fb;border:1px solid #c5dbf0;border-radius:6px;padding:12px 14px;margin-bottom:4px;}
   .vp-inspo-box a{color:#4a90e2;text-decoration:none;font-weight:700;font-size:0.9rem;}
   .vp-inspo-box a:hover{text-decoration:underline;}
@@ -811,6 +826,17 @@
   .cuentas-table th{background:var(--negro);color:#fff;padding:8px 10px;font-size:0.75rem;text-transform:uppercase;text-align:left;}
   .cuentas-table td{padding:8px 10px;border-bottom:1px solid #e4e0d6;font-size:0.85rem;}
   .cuentas-table .del-btn{color:var(--rojo);cursor:pointer;font-size:0.8rem;font-weight:700;background:none;border:none;}
+
+  .rs-card{background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;}
+  .rs-card-nombre{font-weight:700;font-size:0.88rem;}
+  .rs-estado-select{padding:6px 10px;border:1px solid #d8d3c9;border-radius:4px;font-size:0.8rem;font-family:inherit;background:#fff;}
+  .rs-estado-select.conectado{background:#e6f4e6;border-color:#a4d0a4;color:#2e7d2e;font-weight:700;}
+  .rs-qr-fila{width:100%;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:10px;border-top:1px dashed #e4e0d6;margin-top:4px;}
+  .rs-qr-preview{width:84px;height:84px;object-fit:contain;border:1px solid #e4e0d6;border-radius:4px;background:#fbfaf7;}
+  .rs-qr-vacio{width:84px;height:84px;display:flex;align-items:center;justify-content:center;border:1px dashed #d8d3c9;border-radius:4px;color:#999;font-size:0.7rem;text-align:center;padding:4px;}
+  body.dark .rs-card{background:#232326;border-color:#3a3733;}
+  body.dark .rs-estado-select{background:#2a2723;color:#e4e2dd;border-color:#3a3733;}
+  body.dark .rs-qr-vacio{background:#2a2723;}
 
   .guion-item{background:#fff;border:1px solid #e4e0d6;border-radius:4px;margin-bottom:12px;overflow:hidden;transition:background 0.2s,border-color 0.2s;}
   .guion-item[data-estatus="Borrador"]{background:#fdecea;border-color:#f5c9c1;}
@@ -1473,6 +1499,7 @@
           <button class="admin-tab-btn active" data-admin="recibos">🧾 Recibos</button>
           <button class="admin-tab-btn" data-admin="renta">🎥 Renta de Equipo</button>
           <button class="admin-tab-btn" data-admin="kpis">📋 KPI's semanales</button>
+          <button class="admin-tab-btn" data-admin="redes">🔗 Redes sociales</button>
         </div>
 
         <div class="admin-subpanel active" id="admin-panel-recibos">
@@ -1539,6 +1566,21 @@
               </thead>
               <tbody id="kpis-tbody"></tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="admin-subpanel" id="admin-panel-redes">
+          <div class="hint" style="margin-bottom:14px;">
+            Estos datos se usan en la página que ven tus clientes para conectar sus redes ("Conecta tus redes sociales"),
+            a la que llegan desde el link que generas en la pestaña "Cuentas y Contraseñas" de cada cliente.
+          </div>
+          <div style="background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:18px 20px;max-width:520px;">
+            <label style="display:block;font-size:0.78rem;font-weight:700;color:#555;margin-bottom:6px;">ID de Business Manager de Meta</label>
+            <input type="text" id="cfg-meta-business-id" placeholder="Ej. 123456789012345" style="width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;margin-bottom:16px;">
+            <label style="display:block;font-size:0.78rem;font-weight:700;color:#555;margin-bottom:6px;">Correo de Google/YouTube que el cliente debe agregar como administrador</label>
+            <input type="email" id="cfg-youtube-email" placeholder="equipo@levelproducer.com" style="width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;margin-bottom:16px;">
+            <button class="btn" id="btn-guardar-config-redes">Guardar</button>
+            <span class="status-msg" id="cfg-redes-status" style="margin-left:10px;"></span>
           </div>
         </div>
 
@@ -2199,6 +2241,17 @@ Nombre cliente:
           </div>
           <input type="text" id="ct-notas" placeholder="Notas (opcional)" style="margin-top:10px;width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;">
           <button class="btn" id="btn-agregar-cuenta" style="margin-top:12px;">+ Agregar cuenta</button>
+
+          <div style="margin-top:28px;padding-top:22px;border-top:1px solid #e4e0d6;">
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#555;margin-bottom:4px;">📡 Conexión de redes sociales</div>
+            <div style="font-size:0.78rem;color:#8a8578;margin-bottom:12px;">Comparte este link con el cliente para que conecte Facebook/Instagram, TikTok y YouTube. Tú marcas cada red como conectada una vez que verifiques el acceso.</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;">
+              <input type="text" id="rs-link" readonly style="flex:1;min-width:260px;padding:9px 12px;border:1px solid #d8d3c9;border-radius:4px;background:#fbfaf7;font-size:0.78rem;color:#333;">
+              <button class="btn ghost" id="btn-copiar-link-rs">📋 Copiar</button>
+              <button class="btn ghost" id="btn-regenerar-link-rs" title="Genera un link nuevo; el anterior deja de funcionar">↻ Regenerar link</button>
+            </div>
+            <div id="rs-tarjetas"></div>
+          </div>
         </div>
       </div>
 
@@ -2497,7 +2550,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-orden-folios';
+const APP_BUILD = '2026-08-12-conexion-redes';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -2855,6 +2908,32 @@ async function migrarClientesYGuionesASupabase(){
 }
 document.getElementById('btn-migrar-supabase').addEventListener('click', migrarClientesYGuionesASupabase);
 
+async function cargarConfigAgencia(){
+  try{
+    const cfg = await sbCargarConfigAgencia();
+    document.getElementById('cfg-meta-business-id').value = cfg.metaBusinessId;
+    document.getElementById('cfg-youtube-email').value = cfg.youtubeManagerEmail;
+  } catch(err){ console.error(err); }
+}
+document.getElementById('btn-guardar-config-redes').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-guardar-config-redes');
+  const status = document.getElementById('cfg-redes-status');
+  const metaId = document.getElementById('cfg-meta-business-id').value.trim();
+  const ytEmail = document.getElementById('cfg-youtube-email').value.trim();
+  btn.disabled = true;
+  status.textContent = 'Guardando...';
+  try{
+    await sbGuardarConfigAgencia(metaId, ytEmail);
+    status.textContent = '✓ Guardado';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  } catch(err){
+    console.error(err);
+    status.textContent = '';
+    alert('⚠️ No se pudo guardar la configuración. Revisa tu conexión e intenta de nuevo.');
+  }
+  btn.disabled = false;
+});
+
 // ============================================================
 // ============ SUPABASE — Producción (Edición) y CM ===========
 // ============================================================
@@ -3096,6 +3175,52 @@ async function sbCrearCuenta({ id, clienteId, plataforma, usuario, password, not
 async function sbEliminarCuenta(id){
   const { error } = await sb.from('cuentas').delete().eq('id', id);
   if(error){ console.error('Supabase eliminar cuenta:', error); throw error; }
+}
+
+// ---- Conexión de redes sociales (link de onboarding manual por cliente) ----
+function _sbFilaConexionSocial(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id, Token: r.token,
+    MetaEstado: r.meta_estado || 'No conectado',
+    TiktokEstado: r.tiktok_estado || 'No conectado',
+    TiktokQrB64: r.tiktok_qr_b64 || '',
+    YoutubeEstado: r.youtube_estado || 'No conectado'
+  };
+}
+async function sbCargarConexionSocial(clienteId){
+  const { data, error } = await sb.from('social_onboarding').select('*').eq('cliente_id', clienteId).maybeSingle();
+  if(error){ console.error('Supabase social_onboarding:', error); throw error; }
+  return data ? _sbFilaConexionSocial(data) : null;
+}
+async function sbCrearConexionSocial(clienteId){
+  const row = { id: 'rs_' + Date.now().toString(36), cliente_id: clienteId, token: _sbGenerarToken() };
+  const { error } = await sb.from('social_onboarding').insert(row);
+  if(error){ console.error('Supabase crear social_onboarding:', error); throw error; }
+  return _sbFilaConexionSocial(row);
+}
+async function sbActualizarConexionSocial(id, patch){
+  const { data, error } = await sb.from('social_onboarding').update(patch).eq('id', id).select();
+  if(error){ console.error('Supabase actualizar social_onboarding:', error); throw error; }
+  if(!data || data.length === 0) throw new Error('La conexión ' + id + ' no existe; no se guardó nada.');
+}
+async function sbRegenerarTokenConexion(id){
+  const nuevoToken = _sbGenerarToken();
+  const { error } = await sb.from('social_onboarding').update({ token: nuevoToken }).eq('id', id);
+  if(error){ console.error('Supabase regenerar token social:', error); throw error; }
+  return nuevoToken;
+}
+
+// ---- Configuración de agencia (una sola fila, usada en las instrucciones de conexión) ----
+async function sbCargarConfigAgencia(){
+  const { data, error } = await sb.from('configuracion_agencia').select('*').eq('id', 'default').maybeSingle();
+  if(error){ console.error('Supabase configuracion_agencia:', error); return { metaBusinessId: '', youtubeManagerEmail: '' }; }
+  return { metaBusinessId: (data && data.meta_business_id) || '', youtubeManagerEmail: (data && data.youtube_manager_email) || '' };
+}
+async function sbGuardarConfigAgencia(metaBusinessId, youtubeManagerEmail){
+  const { error } = await sb.from('configuracion_agencia').upsert({
+    id: 'default', meta_business_id: metaBusinessId || '', youtube_manager_email: youtubeManagerEmail || ''
+  }, { onConflict: 'id' });
+  if(error){ console.error('Supabase guardar configuracion_agencia:', error); throw error; }
 }
 
 // ---- Expediente (una fila por cliente) ----
@@ -5607,6 +5732,7 @@ let TEAM = [];
 let clienteActual = null;
 let RESPUESTAS_ACTUAL = {};
 let CUENTAS_ACTUAL = [];
+let CONEXION_SOCIAL_ACTUAL = null;
 let GUIONES_ACTUAL = [];
 let GUIONES_DIRTY = new Set(); // IDs de guiones con cambios sin guardar (vista interna del equipo)
 
@@ -6213,7 +6339,7 @@ async function abrirClienteDetalle(id){
   document.getElementById('cliente-detalle-bg').classList.add('open');
 
   await cargarJunta(id); // debe ir primero: el autocompletado del Expediente lee RESPUESTAS_ACTUAL
-  await Promise.all([cargarExpediente(id), cargarInforme(id), cargarCuentas(id), cargarGuiones(id)]);
+  await Promise.all([cargarExpediente(id), cargarInforme(id), cargarCuentas(id), cargarGuiones(id), cargarConexionSocial(id)]);
 }
 
 function renderCdBadges(){
@@ -7419,6 +7545,157 @@ function renderCuentasTabla(){
     });
   });
 }
+
+// ---- Conexión de redes sociales ----
+async function cargarConexionSocial(clienteId){
+  try{
+    let conexion = await sbCargarConexionSocial(clienteId);
+    if(!conexion) conexion = await sbCrearConexionSocial(clienteId);
+    CONEXION_SOCIAL_ACTUAL = conexion;
+  } catch(err){
+    console.error(err);
+    CONEXION_SOCIAL_ACTUAL = null;
+  }
+  renderConexionSocial();
+}
+
+function renderConexionSocial(){
+  const linkInput = document.getElementById('rs-link');
+  const cont = document.getElementById('rs-tarjetas');
+  if(!linkInput || !cont) return;
+  if(!CONEXION_SOCIAL_ACTUAL){
+    linkInput.value = '(no se pudo generar el link; recarga la página)';
+    cont.innerHTML = '';
+    return;
+  }
+  linkInput.value = DOMINIO_PUBLICO + '/?conectar=' + CONEXION_SOCIAL_ACTUAL.Token;
+
+  const plataformas = [
+    { key: 'meta', label: '📘 Meta (Facebook + Instagram)', estado: CONEXION_SOCIAL_ACTUAL.MetaEstado, campo: 'meta_estado' },
+    { key: 'tiktok', label: '🎵 TikTok', estado: CONEXION_SOCIAL_ACTUAL.TiktokEstado, campo: 'tiktok_estado' },
+    { key: 'youtube', label: '▶️ YouTube', estado: CONEXION_SOCIAL_ACTUAL.YoutubeEstado, campo: 'youtube_estado' }
+  ];
+
+  cont.innerHTML = plataformas.map(p => {
+    const conectado = p.estado === 'Conectado';
+    let extra = '';
+    if(p.key === 'tiktok'){
+      extra = `
+        <div class="rs-qr-fila">
+          ${CONEXION_SOCIAL_ACTUAL.TiktokQrB64
+            ? `<img class="rs-qr-preview" src="${CONEXION_SOCIAL_ACTUAL.TiktokQrB64}" alt="QR de TikTok">`
+            : `<div class="rs-qr-vacio">Sin QR</div>`}
+          <div>
+            <input type="file" accept="image/*" id="rs-tiktok-qr-input" style="display:none;">
+            <button class="btn ghost" id="rs-tiktok-qr-btn" type="button">${CONEXION_SOCIAL_ACTUAL.TiktokQrB64 ? 'Reemplazar QR' : 'Subir QR'}</button>
+            ${CONEXION_SOCIAL_ACTUAL.TiktokQrB64 ? '<button class="btn ghost" id="rs-tiktok-qr-quitar" type="button" style="margin-left:8px;">Quitar</button>' : ''}
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="rs-card">
+        <span class="rs-card-nombre">${p.label}</span>
+        <select class="rs-estado-select ${conectado ? 'conectado' : ''}" data-campo="${p.campo}">
+          <option value="No conectado" ${!conectado ? 'selected' : ''}>No conectado</option>
+          <option value="Conectado" ${conectado ? 'selected' : ''}>✅ Conectado</option>
+        </select>
+        ${extra}
+      </div>`;
+  }).join('');
+
+  const _campoAProp = { meta_estado: 'MetaEstado', tiktok_estado: 'TiktokEstado', youtube_estado: 'YoutubeEstado' };
+  cont.querySelectorAll('.rs-estado-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const campo = sel.dataset.campo;
+      const prop = _campoAProp[campo];
+      const nuevoValor = sel.value;
+      const anterior = CONEXION_SOCIAL_ACTUAL[prop];
+      sel.disabled = true;
+      try{
+        await sbActualizarConexionSocial(CONEXION_SOCIAL_ACTUAL.ID, { [campo]: nuevoValor });
+        CONEXION_SOCIAL_ACTUAL[prop] = nuevoValor;
+        renderConexionSocial();
+      } catch(err){
+        console.error(err);
+        sel.value = anterior;
+        alert('⚠️ No se pudo actualizar el estatus. Revisa tu conexión e intenta de nuevo.');
+      }
+      sel.disabled = false;
+    });
+  });
+
+  const btnSubirQr = document.getElementById('rs-tiktok-qr-btn');
+  const inputQr = document.getElementById('rs-tiktok-qr-input');
+  if(btnSubirQr && inputQr){
+    btnSubirQr.addEventListener('click', () => inputQr.click());
+    inputQr.addEventListener('change', () => {
+      const file = inputQr.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const b64 = reader.result;
+        const anterior = CONEXION_SOCIAL_ACTUAL.TiktokQrB64;
+        CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = b64;
+        renderConexionSocial();
+        try{
+          await sbActualizarConexionSocial(CONEXION_SOCIAL_ACTUAL.ID, { tiktok_qr_b64: b64 });
+        } catch(err){
+          console.error(err);
+          CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = anterior;
+          renderConexionSocial();
+          alert('⚠️ No se pudo subir el QR. Revisa tu conexión e intenta de nuevo.');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  const btnQuitarQr = document.getElementById('rs-tiktok-qr-quitar');
+  if(btnQuitarQr){
+    btnQuitarQr.addEventListener('click', async () => {
+      const anterior = CONEXION_SOCIAL_ACTUAL.TiktokQrB64;
+      CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = '';
+      renderConexionSocial();
+      try{
+        await sbActualizarConexionSocial(CONEXION_SOCIAL_ACTUAL.ID, { tiktok_qr_b64: '' });
+      } catch(err){
+        console.error(err);
+        CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = anterior;
+        renderConexionSocial();
+        alert('⚠️ No se pudo quitar el QR. Revisa tu conexión e intenta de nuevo.');
+      }
+    });
+  }
+}
+
+document.getElementById('btn-copiar-link-rs').addEventListener('click', () => {
+  const input = document.getElementById('rs-link');
+  const btn = document.getElementById('btn-copiar-link-rs');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const original = btn.textContent;
+    btn.textContent = '¡Copiado!';
+    setTimeout(() => { btn.textContent = original; }, 1600);
+  }).catch(() => {
+    input.select();
+    document.execCommand('copy');
+    alert('Link copiado.');
+  });
+});
+
+document.getElementById('btn-regenerar-link-rs').addEventListener('click', async () => {
+  if(!CONEXION_SOCIAL_ACTUAL) return;
+  if(!confirm('El link anterior dejará de funcionar. ¿Generar uno nuevo?')) return;
+  const btn = document.getElementById('btn-regenerar-link-rs');
+  btn.disabled = true;
+  try{
+    const nuevoToken = await sbRegenerarTokenConexion(CONEXION_SOCIAL_ACTUAL.ID);
+    CONEXION_SOCIAL_ACTUAL.Token = nuevoToken;
+    renderConexionSocial();
+  } catch(err){
+    console.error(err);
+    alert('⚠️ No se pudo regenerar el link. Revisa tu conexión e intenta de nuevo.');
+  }
+  btn.disabled = false;
+});
 
 document.getElementById('btn-gate-entrar').addEventListener('click', () => {
   const pass = document.getElementById('gate-password').value;
@@ -9029,7 +9306,7 @@ function cambiarLinea(lineaKey){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
-    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); }
+    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); cargarConfigAgencia(); }
   }
 }
 
@@ -9243,8 +9520,11 @@ function aplicarPermisosDeLineas(){
 const _urlParams = new URLSearchParams(window.location.search);
 const _tokenPublico = _urlParams.get('guiones');
 const _misGuionesClienteId = _urlParams.get('misguiones');
+const _tokenConectar = _urlParams.get('conectar');
 if(_tokenPublico){
   arrancarVistaPublicaCliente(_tokenPublico);
+} else if(_tokenConectar){
+  arrancarVistaConexionSocial(_tokenConectar);
 } else {
   // Flujo normal: revisar sesión guardada
   const sesionPrevia = cargarSesionGuardada();
@@ -9276,6 +9556,142 @@ function autoAbrirMisGuionesParaCliente(clienteId){
       if(typeof renderMgClientesLista === 'function') renderMgClientesLista();
       if(typeof renderMgDetalle === 'function') renderMgDetalle();
     });
+  }
+}
+
+// ============================================================
+// ============ CONECTA TUS REDES SOCIALES (vista pública) ====
+// ============================================================
+// Página de instrucciones (no OAuth: este CRM es un sitio estático sin backend, así que la
+// conexión se hace guiando al cliente a autorizar/agregar manualmente desde cada plataforma).
+// El staff marca cada red como "Conectado" desde la ficha del cliente tras verificar el acceso.
+async function arrancarVistaConexionSocial(token){
+  const overlay = document.getElementById('login-overlay');
+  if(overlay){ overlay.classList.add('hidden'); overlay.style.display = 'none'; }
+  document.querySelectorAll('body > .topbar, body > .app-shell, body > .tabs-switch, body > .modo-panel, body > .modal-bg, body > .cliente-detalle-bg, body > #exp-render-root, body > #inf-render-root, body > #login-overlay').forEach(el => {
+    el.style.display = 'none';
+  });
+
+  const cont = document.createElement('div');
+  cont.id = 'vista-conectar';
+  cont.innerHTML = `
+    <div class="vp-hero">
+      <div class="vp-hero-inner">
+        <div class="vp-brand">LEVEL PRODUCER</div>
+        <h1 style="margin:10px 0 6px;">Conecta tus redes sociales</h1>
+        <p class="vp-intro">Autoriza las cuentas que administrará nuestro equipo. Nunca te vamos a pedir tu contraseña.</p>
+      </div>
+    </div>
+    <div class="vp-contenido">
+      <div id="conectar-status" style="text-align:center;color:#8a8578;padding:20px;">Cargando...</div>
+      <div id="conectar-resumen"></div>
+      <div id="conectar-tarjetas"></div>
+    </div>
+  `;
+  document.body.appendChild(cont);
+
+  try{
+    const { data: conexion, error: errConexion } = await sb.from('social_onboarding').select('*').eq('token', token).maybeSingle();
+    if(errConexion || !conexion){
+      document.getElementById('conectar-status').innerHTML = '<div style="color:#e77;">Link inválido o expirado.</div>';
+      return;
+    }
+    const { data: cli } = await sb.from('clientes').select('nombre, emoji').eq('id', conexion.cliente_id).maybeSingle();
+    const cfg = await sbCargarConfigAgencia();
+    document.getElementById('conectar-status').textContent = '';
+
+    const nombreCliente = cli ? (cli.nombre || '') : '';
+    const estados = {
+      meta: conexion.meta_estado || 'No conectado',
+      tiktok: conexion.tiktok_estado || 'No conectado',
+      youtube: conexion.youtube_estado || 'No conectado'
+    };
+    const totalConectadas = Object.values(estados).filter(e => e === 'Conectado').length;
+
+    document.getElementById('conectar-resumen').innerHTML = `
+      <div class="conectar-resumen">${nombreCliente ? `Hola, <strong>${nombreCliente}</strong>. ` : ''}Redes conectadas: <strong>${totalConectadas} / 3</strong></div>
+    `;
+
+    const badge = (estado) => estado === 'Conectado'
+      ? '<span class="conectar-badge si">✅ Conectado</span>'
+      : '<span class="conectar-badge no">No conectado</span>';
+
+    const metaIdHtml = cfg.metaBusinessId
+      ? `<div class="conectar-copiable"><span>${cfg.metaBusinessId}</span><button type="button" data-copiar="${cfg.metaBusinessId}">Copiar</button></div>`
+      : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado nuestro ID de negocio. Contáctanos antes de continuar.</p>';
+
+    const ytEmailHtml = cfg.youtubeManagerEmail
+      ? `<div class="conectar-copiable"><span>${cfg.youtubeManagerEmail}</span><button type="button" data-copiar="${cfg.youtubeManagerEmail}">Copiar</button></div>`
+      : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado el correo a agregar. Contáctanos antes de continuar.</p>';
+
+    const qrHtml = conexion.tiktok_qr_b64
+      ? `<div class="conectar-qr-box"><img src="${conexion.tiktok_qr_b64}" alt="Código QR de TikTok"></div>`
+      : '<div class="conectar-qr-box"><p class="conectar-qr-vacio">Todavía no tenemos un código QR listo para ti. Contáctanos y te lo enviamos.</p></div>';
+
+    document.getElementById('conectar-tarjetas').innerHTML = `
+      <div class="conectar-card">
+        <div class="conectar-card-head">
+          <span class="conectar-card-titulo">📘 Meta — Facebook + Instagram</span>
+          ${badge(estados.meta)}
+        </div>
+        <ol class="conectar-pasos">
+          <li>Entra a <strong>business.facebook.com</strong> con la cuenta que administra tu Página de Facebook.</li>
+          <li>Ve a <strong>Configuración del negocio → Socios → Dar acceso a un socio</strong>.</li>
+          <li>Pega este ID de negocio:</li>
+        </ol>
+        ${metaIdHtml}
+        <ol class="conectar-pasos" start="4">
+          <li>Selecciona tu <strong>Página de Facebook</strong> y tu <strong>cuenta de Instagram profesional</strong>, y asígnanos acceso.</li>
+          <li>Guarda los cambios.</li>
+        </ol>
+        <a href="https://business.facebook.com/settings/partners" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir Meta Business Suite ↗</a>
+      </div>
+
+      <div class="conectar-card">
+        <div class="conectar-card-head">
+          <span class="conectar-card-titulo">🎵 TikTok</span>
+          ${badge(estados.tiktok)}
+        </div>
+        <p style="font-size:0.9rem;color:#333;margin-bottom:6px;">Escanea este código con la aplicación de TikTok y acepta la solicitud de acceso.</p>
+        ${qrHtml}
+        <ol class="conectar-pasos" style="margin-top:14px;">
+          <li>Abre la app de <strong>TikTok</strong>.</li>
+          <li>Ve a tu <strong>Perfil → Menú (☰) → Tu código QR</strong>.</li>
+          <li>Toca <strong>Escanear</strong> y apunta a este código.</li>
+          <li>Acepta la solicitud de permisos.</li>
+        </ol>
+      </div>
+
+      <div class="conectar-card">
+        <div class="conectar-card-head">
+          <span class="conectar-card-titulo">▶️ YouTube</span>
+          ${badge(estados.youtube)}
+        </div>
+        <ol class="conectar-pasos">
+          <li>Entra a <strong>YouTube Studio</strong> con la cuenta de tu canal.</li>
+          <li>Ve a <strong>Configuración → Permisos → Invitar</strong>.</li>
+          <li>Pega este correo:</li>
+        </ol>
+        ${ytEmailHtml}
+        <ol class="conectar-pasos" start="4">
+          <li>Asígnale el rol de <strong>Administrador</strong> (o Editor) y guarda.</li>
+        </ol>
+        <a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir YouTube Studio ↗</a>
+      </div>
+    `;
+
+    document.getElementById('conectar-tarjetas').querySelectorAll('[data-copiar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(btn.dataset.copiar).then(() => {
+          const original = btn.textContent;
+          btn.textContent = '¡Copiado!';
+          setTimeout(() => { btn.textContent = original; }, 1600);
+        });
+      });
+    });
+  } catch(err){
+    console.error(err);
+    document.getElementById('conectar-status').innerHTML = '<div style="color:#e77;">No se pudo cargar. Recarga en unos segundos.</div>';
   }
 }
 
