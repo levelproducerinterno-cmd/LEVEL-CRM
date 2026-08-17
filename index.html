@@ -831,6 +831,9 @@
   .rs-card-nombre{font-weight:700;font-size:0.88rem;}
   .rs-estado-select{padding:6px 10px;border:1px solid #d8d3c9;border-radius:4px;font-size:0.8rem;font-family:inherit;background:#fff;}
   .rs-estado-select.conectado{background:#e6f4e6;border-color:#a4d0a4;color:#2e7d2e;font-weight:700;}
+  .rs-estado-select.pendiente{background:#fff8e0;border-color:#e8d97a;color:#8a6d00;font-weight:700;}
+  .conectar-badge.pendiente{background:#fff8e0;color:#8a6d00;}
+  .conectar-en-revision{background:#fff8e0;color:#8a6d00;border-radius:6px;padding:10px 14px;font-size:0.85rem;margin-top:12px;}
   .rs-qr-fila{width:100%;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:10px;border-top:1px dashed #e4e0d6;margin-top:4px;}
   .rs-qr-preview{width:84px;height:84px;object-fit:contain;border:1px solid #e4e0d6;border-radius:4px;background:#fbfaf7;}
   .rs-qr-vacio{width:84px;height:84px;display:flex;align-items:center;justify-content:center;border:1px dashed #d8d3c9;border-radius:4px;color:#999;font-size:0.7rem;text-align:center;padding:4px;}
@@ -2550,7 +2553,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-conexion-redes';
+const APP_BUILD = '2026-08-12-conexion-redes-v2';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -6150,7 +6153,7 @@ function renderNotificacionesClientes(){
   if(NOTIF_ACTIVIDAD.length > 0){
     html += `<div class="notif-clientes-marcar-todo" id="notif-marcar-todo">Marcar todo como leído</div>`;
     html += NOTIF_ACTIVIDAD.map(a => `
-      <div class="notif-clientes-item notif-actividad" data-act-id="${a.id}" data-cliente-id="${a.cliente_id || ''}">
+      <div class="notif-clientes-item notif-actividad" data-act-id="${a.id}" data-cliente-id="${a.cliente_id || ''}" data-tipo="${a.tipo || ''}">
         <span>${a.descripcion}</span>
         <button class="notif-actividad-ok" data-marcar-act="${a.id}" title="Marcar como leído">✓</button>
       </div>
@@ -6180,6 +6183,10 @@ function renderNotificacionesClientes(){
       const cli = CLIENTES.find(c => String(c.ID) === String(id));
       if(!cli) return;
       await abrirClienteDetalle(id);
+      if(item.dataset.tipo === 'social_pendiente_verificar'){
+        const btnCuentas = document.querySelector('.cd-subtab-btn[data-sub="cuentas"]');
+        if(btnCuentas) btnCuentas.click();
+      }
     });
   });
   const btnTodo = document.getElementById('notif-marcar-todo');
@@ -7578,6 +7585,7 @@ function renderConexionSocial(){
 
   cont.innerHTML = plataformas.map(p => {
     const conectado = p.estado === 'Conectado';
+    const pendiente = p.estado === 'Pendiente';
     let extra = '';
     if(p.key === 'tiktok'){
       extra = `
@@ -7595,8 +7603,9 @@ function renderConexionSocial(){
     return `
       <div class="rs-card">
         <span class="rs-card-nombre">${p.label}</span>
-        <select class="rs-estado-select ${conectado ? 'conectado' : ''}" data-campo="${p.campo}">
-          <option value="No conectado" ${!conectado ? 'selected' : ''}>No conectado</option>
+        <select class="rs-estado-select ${conectado ? 'conectado' : ''} ${pendiente ? 'pendiente' : ''}" data-campo="${p.campo}">
+          <option value="No conectado" ${!conectado && !pendiente ? 'selected' : ''}>No conectado</option>
+          <option value="Pendiente" ${pendiente ? 'selected' : ''}>⏳ El cliente dice que ya lo hizo</option>
           <option value="Conectado" ${conectado ? 'selected' : ''}>✅ Conectado</option>
         </select>
         ${extra}
@@ -9606,6 +9615,7 @@ async function arrancarVistaConexionSocial(token){
       tiktok: conexion.tiktok_estado || 'No conectado',
       youtube: conexion.youtube_estado || 'No conectado'
     };
+    function renderTarjetas(){
     const totalConectadas = Object.values(estados).filter(e => e === 'Conectado').length;
 
     document.getElementById('conectar-resumen').innerHTML = `
@@ -9614,7 +9624,17 @@ async function arrancarVistaConexionSocial(token){
 
     const badge = (estado) => estado === 'Conectado'
       ? '<span class="conectar-badge si">✅ Conectado</span>'
-      : '<span class="conectar-badge no">No conectado</span>';
+      : estado === 'Pendiente'
+        ? '<span class="conectar-badge pendiente">⏳ En revisión</span>'
+        : '<span class="conectar-badge no">No conectado</span>';
+
+    // El cliente avisa que ya hizo su parte -> pasa a "Pendiente" (staff confirma después).
+    // Solo mostramos el botón si todavía no está Conectado ni ya avisó (evita avisos duplicados).
+    const botonListo = (plataforma, estado) => {
+      if(estado === 'Conectado') return '';
+      if(estado === 'Pendiente') return '<p class="conectar-en-revision">⏳ Le avisamos a nuestro equipo. En cuanto lo verifiquemos, esto va a decir "Conectado".</p>';
+      return `<button type="button" class="vp-btn-secundario conectar-btn-listo" data-plataforma="${plataforma}" style="margin-top:12px;">✅ Ya lo hice</button>`;
+    };
 
     const metaIdHtml = cfg.metaBusinessId
       ? `<div class="conectar-copiable"><span>${cfg.metaBusinessId}</span><button type="button" data-copiar="${cfg.metaBusinessId}">Copiar</button></div>`
@@ -9623,6 +9643,8 @@ async function arrancarVistaConexionSocial(token){
     const ytEmailHtml = cfg.youtubeManagerEmail
       ? `<div class="conectar-copiable"><span>${cfg.youtubeManagerEmail}</span><button type="button" data-copiar="${cfg.youtubeManagerEmail}">Copiar</button></div>`
       : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado el correo a agregar. Contáctanos antes de continuar.</p>';
+
+    const metaLinkBusiness = 'https://business.facebook.com/latest/settings/partners';
 
     const qrHtml = conexion.tiktok_qr_b64
       ? `<div class="conectar-qr-box"><img src="${conexion.tiktok_qr_b64}" alt="Código QR de TikTok"></div>`
@@ -9635,16 +9657,18 @@ async function arrancarVistaConexionSocial(token){
           ${badge(estados.meta)}
         </div>
         <ol class="conectar-pasos">
-          <li>Entra a <strong>business.facebook.com</strong> con la cuenta que administra tu Página de Facebook.</li>
-          <li>Ve a <strong>Configuración del negocio → Socios → Dar acceso a un socio</strong>.</li>
-          <li>Pega este ID de negocio:</li>
+          <li>Entra a <strong>business.facebook.com</strong> con la cuenta que administra tu Página de Facebook (o da clic en el botón de abajo).</li>
+          <li>Ve a <strong>Configuración → Usuarios → Socios</strong>.</li>
+          <li>Clic en <strong>Agregar → Otorgar a un socio acceso a tus activos</strong> y pega este ID:</li>
         </ol>
         ${metaIdHtml}
         <ol class="conectar-pasos" start="4">
-          <li>Selecciona tu <strong>Página de Facebook</strong> y tu <strong>cuenta de Instagram profesional</strong>, y asígnanos acceso.</li>
-          <li>Guarda los cambios.</li>
+          <li>Clic en <strong>Otorgar acceso</strong>.</li>
+          <li>Selecciona las cuentas a las que darás acceso (<strong>Instagram y Facebook</strong>) → <strong>Acceso parcial a contenido</strong>.</li>
+          <li>Clic en <strong>Invitar activo</strong>.</li>
         </ol>
-        <a href="https://business.facebook.com/settings/partners" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir Meta Business Suite ↗</a>
+        <a href="${metaLinkBusiness}" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir Meta Business Suite ↗</a>
+        ${botonListo('meta', estados.meta)}
       </div>
 
       <div class="conectar-card">
@@ -9660,6 +9684,7 @@ async function arrancarVistaConexionSocial(token){
           <li>Toca <strong>Escanear</strong> y apunta a este código.</li>
           <li>Acepta la solicitud de permisos.</li>
         </ol>
+        ${botonListo('tiktok', estados.tiktok)}
       </div>
 
       <div class="conectar-card">
@@ -9677,6 +9702,7 @@ async function arrancarVistaConexionSocial(token){
           <li>Asígnale el rol de <strong>Administrador</strong> (o Editor) y guarda.</li>
         </ol>
         <a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir YouTube Studio ↗</a>
+        ${botonListo('youtube', estados.youtube)}
       </div>
     `;
 
@@ -9689,6 +9715,32 @@ async function arrancarVistaConexionSocial(token){
         });
       });
     });
+
+    document.getElementById('conectar-tarjetas').querySelectorAll('.conectar-btn-listo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const plataforma = btn.dataset.plataforma;
+        const campo = plataforma + '_estado';
+        btn.disabled = true;
+        btn.textContent = 'Avisando...';
+        try{
+          await sbActualizarConexionSocial(conexion.id, { [campo]: 'Pendiente' });
+          const nombrePlataforma = { meta: 'Meta (Facebook/Instagram)', tiktok: 'TikTok', youtube: 'YouTube' }[plataforma];
+          registrarActividad({
+            tipo: 'social_pendiente_verificar', clienteId: conexion.cliente_id, clienteNombre: nombreCliente,
+            descripcion: `📡 ${nombreCliente || 'Un cliente'} dice que ya conectó ${nombrePlataforma} — verifica y confirma en Cuentas y Contraseñas.`
+          });
+          estados[plataforma] = 'Pendiente';
+          renderTarjetas();
+        } catch(err){
+          console.error(err);
+          btn.disabled = false;
+          btn.textContent = '✅ Ya lo hice';
+          alert('No se pudo avisar. Revisa tu conexión e intenta de nuevo.');
+        }
+      });
+    });
+    } // cierra renderTarjetas()
+    renderTarjetas();
   } catch(err){
     console.error(err);
     document.getElementById('conectar-status').innerHTML = '<div style="color:#e77;">No se pudo cargar. Recarga en unos segundos.</div>';
