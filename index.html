@@ -2224,15 +2224,7 @@ Nombre cliente:
       </div>
 
       <div class="cd-panel" id="cd-panel-cuentas">
-        <div id="cuentas-gate">
-          <div class="gate-box">
-            <p>Esta sección está protegida. Ingresa la contraseña para ver las cuentas y contraseñas de este cliente.</p>
-            <input type="password" id="gate-password" placeholder="Contraseña">
-            <button class="btn" id="btn-gate-entrar" style="width:100%;">Entrar</button>
-            <div class="status-msg" id="gate-status"></div>
-          </div>
-        </div>
-        <div id="cuentas-contenido" style="display:none;">
+        <div id="cuentas-contenido">
           <table class="cuentas-table">
             <thead><tr><th>Plataforma</th><th>Usuario</th><th>Contraseña</th><th>Notas</th><th></th></tr></thead>
             <tbody id="cuentas-tbody"></tbody>
@@ -2247,12 +2239,7 @@ Nombre cliente:
 
           <div style="margin-top:28px;padding-top:22px;border-top:1px solid #e4e0d6;">
             <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#555;margin-bottom:4px;">📡 Conexión de redes sociales</div>
-            <div style="font-size:0.78rem;color:#8a8578;margin-bottom:12px;">Comparte este link con el cliente para que conecte Facebook/Instagram, TikTok y YouTube. Tú marcas cada red como conectada una vez que verifiques el acceso.</div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;">
-              <input type="text" id="rs-link" readonly style="flex:1;min-width:260px;padding:9px 12px;border:1px solid #d8d3c9;border-radius:4px;background:#fbfaf7;font-size:0.78rem;color:#333;">
-              <button class="btn ghost" id="btn-copiar-link-rs">📋 Copiar</button>
-              <button class="btn ghost" id="btn-regenerar-link-rs" title="Genera un link nuevo; el anterior deja de funcionar">↻ Regenerar link</button>
-            </div>
+            <div style="font-size:0.78rem;color:#8a8578;margin-bottom:12px;">El cliente conecta Facebook/Instagram, TikTok y YouTube desde el mismo link general que ya tiene (pestaña "Conecta tus cuentas"). Tú marcas cada red como conectada una vez que verifiques el acceso.</div>
             <div id="rs-tarjetas"></div>
           </div>
         </div>
@@ -2553,7 +2540,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-conexion-redes-v2';
+const APP_BUILD = '2026-08-12-link-unico-conectar';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3205,12 +3192,6 @@ async function sbActualizarConexionSocial(id, patch){
   const { data, error } = await sb.from('social_onboarding').update(patch).eq('id', id).select();
   if(error){ console.error('Supabase actualizar social_onboarding:', error); throw error; }
   if(!data || data.length === 0) throw new Error('La conexión ' + id + ' no existe; no se guardó nada.');
-}
-async function sbRegenerarTokenConexion(id){
-  const nuevoToken = _sbGenerarToken();
-  const { error } = await sb.from('social_onboarding').update({ token: nuevoToken }).eq('id', id);
-  if(error){ console.error('Supabase regenerar token social:', error); throw error; }
-  return nuevoToken;
 }
 
 // ---- Configuración de agencia (una sola fila, usada en las instrucciones de conexión) ----
@@ -5659,7 +5640,6 @@ document.getElementById('cm-f-filtro-responsable').addEventListener('change', ()
 // ============ CLIENTES (junta de aterrizaje, cuentas, guiones) ============
 // ============================================================
 
-const GATE_PASSWORD = '2424';
 
 const PLANTILLA_JUNTA = [
   { seccion: 'Datos Generales', pregunta: 'Nombre completo del cliente' },
@@ -6334,10 +6314,6 @@ async function abrirClienteDetalle(id){
     frameBtn.classList.add('disabled');
   }
 
-  document.getElementById('cuentas-gate').style.display = 'block';
-  document.getElementById('cuentas-contenido').style.display = 'none';
-  document.getElementById('gate-password').value = '';
-  document.getElementById('gate-status').textContent = '';
   document.querySelectorAll('.cd-subtab-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.cd-subtab-btn[data-sub="junta"]').classList.add('active');
   document.querySelectorAll('.cd-panel').forEach(p => p.classList.remove('active'));
@@ -7567,15 +7543,12 @@ async function cargarConexionSocial(clienteId){
 }
 
 function renderConexionSocial(){
-  const linkInput = document.getElementById('rs-link');
   const cont = document.getElementById('rs-tarjetas');
-  if(!linkInput || !cont) return;
+  if(!cont) return;
   if(!CONEXION_SOCIAL_ACTUAL){
-    linkInput.value = '(no se pudo generar el link; recarga la página)';
-    cont.innerHTML = '';
+    cont.innerHTML = '<div style="color:#999;">No se pudo cargar. Recarga la página.</div>';
     return;
   }
-  linkInput.value = DOMINIO_PUBLICO + '/?conectar=' + CONEXION_SOCIAL_ACTUAL.Token;
 
   const plataformas = [
     { key: 'meta', label: '📘 Meta (Facebook + Instagram)', estado: CONEXION_SOCIAL_ACTUAL.MetaEstado, campo: 'meta_estado' },
@@ -7676,45 +7649,6 @@ function renderConexionSocial(){
   }
 }
 
-document.getElementById('btn-copiar-link-rs').addEventListener('click', () => {
-  const input = document.getElementById('rs-link');
-  const btn = document.getElementById('btn-copiar-link-rs');
-  navigator.clipboard.writeText(input.value).then(() => {
-    const original = btn.textContent;
-    btn.textContent = '¡Copiado!';
-    setTimeout(() => { btn.textContent = original; }, 1600);
-  }).catch(() => {
-    input.select();
-    document.execCommand('copy');
-    alert('Link copiado.');
-  });
-});
-
-document.getElementById('btn-regenerar-link-rs').addEventListener('click', async () => {
-  if(!CONEXION_SOCIAL_ACTUAL) return;
-  if(!confirm('El link anterior dejará de funcionar. ¿Generar uno nuevo?')) return;
-  const btn = document.getElementById('btn-regenerar-link-rs');
-  btn.disabled = true;
-  try{
-    const nuevoToken = await sbRegenerarTokenConexion(CONEXION_SOCIAL_ACTUAL.ID);
-    CONEXION_SOCIAL_ACTUAL.Token = nuevoToken;
-    renderConexionSocial();
-  } catch(err){
-    console.error(err);
-    alert('⚠️ No se pudo regenerar el link. Revisa tu conexión e intenta de nuevo.');
-  }
-  btn.disabled = false;
-});
-
-document.getElementById('btn-gate-entrar').addEventListener('click', () => {
-  const pass = document.getElementById('gate-password').value;
-  if(pass === GATE_PASSWORD){
-    document.getElementById('cuentas-gate').style.display = 'none';
-    document.getElementById('cuentas-contenido').style.display = 'block';
-  } else {
-    document.getElementById('gate-status').textContent = 'Contraseña incorrecta.';
-  }
-});
 
 document.getElementById('btn-agregar-cuenta').addEventListener('click', async () => {
   const plataforma = document.getElementById('ct-plataforma').value.trim();
@@ -9574,6 +9508,144 @@ function autoAbrirMisGuionesParaCliente(clienteId){
 // Página de instrucciones (no OAuth: este CRM es un sitio estático sin backend, así que la
 // conexión se hace guiando al cliente a autorizar/agregar manualmente desde cada plataforma).
 // El staff marca cada red como "Conectado" desde la ficha del cliente tras verificar el acceso.
+// Dibuja las 3 tarjetas de conexión (Meta/TikTok/YouTube) dentro de los contenedores indicados.
+// Reutilizable: la usa tanto el link viejo standalone (?conectar=TOKEN, retrocompatible) como la
+// pestaña "Conecta tus cuentas" dentro del link general del cliente (?guiones=TOKEN).
+// `onCambio(plataforma)` se llama después de que el cliente avisa "Ya lo hice" en una plataforma,
+// para que quien llama pueda reaccionar (ej. revisar si ya se debe ocultar la pestaña).
+function renderTarjetasConexionSocial({ resumenId, tarjetasId, conexion, cfg, nombreCliente, estados, onCambio }){
+  const totalConectadas = Object.values(estados).filter(e => e === 'Conectado').length;
+  const resumenEl = document.getElementById(resumenId);
+  if(resumenEl){
+    resumenEl.innerHTML = `
+      <div class="conectar-resumen">${nombreCliente ? `Hola, <strong>${nombreCliente}</strong>. ` : ''}Redes conectadas: <strong>${totalConectadas} / 3</strong></div>
+    `;
+  }
+
+  const badge = (estado) => estado === 'Conectado'
+    ? '<span class="conectar-badge si">✅ Conectado</span>'
+    : estado === 'Pendiente'
+      ? '<span class="conectar-badge pendiente">⏳ En revisión</span>'
+      : '<span class="conectar-badge no">No conectado</span>';
+
+  // El cliente avisa que ya hizo su parte -> pasa a "Pendiente" (staff confirma después).
+  // Solo mostramos el botón si todavía no está Conectado ni ya avisó (evita avisos duplicados).
+  const botonListo = (plataforma, estado) => {
+    if(estado === 'Conectado') return '';
+    if(estado === 'Pendiente') return '<p class="conectar-en-revision">⏳ Le avisamos a nuestro equipo. En cuanto lo verifiquemos, esto va a decir "Conectado".</p>';
+    return `<button type="button" class="vp-btn-secundario conectar-btn-listo" data-plataforma="${plataforma}" style="margin-top:12px;">✅ Ya lo hice</button>`;
+  };
+
+  const metaIdHtml = cfg.metaBusinessId
+    ? `<div class="conectar-copiable"><span>${cfg.metaBusinessId}</span><button type="button" data-copiar="${cfg.metaBusinessId}">Copiar</button></div>`
+    : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado nuestro ID de negocio. Contáctanos antes de continuar.</p>';
+
+  const ytEmailHtml = cfg.youtubeManagerEmail
+    ? `<div class="conectar-copiable"><span>${cfg.youtubeManagerEmail}</span><button type="button" data-copiar="${cfg.youtubeManagerEmail}">Copiar</button></div>`
+    : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado el correo a agregar. Contáctanos antes de continuar.</p>';
+
+  const metaLinkBusiness = 'https://business.facebook.com/latest/settings/partners';
+
+  const qrHtml = conexion.tiktok_qr_b64
+    ? `<div class="conectar-qr-box"><img src="${conexion.tiktok_qr_b64}" alt="Código QR de TikTok"></div>`
+    : '<div class="conectar-qr-box"><p class="conectar-qr-vacio">Todavía no tenemos un código QR listo para ti. Contáctanos y te lo enviamos.</p></div>';
+
+  const tarjetasEl = document.getElementById(tarjetasId);
+  if(!tarjetasEl) return;
+  tarjetasEl.innerHTML = `
+    <div class="conectar-card">
+      <div class="conectar-card-head">
+        <span class="conectar-card-titulo">📘 Meta — Facebook + Instagram</span>
+        ${badge(estados.meta)}
+      </div>
+      <ol class="conectar-pasos">
+        <li>Entra a <strong>business.facebook.com</strong> con la cuenta que administra tu Página de Facebook (o da clic en el botón de abajo).</li>
+        <li>Ve a <strong>Configuración → Usuarios → Socios</strong>.</li>
+        <li>Clic en <strong>Agregar → Otorgar a un socio acceso a tus activos</strong> y pega este ID:</li>
+      </ol>
+      ${metaIdHtml}
+      <ol class="conectar-pasos" start="4">
+        <li>Clic en <strong>Otorgar acceso</strong>.</li>
+        <li>Selecciona las cuentas a las que darás acceso (<strong>Instagram y Facebook</strong>) → <strong>Acceso parcial a contenido</strong>.</li>
+        <li>Clic en <strong>Invitar activo</strong>.</li>
+      </ol>
+      <a href="${metaLinkBusiness}" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir Meta Business Suite ↗</a>
+      ${botonListo('meta', estados.meta)}
+    </div>
+
+    <div class="conectar-card">
+      <div class="conectar-card-head">
+        <span class="conectar-card-titulo">🎵 TikTok</span>
+        ${badge(estados.tiktok)}
+      </div>
+      <p style="font-size:0.9rem;color:#333;margin-bottom:6px;">Escanea este código con la aplicación de TikTok y acepta la solicitud de acceso.</p>
+      ${qrHtml}
+      <ol class="conectar-pasos" style="margin-top:14px;">
+        <li>Abre la app de <strong>TikTok</strong>.</li>
+        <li>Ve a tu <strong>Perfil → Menú (☰) → Tu código QR</strong>.</li>
+        <li>Toca <strong>Escanear</strong> y apunta a este código.</li>
+        <li>Acepta la solicitud de permisos.</li>
+      </ol>
+      ${botonListo('tiktok', estados.tiktok)}
+    </div>
+
+    <div class="conectar-card">
+      <div class="conectar-card-head">
+        <span class="conectar-card-titulo">▶️ YouTube</span>
+        ${badge(estados.youtube)}
+      </div>
+      <ol class="conectar-pasos">
+        <li>Entra a <strong>YouTube Studio</strong> con la cuenta de tu canal.</li>
+        <li>Ve a <strong>Configuración → Permisos → Invitar</strong>.</li>
+        <li>Pega este correo:</li>
+      </ol>
+      ${ytEmailHtml}
+      <ol class="conectar-pasos" start="4">
+        <li>Asígnale el rol de <strong>Administrador</strong> (o Editor) y guarda.</li>
+      </ol>
+      <a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir YouTube Studio ↗</a>
+      ${botonListo('youtube', estados.youtube)}
+    </div>
+  `;
+
+  tarjetasEl.querySelectorAll('[data-copiar]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.copiar).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '¡Copiado!';
+        setTimeout(() => { btn.textContent = original; }, 1600);
+      });
+    });
+  });
+
+  tarjetasEl.querySelectorAll('.conectar-btn-listo').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const plataforma = btn.dataset.plataforma;
+      const campo = plataforma + '_estado';
+      btn.disabled = true;
+      btn.textContent = 'Avisando...';
+      try{
+        await sbActualizarConexionSocial(conexion.id, { [campo]: 'Pendiente' });
+        const nombrePlataforma = { meta: 'Meta (Facebook/Instagram)', tiktok: 'TikTok', youtube: 'YouTube' }[plataforma];
+        registrarActividad({
+          tipo: 'social_pendiente_verificar', clienteId: conexion.cliente_id, clienteNombre: nombreCliente,
+          descripcion: `📡 ${nombreCliente || 'Un cliente'} dice que ya conectó ${nombrePlataforma} — verifica y confirma en Cuentas y Contraseñas.`
+        });
+        estados[plataforma] = 'Pendiente';
+        renderTarjetasConexionSocial({ resumenId, tarjetasId, conexion, cfg, nombreCliente, estados, onCambio });
+        if(onCambio) onCambio(plataforma);
+      } catch(err){
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = '✅ Ya lo hice';
+        alert('No se pudo avisar. Revisa tu conexión e intenta de nuevo.');
+      }
+    });
+  });
+}
+
+// Link viejo standalone (?conectar=TOKEN). Ya no se genera/comparte desde el CRM (ahora todo va
+// por el link general de guiones), pero se deja funcionando por si algún cliente todavía lo tiene.
 async function arrancarVistaConexionSocial(token){
   const overlay = document.getElementById('login-overlay');
   if(overlay){ overlay.classList.add('hidden'); overlay.style.display = 'none'; }
@@ -9615,132 +9687,7 @@ async function arrancarVistaConexionSocial(token){
       tiktok: conexion.tiktok_estado || 'No conectado',
       youtube: conexion.youtube_estado || 'No conectado'
     };
-    function renderTarjetas(){
-    const totalConectadas = Object.values(estados).filter(e => e === 'Conectado').length;
-
-    document.getElementById('conectar-resumen').innerHTML = `
-      <div class="conectar-resumen">${nombreCliente ? `Hola, <strong>${nombreCliente}</strong>. ` : ''}Redes conectadas: <strong>${totalConectadas} / 3</strong></div>
-    `;
-
-    const badge = (estado) => estado === 'Conectado'
-      ? '<span class="conectar-badge si">✅ Conectado</span>'
-      : estado === 'Pendiente'
-        ? '<span class="conectar-badge pendiente">⏳ En revisión</span>'
-        : '<span class="conectar-badge no">No conectado</span>';
-
-    // El cliente avisa que ya hizo su parte -> pasa a "Pendiente" (staff confirma después).
-    // Solo mostramos el botón si todavía no está Conectado ni ya avisó (evita avisos duplicados).
-    const botonListo = (plataforma, estado) => {
-      if(estado === 'Conectado') return '';
-      if(estado === 'Pendiente') return '<p class="conectar-en-revision">⏳ Le avisamos a nuestro equipo. En cuanto lo verifiquemos, esto va a decir "Conectado".</p>';
-      return `<button type="button" class="vp-btn-secundario conectar-btn-listo" data-plataforma="${plataforma}" style="margin-top:12px;">✅ Ya lo hice</button>`;
-    };
-
-    const metaIdHtml = cfg.metaBusinessId
-      ? `<div class="conectar-copiable"><span>${cfg.metaBusinessId}</span><button type="button" data-copiar="${cfg.metaBusinessId}">Copiar</button></div>`
-      : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado nuestro ID de negocio. Contáctanos antes de continuar.</p>';
-
-    const ytEmailHtml = cfg.youtubeManagerEmail
-      ? `<div class="conectar-copiable"><span>${cfg.youtubeManagerEmail}</span><button type="button" data-copiar="${cfg.youtubeManagerEmail}">Copiar</button></div>`
-      : '<p style="color:#8a8578;font-style:italic;">Todavía no tenemos configurado el correo a agregar. Contáctanos antes de continuar.</p>';
-
-    const metaLinkBusiness = 'https://business.facebook.com/latest/settings/partners';
-
-    const qrHtml = conexion.tiktok_qr_b64
-      ? `<div class="conectar-qr-box"><img src="${conexion.tiktok_qr_b64}" alt="Código QR de TikTok"></div>`
-      : '<div class="conectar-qr-box"><p class="conectar-qr-vacio">Todavía no tenemos un código QR listo para ti. Contáctanos y te lo enviamos.</p></div>';
-
-    document.getElementById('conectar-tarjetas').innerHTML = `
-      <div class="conectar-card">
-        <div class="conectar-card-head">
-          <span class="conectar-card-titulo">📘 Meta — Facebook + Instagram</span>
-          ${badge(estados.meta)}
-        </div>
-        <ol class="conectar-pasos">
-          <li>Entra a <strong>business.facebook.com</strong> con la cuenta que administra tu Página de Facebook (o da clic en el botón de abajo).</li>
-          <li>Ve a <strong>Configuración → Usuarios → Socios</strong>.</li>
-          <li>Clic en <strong>Agregar → Otorgar a un socio acceso a tus activos</strong> y pega este ID:</li>
-        </ol>
-        ${metaIdHtml}
-        <ol class="conectar-pasos" start="4">
-          <li>Clic en <strong>Otorgar acceso</strong>.</li>
-          <li>Selecciona las cuentas a las que darás acceso (<strong>Instagram y Facebook</strong>) → <strong>Acceso parcial a contenido</strong>.</li>
-          <li>Clic en <strong>Invitar activo</strong>.</li>
-        </ol>
-        <a href="${metaLinkBusiness}" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir Meta Business Suite ↗</a>
-        ${botonListo('meta', estados.meta)}
-      </div>
-
-      <div class="conectar-card">
-        <div class="conectar-card-head">
-          <span class="conectar-card-titulo">🎵 TikTok</span>
-          ${badge(estados.tiktok)}
-        </div>
-        <p style="font-size:0.9rem;color:#333;margin-bottom:6px;">Escanea este código con la aplicación de TikTok y acepta la solicitud de acceso.</p>
-        ${qrHtml}
-        <ol class="conectar-pasos" style="margin-top:14px;">
-          <li>Abre la app de <strong>TikTok</strong>.</li>
-          <li>Ve a tu <strong>Perfil → Menú (☰) → Tu código QR</strong>.</li>
-          <li>Toca <strong>Escanear</strong> y apunta a este código.</li>
-          <li>Acepta la solicitud de permisos.</li>
-        </ol>
-        ${botonListo('tiktok', estados.tiktok)}
-      </div>
-
-      <div class="conectar-card">
-        <div class="conectar-card-head">
-          <span class="conectar-card-titulo">▶️ YouTube</span>
-          ${badge(estados.youtube)}
-        </div>
-        <ol class="conectar-pasos">
-          <li>Entra a <strong>YouTube Studio</strong> con la cuenta de tu canal.</li>
-          <li>Ve a <strong>Configuración → Permisos → Invitar</strong>.</li>
-          <li>Pega este correo:</li>
-        </ol>
-        ${ytEmailHtml}
-        <ol class="conectar-pasos" start="4">
-          <li>Asígnale el rol de <strong>Administrador</strong> (o Editor) y guarda.</li>
-        </ol>
-        <a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="vp-btn-primario" style="display:inline-block;text-decoration:none;">Abrir YouTube Studio ↗</a>
-        ${botonListo('youtube', estados.youtube)}
-      </div>
-    `;
-
-    document.getElementById('conectar-tarjetas').querySelectorAll('[data-copiar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        navigator.clipboard.writeText(btn.dataset.copiar).then(() => {
-          const original = btn.textContent;
-          btn.textContent = '¡Copiado!';
-          setTimeout(() => { btn.textContent = original; }, 1600);
-        });
-      });
-    });
-
-    document.getElementById('conectar-tarjetas').querySelectorAll('.conectar-btn-listo').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const plataforma = btn.dataset.plataforma;
-        const campo = plataforma + '_estado';
-        btn.disabled = true;
-        btn.textContent = 'Avisando...';
-        try{
-          await sbActualizarConexionSocial(conexion.id, { [campo]: 'Pendiente' });
-          const nombrePlataforma = { meta: 'Meta (Facebook/Instagram)', tiktok: 'TikTok', youtube: 'YouTube' }[plataforma];
-          registrarActividad({
-            tipo: 'social_pendiente_verificar', clienteId: conexion.cliente_id, clienteNombre: nombreCliente,
-            descripcion: `📡 ${nombreCliente || 'Un cliente'} dice que ya conectó ${nombrePlataforma} — verifica y confirma en Cuentas y Contraseñas.`
-          });
-          estados[plataforma] = 'Pendiente';
-          renderTarjetas();
-        } catch(err){
-          console.error(err);
-          btn.disabled = false;
-          btn.textContent = '✅ Ya lo hice';
-          alert('No se pudo avisar. Revisa tu conexión e intenta de nuevo.');
-        }
-      });
-    });
-    } // cierra renderTarjetas()
-    renderTarjetas();
+    renderTarjetasConexionSocial({ resumenId: 'conectar-resumen', tarjetasId: 'conectar-tarjetas', conexion, cfg, nombreCliente, estados });
   } catch(err){
     console.error(err);
     document.getElementById('conectar-status').innerHTML = '<div style="color:#e77;">No se pudo cargar. Recarga en unos segundos.</div>';
@@ -9772,6 +9719,7 @@ async function arrancarVistaPublicaCliente(token){
 
     <div class="vp-tabs" id="vp-tabs">
       <button class="vp-tab active" data-vp-tab="guiones">📄 Guiones</button>
+      <button class="vp-tab" data-vp-tab="conectar" id="vp-tab-conectar" style="display:none;">🔗 Conecta tus cuentas</button>
       <button class="vp-tab" data-vp-tab="calendario">📆 Calendario de publicaciones</button>
       <button class="vp-tab" data-vp-tab="videos" id="vp-tab-videos" style="display:none;">🎬 Tus videos</button>
       <button class="vp-tab" data-vp-tab="expediente">📋 Expediente</button>
@@ -9787,6 +9735,10 @@ async function arrancarVistaPublicaCliente(token){
           <button id="vp-guardar-todos" class="vp-btn-secundario" style="display:none;">💾 Guardar todos los cambios</button>
           <span id="vp-guardar-todos-msg" class="vp-msg"></span>
         </div>
+      </div>
+      <div class="vp-seccion" id="vp-seccion-conectar" style="display:none;">
+        <div id="vp-conectar-resumen"></div>
+        <div id="vp-conectar-tarjetas"></div>
       </div>
       <div class="vp-seccion" id="vp-seccion-calendario" style="display:none;">
         <div id="vp-calendario-lista"></div>
@@ -9859,9 +9811,37 @@ async function arrancarVistaPublicaCliente(token){
       VP_INFORME = infResp.data ? _sbFilaInforme(infResp.data) : null;
       VP_INF_PDFS = (infPdfsResp.data || []).map(_sbFilaPdf);
       renderVpInformes();
+      cargarVpConexionSocial(); // aparte: si falla, no debe tumbar el resto de la vista
     } catch(err) {
       document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">No se pudo conectar. Recarga en unos segundos.</div>';
     }
+  }
+
+  async function cargarVpConexionSocial(){
+    try{
+      let conexion = await sbCargarConexionSocial(VP_CLIENTE.id);
+      if(!conexion){
+        const nueva = await sbCrearConexionSocial(VP_CLIENTE.id);
+        conexion = { id: nueva.ID, cliente_id: VP_CLIENTE.id, meta_estado: 'No conectado', tiktok_estado: 'No conectado', youtube_estado: 'No conectado', tiktok_qr_b64: '' };
+      } else {
+        conexion = { id: conexion.ID, cliente_id: VP_CLIENTE.id, meta_estado: conexion.MetaEstado, tiktok_estado: conexion.TiktokEstado, youtube_estado: conexion.YoutubeEstado, tiktok_qr_b64: conexion.TiktokQrB64 };
+      }
+      const cfg = await sbCargarConfigAgencia();
+      const estados = {
+        meta: conexion.meta_estado || 'No conectado',
+        tiktok: conexion.tiktok_estado || 'No conectado',
+        youtube: conexion.youtube_estado || 'No conectado'
+      };
+      const tabBtn = document.getElementById('vp-tab-conectar');
+      const totalConectadas = Object.values(estados).filter(e => e === 'Conectado').length;
+      // Ya no hay que "mandar 2 links": esta pestaña vive dentro del link general y se
+      // esconde sola en cuanto las 3 redes quedan confirmadas como Conectado.
+      if(tabBtn) tabBtn.style.display = totalConectadas === 3 ? 'none' : '';
+      renderTarjetasConexionSocial({
+        resumenId: 'vp-conectar-resumen', tarjetasId: 'vp-conectar-tarjetas',
+        conexion, cfg, nombreCliente: VP_CLIENTE.nombre, estados
+      });
+    } catch(err){ console.error(err); }
   }
 
   function estatusColor(est){
