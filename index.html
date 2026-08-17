@@ -2549,7 +2549,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-qr-tiktok-global';
+const APP_BUILD = '2026-08-12-notif-progreso-tiktok';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -5595,6 +5595,12 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     try{
       await sbActualizarModoCompleto(modoKey, idExistente, payload);
       modalBg.classList.remove('open');
+      if(modoKey === 'edicion' && respaldo && (respaldo.Progreso || 0) !== datosForm.Progreso){
+        registrarActividad({
+          tipo: 'edicion_progreso', clienteNombre: datosForm.Cliente,
+          descripcion: `📈 ${(typeof USUARIO_ACTUAL !== 'undefined' && USUARIO_ACTUAL) ? USUARIO_ACTUAL.Nombre : 'Editor'} actualizó el progreso de un video de ${datosForm.Cliente || 'un cliente'} a ${datosForm.Progreso}%${datosForm.Folio ? ' (' + datosForm.Folio + ')' : ''}`
+        });
+      }
     } catch(err){
       console.error('No se pudo actualizar', err);
       if(item && respaldo) Object.assign(item, respaldo);
@@ -9569,14 +9575,8 @@ function renderTarjetasConexionSocial({ resumenId, tarjetasId, conexion, cfg, no
         <span class="conectar-card-titulo">🎵 TikTok</span>
         ${badge(estados.tiktok)}
       </div>
-      <p style="font-size:0.9rem;color:#333;margin-bottom:6px;">Escanea este código con la aplicación de TikTok y acepta la solicitud de acceso.</p>
+      <p style="font-size:0.9rem;color:#333;margin-bottom:6px;">Escanea este código con la cámara de tu celular. El link te va a llevar directo a TikTok para aceptar el acceso.</p>
       ${qrHtml}
-      <ol class="conectar-pasos" style="margin-top:14px;">
-        <li>Abre la app de <strong>TikTok</strong>.</li>
-        <li>Ve a tu <strong>Perfil → Menú (☰) → Tu código QR</strong>.</li>
-        <li>Toca <strong>Escanear</strong> y apunta a este código.</li>
-        <li>Acepta la solicitud de permisos.</li>
-      </ol>
       ${botonListo('tiktok', estados.tiktok)}
     </div>
 
