@@ -2549,7 +2549,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-notif-progreso-tiktok';
+const APP_BUILD = '2026-08-17-fix-guardar-checkin';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3427,7 +3427,13 @@ async function sbGuardarReporte(miembroId, semana, mental, feedbacks, extra){
     puesto: extra.puesto || '',
     fecha_reporte: new Date().toISOString()
   };
-  const { data: existente } = await sb.from('reportes').select('id').eq('miembro_id', miembroId).eq('semana', semana).maybeSingle();
+  // Usamos select() en vez de maybeSingle(): si por alguna razón ya hay más de una fila
+  // para este miembro+semana, maybeSingle() haría fallar la consulta (PostgREST exige
+  // exactamente 0 o 1 fila) y ese error se perdía sin lanzarse, cayendo por accidente al
+  // camino de "crear nueva" y duplicando/chocando con la fila ya existente.
+  const { data: existentes, error: errBusqueda } = await sb.from('reportes').select('id').eq('miembro_id', miembroId).eq('semana', semana);
+  if(errBusqueda){ console.error('Supabase buscar reporte:', errBusqueda); throw errBusqueda; }
+  const existente = (existentes && existentes[0]) || null;
   if(existente){
     const { error } = await sb.from('reportes').update(patch).eq('id', existente.id);
     if(error){ console.error('Supabase actualizar reporte:', error); throw error; }
@@ -8386,7 +8392,8 @@ function mostrarPopupReporteSemanal(semana){
       bg.remove();
     } catch(err) {
       console.error(err);
-      errEl.textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+      const detalle = (err && (err.message || err.details || err.hint)) || '';
+      errEl.textContent = 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.' + (detalle ? ' (' + detalle + ')' : '');
       btn.disabled = false;
       btn.textContent = 'Guardar y descansar 🌴';
     }
