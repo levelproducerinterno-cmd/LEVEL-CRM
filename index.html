@@ -514,8 +514,8 @@
   .vp-intro{max-width:600px;margin:22px auto 0;color:#d4cfc4;font-size:0.92rem;line-height:1.65;}
   .vp-intro strong{color:#fff;font-weight:700;}
 
-  .vp-tabs{max-width:1000px;margin:0 auto;padding:0 24px;display:flex;flex-wrap:wrap;gap:6px;background:transparent;border-bottom:1px solid rgba(255,255,255,0.1);position:sticky;top:0;background:#1c1a17;z-index:10;}
-  .vp-tab{background:none;border:none;color:#8a8578;padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.03em;border-bottom:3px solid transparent;transition:color 0.15s;}
+  .vp-tabs{max-width:1000px;margin:0 auto;padding:0 24px;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:6px;background:transparent;border-bottom:1px solid rgba(255,255,255,0.1);position:sticky;top:0;background:#1c1a17;z-index:10;scrollbar-width:thin;}
+  .vp-tab{background:none;border:none;color:#8a8578;padding:16px 16px;font-family:'Montserrat',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.03em;border-bottom:3px solid transparent;transition:color 0.15s;white-space:nowrap;flex-shrink:0;}
   .vp-tab:hover{color:#f0ede6;}
   .vp-tab.active{color:#fff;border-bottom-color:#c72a09;}
 
@@ -1574,14 +1574,23 @@
 
         <div class="admin-subpanel" id="admin-panel-redes">
           <div class="hint" style="margin-bottom:14px;">
-            Estos datos se usan en la página que ven tus clientes para conectar sus redes ("Conecta tus redes sociales"),
-            a la que llegan desde el link que generas en la pestaña "Cuentas y Contraseñas" de cada cliente.
+            Estos datos se usan en la pestaña "Conecta tus cuentas" que ven tus clientes dentro de su link general
+            (el mismo que ya usan para sus guiones). Son los mismos para todos los clientes.
           </div>
           <div style="background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:18px 20px;max-width:520px;">
             <label style="display:block;font-size:0.78rem;font-weight:700;color:#555;margin-bottom:6px;">ID de Business Manager de Meta</label>
             <input type="text" id="cfg-meta-business-id" placeholder="Ej. 123456789012345" style="width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;margin-bottom:16px;">
             <label style="display:block;font-size:0.78rem;font-weight:700;color:#555;margin-bottom:6px;">Correo de Google/YouTube que el cliente debe agregar como administrador</label>
             <input type="email" id="cfg-youtube-email" placeholder="equipo@levelproducer.com" style="width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;margin-bottom:16px;">
+            <label style="display:block;font-size:0.78rem;font-weight:700;color:#555;margin-bottom:6px;">Código QR de TikTok (el mismo para todos los clientes)</label>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+              <div id="cfg-tiktok-qr-preview-wrap"></div>
+              <div>
+                <input type="file" accept="image/*" id="cfg-tiktok-qr-input" style="display:none;">
+                <button type="button" class="btn ghost" id="cfg-tiktok-qr-btn">Subir QR</button>
+                <button type="button" class="btn ghost" id="cfg-tiktok-qr-quitar" style="display:none;margin-left:8px;">Quitar</button>
+              </div>
+            </div>
             <button class="btn" id="btn-guardar-config-redes">Guardar</button>
             <span class="status-msg" id="cfg-redes-status" style="margin-left:10px;"></span>
           </div>
@@ -2540,7 +2549,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-12-link-unico-conectar';
+const APP_BUILD = '2026-08-12-qr-tiktok-global';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -2898,13 +2907,44 @@ async function migrarClientesYGuionesASupabase(){
 }
 document.getElementById('btn-migrar-supabase').addEventListener('click', migrarClientesYGuionesASupabase);
 
+let CFG_TIKTOK_QR_B64 = '';
+
+function renderCfgTiktokQrPreview(){
+  const wrap = document.getElementById('cfg-tiktok-qr-preview-wrap');
+  const btnQuitar = document.getElementById('cfg-tiktok-qr-quitar');
+  if(!wrap) return;
+  wrap.innerHTML = CFG_TIKTOK_QR_B64
+    ? `<img class="rs-qr-preview" src="${CFG_TIKTOK_QR_B64}" alt="QR de TikTok">`
+    : `<div class="rs-qr-vacio">Sin QR</div>`;
+  if(btnQuitar) btnQuitar.style.display = CFG_TIKTOK_QR_B64 ? '' : 'none';
+}
+
 async function cargarConfigAgencia(){
   try{
     const cfg = await sbCargarConfigAgencia();
     document.getElementById('cfg-meta-business-id').value = cfg.metaBusinessId;
     document.getElementById('cfg-youtube-email').value = cfg.youtubeManagerEmail;
+    CFG_TIKTOK_QR_B64 = cfg.tiktokQrB64 || '';
+    renderCfgTiktokQrPreview();
   } catch(err){ console.error(err); }
 }
+document.getElementById('cfg-tiktok-qr-btn').addEventListener('click', () => {
+  document.getElementById('cfg-tiktok-qr-input').click();
+});
+document.getElementById('cfg-tiktok-qr-input').addEventListener('change', () => {
+  const file = document.getElementById('cfg-tiktok-qr-input').files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    CFG_TIKTOK_QR_B64 = reader.result;
+    renderCfgTiktokQrPreview();
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('cfg-tiktok-qr-quitar').addEventListener('click', () => {
+  CFG_TIKTOK_QR_B64 = '';
+  renderCfgTiktokQrPreview();
+});
 document.getElementById('btn-guardar-config-redes').addEventListener('click', async () => {
   const btn = document.getElementById('btn-guardar-config-redes');
   const status = document.getElementById('cfg-redes-status');
@@ -2913,7 +2953,7 @@ document.getElementById('btn-guardar-config-redes').addEventListener('click', as
   btn.disabled = true;
   status.textContent = 'Guardando...';
   try{
-    await sbGuardarConfigAgencia(metaId, ytEmail);
+    await sbGuardarConfigAgencia({ metaBusinessId: metaId, youtubeManagerEmail: ytEmail, tiktokQrB64: CFG_TIKTOK_QR_B64 });
     status.textContent = '✓ Guardado';
     setTimeout(() => { status.textContent = ''; }, 3000);
   } catch(err){
@@ -3197,13 +3237,21 @@ async function sbActualizarConexionSocial(id, patch){
 // ---- Configuración de agencia (una sola fila, usada en las instrucciones de conexión) ----
 async function sbCargarConfigAgencia(){
   const { data, error } = await sb.from('configuracion_agencia').select('*').eq('id', 'default').maybeSingle();
-  if(error){ console.error('Supabase configuracion_agencia:', error); return { metaBusinessId: '', youtubeManagerEmail: '' }; }
-  return { metaBusinessId: (data && data.meta_business_id) || '', youtubeManagerEmail: (data && data.youtube_manager_email) || '' };
+  if(error){ console.error('Supabase configuracion_agencia:', error); return { metaBusinessId: '', youtubeManagerEmail: '', tiktokQrB64: '' }; }
+  return {
+    metaBusinessId: (data && data.meta_business_id) || '',
+    youtubeManagerEmail: (data && data.youtube_manager_email) || '',
+    tiktokQrB64: (data && data.tiktok_qr_b64) || ''
+  };
 }
-async function sbGuardarConfigAgencia(metaBusinessId, youtubeManagerEmail){
-  const { error } = await sb.from('configuracion_agencia').upsert({
-    id: 'default', meta_business_id: metaBusinessId || '', youtube_manager_email: youtubeManagerEmail || ''
-  }, { onConflict: 'id' });
+// patch acepta cualquier combinación de metaBusinessId / youtubeManagerEmail / tiktokQrB64;
+// solo se escriben las columnas incluidas (el resto de la fila no se toca).
+async function sbGuardarConfigAgencia(patch){
+  const row = { id: 'default' };
+  if(patch.metaBusinessId !== undefined) row.meta_business_id = patch.metaBusinessId || '';
+  if(patch.youtubeManagerEmail !== undefined) row.youtube_manager_email = patch.youtubeManagerEmail || '';
+  if(patch.tiktokQrB64 !== undefined) row.tiktok_qr_b64 = patch.tiktokQrB64 || '';
+  const { error } = await sb.from('configuracion_agencia').upsert(row, { onConflict: 'id' });
   if(error){ console.error('Supabase guardar configuracion_agencia:', error); throw error; }
 }
 
@@ -7559,20 +7607,6 @@ function renderConexionSocial(){
   cont.innerHTML = plataformas.map(p => {
     const conectado = p.estado === 'Conectado';
     const pendiente = p.estado === 'Pendiente';
-    let extra = '';
-    if(p.key === 'tiktok'){
-      extra = `
-        <div class="rs-qr-fila">
-          ${CONEXION_SOCIAL_ACTUAL.TiktokQrB64
-            ? `<img class="rs-qr-preview" src="${CONEXION_SOCIAL_ACTUAL.TiktokQrB64}" alt="QR de TikTok">`
-            : `<div class="rs-qr-vacio">Sin QR</div>`}
-          <div>
-            <input type="file" accept="image/*" id="rs-tiktok-qr-input" style="display:none;">
-            <button class="btn ghost" id="rs-tiktok-qr-btn" type="button">${CONEXION_SOCIAL_ACTUAL.TiktokQrB64 ? 'Reemplazar QR' : 'Subir QR'}</button>
-            ${CONEXION_SOCIAL_ACTUAL.TiktokQrB64 ? '<button class="btn ghost" id="rs-tiktok-qr-quitar" type="button" style="margin-left:8px;">Quitar</button>' : ''}
-          </div>
-        </div>`;
-    }
     return `
       <div class="rs-card">
         <span class="rs-card-nombre">${p.label}</span>
@@ -7581,9 +7615,8 @@ function renderConexionSocial(){
           <option value="Pendiente" ${pendiente ? 'selected' : ''}>⏳ El cliente dice que ya lo hizo</option>
           <option value="Conectado" ${conectado ? 'selected' : ''}>✅ Conectado</option>
         </select>
-        ${extra}
       </div>`;
-  }).join('');
+  }).join('') + '<div class="hint" style="margin-top:8px;">El QR de TikTok es el mismo para todos los clientes — se administra en Administración → 🔗 Redes sociales.</div>';
 
   const _campoAProp = { meta_estado: 'MetaEstado', tiktok_estado: 'TiktokEstado', youtube_estado: 'YoutubeEstado' };
   cont.querySelectorAll('.rs-estado-select').forEach(sel => {
@@ -7605,48 +7638,6 @@ function renderConexionSocial(){
       sel.disabled = false;
     });
   });
-
-  const btnSubirQr = document.getElementById('rs-tiktok-qr-btn');
-  const inputQr = document.getElementById('rs-tiktok-qr-input');
-  if(btnSubirQr && inputQr){
-    btnSubirQr.addEventListener('click', () => inputQr.click());
-    inputQr.addEventListener('change', () => {
-      const file = inputQr.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const b64 = reader.result;
-        const anterior = CONEXION_SOCIAL_ACTUAL.TiktokQrB64;
-        CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = b64;
-        renderConexionSocial();
-        try{
-          await sbActualizarConexionSocial(CONEXION_SOCIAL_ACTUAL.ID, { tiktok_qr_b64: b64 });
-        } catch(err){
-          console.error(err);
-          CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = anterior;
-          renderConexionSocial();
-          alert('⚠️ No se pudo subir el QR. Revisa tu conexión e intenta de nuevo.');
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-  const btnQuitarQr = document.getElementById('rs-tiktok-qr-quitar');
-  if(btnQuitarQr){
-    btnQuitarQr.addEventListener('click', async () => {
-      const anterior = CONEXION_SOCIAL_ACTUAL.TiktokQrB64;
-      CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = '';
-      renderConexionSocial();
-      try{
-        await sbActualizarConexionSocial(CONEXION_SOCIAL_ACTUAL.ID, { tiktok_qr_b64: '' });
-      } catch(err){
-        console.error(err);
-        CONEXION_SOCIAL_ACTUAL.TiktokQrB64 = anterior;
-        renderConexionSocial();
-        alert('⚠️ No se pudo quitar el QR. Revisa tu conexión e intenta de nuevo.');
-      }
-    });
-  }
 }
 
 
@@ -9546,9 +9537,9 @@ function renderTarjetasConexionSocial({ resumenId, tarjetasId, conexion, cfg, no
 
   const metaLinkBusiness = 'https://business.facebook.com/latest/settings/partners';
 
-  const qrHtml = conexion.tiktok_qr_b64
-    ? `<div class="conectar-qr-box"><img src="${conexion.tiktok_qr_b64}" alt="Código QR de TikTok"></div>`
-    : '<div class="conectar-qr-box"><p class="conectar-qr-vacio">Todavía no tenemos un código QR listo para ti. Contáctanos y te lo enviamos.</p></div>';
+  const qrHtml = cfg.tiktokQrB64
+    ? `<div class="conectar-qr-box"><img src="${cfg.tiktokQrB64}" alt="Código QR de TikTok"></div>`
+    : '<div class="conectar-qr-box"><p class="conectar-qr-vacio">Todavía no tenemos un código QR listo. Contáctanos y te lo enviamos.</p></div>';
 
   const tarjetasEl = document.getElementById(tarjetasId);
   if(!tarjetasEl) return;
