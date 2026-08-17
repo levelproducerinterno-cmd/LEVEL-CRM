@@ -2549,7 +2549,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-17-fix-guardar-checkin';
+const APP_BUILD = '2026-08-17-aviso-espaciado-fantasma';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -8275,6 +8275,27 @@ function _reporteTextoBloque(campo, label){
     </div>`;
 }
 
+// Detecta (sin intentar "arreglar") texto pegado desde una fuente con espaciado visual
+// entre letras (una app de diseño, otro PDF, etc.): al copiar ese tipo de texto, el
+// espaciado se convierte en espacios reales entre cada letra ("e s t i l o"). No lo
+// corregimos automáticamente porque no hay forma confiable de saber dónde iban los
+// espacios reales entre palabras una vez que ya se perdieron — solo avisamos para que
+// la persona lo revise y lo vuelva a escribir si hace falta.
+function _pareceEspaciadoFantasma(texto){
+  if(!texto) return false;
+  const tokens = texto.split(' ');
+  let corrida = 0;
+  for(const t of tokens){
+    if(t.length === 1 && /\S/.test(t)){
+      corrida++;
+      if(corrida >= 8) return true;
+    } else {
+      corrida = 0;
+    }
+  }
+  return false;
+}
+
 // Preguntas de texto libre por rol (van al PDF de "KPI's semanales", no al Dashboard).
 const PREGUNTAS_TEXTO_REPORTE = {
   Edicion: [
@@ -8373,10 +8394,25 @@ function mostrarPopupReporteSemanal(semana){
     const direccionEl = bg.querySelector('[data-campo="direccion"]');
     const rendimientoEl = bg.querySelector('[data-campo="rendimiento"]');
     const preguntasTexto = PREGUNTAS_TEXTO_REPORTE[puesto] || [];
-    const respuestasTexto = JSON.stringify(preguntasTexto.map(p => ({
+    const respuestasCrudas = preguntasTexto.map(p => ({
       pregunta: p.label,
       respuesta: (bg.querySelector(`[data-campo="${p.campo}"]`) || {}).value || ''
-    })));
+    }));
+    // Si alguna respuesta parece pegada desde una fuente con espaciado raro entre letras
+    // (se ve normal al escribir, pero se guardaría como "e s t i l o" y saldría feo en el
+    // PDF), avisamos ANTES de guardar en vez de intentar "corregirlo" nosotros — no hay
+    // forma confiable de reconstruir los espacios reales una vez perdidos.
+    const conEspaciadoRaro = respuestasCrudas.filter(r => _pareceEspaciadoFantasma(r.respuesta));
+    if(conEspaciadoRaro.length > 0){
+      const seguir = confirm(
+        'Una de tus respuestas parece tener el texto con las letras separadas por espacios ' +
+        '(pasa cuando se pega texto copiado de otra app). Puede que se vea raro en el PDF.\n\n' +
+        'Revisa esa respuesta y vuelve a escribirla a mano si hace falta.\n\n' +
+        '¿Guardar de todas formas?'
+      );
+      if(!seguir) return;
+    }
+    const respuestasTexto = JSON.stringify(respuestasCrudas);
 
     btn.disabled = true;
     btn.textContent = 'Guardando...';
@@ -8388,6 +8424,11 @@ function mostrarPopupReporteSemanal(semana){
         direccion: direccionEl ? parseInt(direccionEl.value, 10) : undefined,
         rendimiento: rendimientoEl ? parseInt(rendimientoEl.value, 10) : undefined,
         respuestasTexto
+      });
+      const puestoLabelNotif = { Direccion: 'Dirección', Edicion: 'Edición' }[puesto] || puesto;
+      registrarActividad({
+        tipo: 'checkin_semanal', clienteNombre: '',
+        descripcion: `📋 ${USUARIO_ACTUAL.Nombre} (${puestoLabelNotif}) completó su check-in semanal — revisa sus respuestas en Administración → KPI's semanales.`
       });
       bg.remove();
     } catch(err) {
