@@ -2730,7 +2730,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-17-mensajes-sin-emojis-rotos';
+const APP_BUILD = '2026-09-02-cobranza-oct-kpis-mensuales';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3185,11 +3185,21 @@ function _etiquetaVence(dias){
   return { texto: `En ${dias}d`, clase: '' };
 }
 
+// La presentación ("Soy Fer, encargada de administración...") solo va la primera vez
+// (septiembre 2026). A partir de octubre 2026 el mensaje va directo al recordatorio.
+function _esPrimerMesDeCobranza(){
+  const hoy = new Date();
+  return hoy.getFullYear() === 2026 && hoy.getMonth() === 8; // 8 = septiembre (0-indexado)
+}
+
 function armarMensajeCobranza(cliente){
   const contacto = cliente.ContactoCobranza || cliente.Nombre || '';
   const monto = cliente.MontoCobro ? ('$' + Number(cliente.MontoCobro).toLocaleString('es-MX')) : '';
   const cfg = CFG_CUENTA_COBRO;
-  return `¡Hola ${contacto}! Soy Fer, encargada de administración de Level Producer, la agencia con la que tienes tu contenido.\n\n` +
+  const saludo = _esPrimerMesDeCobranza()
+    ? `¡Hola ${contacto}! Soy Fer, encargada de administración de Level Producer, la agencia con la que tienes tu contenido.\n\n`
+    : `¡Hola ${contacto}!\n\n`;
+  return saludo +
     `Este es un amable recordatorio para realizar tu pago${monto ? ' de ' + monto : ''} en los próximos 5 días a la siguiente cuenta:\n\n` +
     `${cfg.cuentaTitular || ''}\nBanco: ${cfg.cuentaBanco || ''}\nCLABE: ${cfg.cuentaClabe || ''}\nCuenta: ${cfg.cuentaNumero || ''}\n\n` +
     `Favor de avisarme en cuanto hagas tu pago para mandarte tu recibo. ¡Gracias!`;
@@ -3815,6 +3825,26 @@ function _claveSemana(fecha){
 function _claveSemanaAnterior(fecha){
   const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate() - 7);
   return _claveSemana(d);
+}
+// Regresa el lunes (Date) de una clave de semana ISO tipo "2026-W33" (inverso de _claveSemana).
+function _lunesDeClaveSemana(clave){
+  const partes = String(clave || '').split('-W');
+  const year = parseInt(partes[0], 10);
+  const semanaNum = parseInt(partes[1], 10);
+  if(!year || !semanaNum) return null;
+  const enero1 = new Date(year, 0, 1);
+  const diaEnero1 = enero1.getDay();
+  const offset = diaEnero1 <= 4 ? diaEnero1 - 1 : diaEnero1 - 8;
+  const primerJueves = new Date(year, 0, 1 - offset + 3);
+  const jueves = new Date(primerJueves.getFullYear(), primerJueves.getMonth(), primerJueves.getDate() + (semanaNum - 1) * 7);
+  const lunes = new Date(jueves.getFullYear(), jueves.getMonth(), jueves.getDate() - 3);
+  return lunes;
+}
+// Las preguntas largas (texto libre) del check-in semanal solo se piden la semana cuyo
+// lunes cae en los primeros 7 días del mes — el resto de semanas solo llevan las métricas rápidas.
+function _esPrimeraSemanaDelMes(claveSemana){
+  const lunes = _lunesDeClaveSemana(claveSemana);
+  return !!lunes && lunes.getDate() <= 7;
 }
 function _sbFilaReporte(r){
   return {
@@ -8780,26 +8810,27 @@ const PREGUNTAS_TEXTO_REPORTE = {
 
 function mostrarPopupReporteSemanal(semana){
   const puesto = USUARIO_ACTUAL.Puesto;
+  const conPreguntasLargas = _esPrimeraSemanaDelMes(semana);
   let bloques = '';
   if(puesto === 'Edicion'){
     bloques =
       _reporteSliderBloque('mental', '¿Cómo te sentiste esta semana?') +
       _reporteNumeroBloque('feedbacks', '¿Cuántos feedbacks recibiste esta semana?', 'Cuenta cada vez que un cliente o Dirección te pidió cambios.') +
-      _reporteTextoBloque('mejora_edicion', '¿Qué mejorarías de tu edición?') +
-      _reporteTextoBloque('aprender', '¿Qué te gustaría aprender o editar en esta agencia?') +
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_edicion', '¿Qué mejorarías de tu edición?') : '') +
+      (conPreguntasLargas ? _reporteTextoBloque('aprender', '¿Qué te gustaría aprender o editar en esta agencia?') : '') +
       _reporteSliderBloque('grabacion', 'Del 1 al 10, ¿qué calificación le pondrías a la grabación que recibiste?') +
-      _reporteTextoBloque('mejora_grabacion', '¿Qué mejorarías de la grabación?') +
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_grabacion', '¿Qué mejorarías de la grabación?') : '') +
       _reporteSliderBloque('direccion', 'Del 1 al 10, ¿cómo calificarías a Dirección esta semana?') +
-      _reporteTextoBloque('mejora_direccion', '¿Qué mejorarías de Dirección?') +
-      _reporteTextoBloque('crecimiento', '¿Qué te gustaría ver para tu crecimiento en esta agencia?');
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_direccion', '¿Qué mejorarías de Dirección?') : '') +
+      (conPreguntasLargas ? _reporteTextoBloque('crecimiento', '¿Qué te gustaría ver para tu crecimiento en esta agencia?') : '');
   } else if(puesto === 'CM'){
     bloques =
       _reporteSliderBloque('mental', '¿Cómo te sentiste esta semana?') +
-      _reporteTextoBloque('mejora_general', '¿Qué mejorarías?') +
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_general', '¿Qué mejorarías?') : '') +
       _reporteSliderBloque('rendimiento', 'Del 1 al 10, ¿cómo calificarías tu rendimiento esta semana?') +
       _reporteSliderBloque('direccion', 'Del 1 al 10, ¿cómo calificarías a Dirección esta semana?') +
-      _reporteTextoBloque('mejora_sistema', '¿Qué mejorarías del sistema (CRM)?') +
-      _reporteTextoBloque('mejora_servicio', '¿Qué mejorarías del servicio?');
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_sistema', '¿Qué mejorarías del sistema (CRM)?') : '') +
+      (conPreguntasLargas ? _reporteTextoBloque('mejora_servicio', '¿Qué mejorarías del servicio?') : '');
   } else {
     // Filmmaker: se queda con el formulario simple original.
     bloques =
