@@ -1256,6 +1256,7 @@
     <div class="titulo-panel">Team</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn ghost" id="btn-invitaciones-semanales" title="Envía la invitación de Calendar con las tareas de la semana a cada miembro con email + tareas configuradas">📅 Enviar invitaciones semanales</button>
+      <button class="btn ghost" id="btn-generar-contrato-team">📄 Generar contrato</button>
       <button class="btn" id="btn-nuevo-team">+ Nuevo miembro</button>
     </div>
   </div>
@@ -2729,7 +2730,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-17-contratos-integrado';
+const APP_BUILD = '2026-08-17-contratos-boton-team-emojis';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3188,10 +3189,10 @@ function armarMensajeCobranza(cliente){
   const contacto = cliente.ContactoCobranza || cliente.Nombre || '';
   const monto = cliente.MontoCobro ? ('$' + Number(cliente.MontoCobro).toLocaleString('es-MX')) : '';
   const cfg = CFG_CUENTA_COBRO;
-  return `Hola ¿qué tal? ${contacto}. Soy Fer, encargada de administración de Level Producer, la agencia con la que tienes tu contenido.\n\n` +
-    `Este mensaje es un amable recordatorio para realizar tu pago${monto ? ' de ' + monto : ''} en los próximos 5 días a la siguiente cuenta:\n\n` +
-    `${cfg.cuentaTitular || ''}\nBanco: ${cfg.cuentaBanco || ''}\nCLABE: ${cfg.cuentaClabe || ''}\nCuenta: ${cfg.cuentaNumero || ''}\n\n` +
-    `Favor de avisarme en cuanto hagas tu pago para mandarte tu recibo. ¡Gracias!`;
+  return `¡Hola ${contacto}! 👋 Soy Fer, encargada de administración de Level Producer 🎬, la agencia con la que tienes tu contenido.\n\n` +
+    `Este es un amable recordatorio 📅 para realizar tu pago${monto ? ' de ' + monto : ''} 💵 en los próximos 5 días a la siguiente cuenta:\n\n` +
+    `💳 ${cfg.cuentaTitular || ''}\nBanco: ${cfg.cuentaBanco || ''}\nCLABE: ${cfg.cuentaClabe || ''}\nCuenta: ${cfg.cuentaNumero || ''}\n\n` +
+    `Favor de avisarme en cuanto hagas tu pago para mandarte tu recibo 🧾. ¡Gracias! 🙌`;
 }
 
 async function cargarCobranza(){
@@ -3294,9 +3295,9 @@ function _rangoQuincenaActual(){
 }
 
 function armarMensajeNomina(persona, linkVideo){
-  let msg = `Hola ${persona.Nombre}, ya quedó tu pago correspondiente a la quincena del ${_rangoQuincenaActual()}. ¡Muchas gracias por confiar en nosotros! 🙌`;
+  let msg = `¡Hola ${persona.Nombre}! 👋 Ya quedó tu pago 💰 correspondiente a la quincena del ${_rangoQuincenaActual()}. ¡Muchas gracias por confiar en nosotros! 🙌✨`;
   if(linkVideo){
-    msg += `\n\nAdemás, ¡felicidades! Fuiste el video de la semana 🎬🏆\n${linkVideo}`;
+    msg += `\n\n🎉 Además, ¡felicidades! Fuiste el video de la semana 🎬🏆\n${linkVideo}`;
   }
   return msg;
 }
@@ -10024,6 +10025,8 @@ document.querySelectorAll('#modal-contrato-bg .inf-toggle-btn').forEach(btn => {
     CTR_PAGO_SELECCIONADO = btn.dataset.pago;
   });
 });
+
+document.getElementById('btn-generar-contrato-team').addEventListener('click', () => abrirModalContrato('', 'editor'));
 
 document.getElementById('btn-cancelar-contrato').addEventListener('click', () => modalContratoBg.classList.remove('open'));
 modalContratoBg.addEventListener('click', (e) => { if(e.target === modalContratoBg) modalContratoBg.classList.remove('open'); });
