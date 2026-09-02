@@ -2730,7 +2730,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-17-mensaje-cobranza-ajustado';
+const APP_BUILD = '2026-08-17-mensaje-nomina-ajustado';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3295,7 +3295,7 @@ function _rangoQuincenaActual(){
 }
 
 function armarMensajeNomina(persona, linkVideo){
-  let msg = `¡Hola ${persona.Nombre}! 👋 Ya quedó tu pago 💰 correspondiente a la quincena del ${_rangoQuincenaActual()}. ¡Muchas gracias por confiar en nosotros! 🙌✨`;
+  let msg = `¡Hola ${persona.Nombre}! Ya quedó tu pago correspondiente a la quincena del ${_rangoQuincenaActual()}. ¡Muchas gracias por confiar en nosotros!`;
   if(linkVideo){
     msg += `\n\n🎉 Además, ¡felicidades! Fuiste el video de la semana 🎬🏆\n${linkVideo}`;
   }
