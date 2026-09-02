@@ -441,6 +441,30 @@
   .linea-vista-btn:hover{border-color:var(--rojo);color:var(--rojo);}
   .linea-vista-btn.active{background:var(--rojo);border-color:var(--rojo);color:#fff;}
 
+  /* Switch Vista simple / Vista detallada */
+  .linea-modo-switch{display:flex;gap:8px;margin-right:16px;}
+  .linea-modo-btn{background:#2a2723;border:1.5px solid #555;color:#cfc9bc;padding:8px 16px;border-radius:16px;cursor:pointer;font-size:0.78rem;font-weight:700;letter-spacing:0.02em;}
+  .linea-modo-btn:hover{border-color:var(--rojo);color:#fff;}
+  .linea-modo-btn.active{background:var(--rojo);border-color:var(--rojo);color:#fff;}
+
+  /* Vista simple: tarjetas por cliente, "cuántas balas quedan" */
+  .linea-simple-wrap{padding:20px 28px 60px;}
+  .linea-simple-hint{color:#b7b2a9;font-size:0.85rem;margin-bottom:20px;}
+  .linea-simple-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+  .linea-simple-card{background:var(--hueso);border-radius:8px;padding:20px;box-shadow:0 4px 14px rgba(0,0,0,0.12);border:2px solid transparent;}
+  .linea-simple-card.alerta{border-color:var(--rojo);}
+  .ls-header{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.05rem;color:#1c1c1c;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .ls-numero-row{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+  .ls-numero{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:2.4rem;color:#1c1c1c;line-height:1;}
+  .linea-simple-card.alerta .ls-numero{color:var(--rojo);}
+  .ls-label{font-size:0.76rem;color:#66625a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:14px;}
+  .ls-barra{height:8px;border-radius:4px;background:#e4e0d6;overflow:hidden;display:flex;margin-bottom:10px;}
+  .ls-barra-seg{height:100%;}
+  .ls-alerta{background:#fdecea;color:#7a1a09;font-size:0.76rem;font-weight:700;padding:6px 10px;border-radius:4px;text-align:center;}
+  .ls-sinslots{color:#999;font-size:0.78rem;font-style:italic;}
+  body.dark .linea-simple-card{background:#232326;}
+  body.dark .ls-header, body.dark .ls-numero{color:#e4e2dd;}
+
   /* Header con meses en columnas */
   .linea-meses-header{display:grid;grid-template-columns:260px 1fr;background:#1c1a17;padding:0;color:#fff;}
   .linea-meses-header-espaciador{}
@@ -1387,13 +1411,19 @@
   <div class="panel-header">
     <div class="titulo-panel">Línea de Producción</div>
     <div class="linea-controles">
-      <button class="linea-nav-btn" data-linea-nav="prev">←</button>
-      <div class="linea-mes-actual" id="linea-mes-actual">—</div>
-      <button class="linea-nav-btn" data-linea-nav="next">→</button>
-      <button class="linea-nav-btn" data-linea-nav="hoy" style="margin-left:8px;">Hoy</button>
-      <label class="linea-toggle-solo-mios" id="linea-toggle-wrap" style="display:none;margin-left:16px;">
-        <input type="checkbox" id="linea-toggle-solo-mios"> Solo míos
-      </label>
+      <div class="linea-modo-switch">
+        <button class="linea-modo-btn active" data-linea-modo="simple">📋 Vista simple</button>
+        <button class="linea-modo-btn" data-linea-modo="detallada">🗂️ Vista detallada</button>
+      </div>
+      <div id="linea-controles-detallada" style="display:none;align-items:center;gap:0;">
+        <button class="linea-nav-btn" data-linea-nav="prev">←</button>
+        <div class="linea-mes-actual" id="linea-mes-actual">—</div>
+        <button class="linea-nav-btn" data-linea-nav="next">→</button>
+        <button class="linea-nav-btn" data-linea-nav="hoy" style="margin-left:8px;">Hoy</button>
+        <label class="linea-toggle-solo-mios" id="linea-toggle-wrap" style="display:none;margin-left:16px;">
+          <input type="checkbox" id="linea-toggle-solo-mios"> Solo míos
+        </label>
+      </div>
     </div>
   </div>
   <div id="linea-cuerpo" class="linea-cuerpo"></div>
@@ -2740,7 +2770,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-02-fix-slots-duplicados';
+const APP_BUILD = '2026-09-02-linea-vista-simple';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -9522,7 +9552,10 @@ const LINEA_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
 // LINEA_STATE mantiene el mes "ancla" que ves en el centro cuando estás en vista de 3 meses.
 // - vista 'tres': muestra mes anterior, ancla y mes siguiente
 // - vista 'todos': muestra todos los meses que hay slots + el mes actual
-let LINEA_STATE = { year: null, month: null, vista: 'tres' };
+let LINEA_STATE = { year: null, month: null, vista: 'tres', modo: 'simple' };
+// A partir de cuántos videos por publicar (de los contratados este mes) se avisa que ya hay
+// que agendar la siguiente grabación con el cliente.
+const LINEA_UMBRAL_AGENDAR = 3;
 let LINEA_SLOTS = [];
 let LINEA_TODOS_CLIENTES = [];
 let LINEA_TODO_TEAM = [];
@@ -9601,8 +9634,89 @@ async function cargarLineaProduccion(){
   }
 }
 
+// Vista simple: una tarjeta por cliente con "cuántos videos le faltan publicar este mes".
+// Es la vista pensada para que Dirección/Administración decida cuándo agendar la siguiente
+// grabación, sin tener que leer la cuadrícula detallada de cada editor.
+function _renderLineaVistaSimple(cuerpo){
+  const hoy = new Date();
+  const year = hoy.getFullYear();
+  const month = hoy.getMonth() + 1;
+  const clientesActivos = (LINEA_TODOS_CLIENTES || []).filter(c => String(c.Estado || 'Activo') === 'Activo');
+
+  const tarjetas = clientesActivos.map(c => {
+    const slotsCliente = (LINEA_SLOTS || []).filter(s =>
+      String(s.ClienteID) === String(c.ID) &&
+      parseInt(s.Year, 10) === year && parseInt(s.Month, 10) === month
+    );
+    const total = slotsCliente.length;
+    const publicados = slotsCliente.filter(s => s.Estatus === 'verde').length;
+    const editados = slotsCliente.filter(s => s.Estatus === 'amarillo').length;
+    const grabados = slotsCliente.filter(s => s.Estatus === 'rojo').length;
+    const restantes = total - publicados;
+    const necesitaAgendar = total > 0 && restantes <= LINEA_UMBRAL_AGENDAR;
+    return { cliente: c, total, publicados, editados, grabados, restantes, necesitaAgendar };
+  });
+
+  tarjetas.sort((a, b) => {
+    if(a.necesitaAgendar !== b.necesitaAgendar) return a.necesitaAgendar ? -1 : 1;
+    if(a.necesitaAgendar && b.necesitaAgendar) return a.restantes - b.restantes;
+    return (a.cliente.Nombre || '').localeCompare(b.cliente.Nombre || '');
+  });
+
+  const mesLabel = LINEA_MESES[month - 1] + ' ' + year;
+
+  let html = `
+    <div class="linea-simple-wrap">
+      <div class="linea-simple-hint">
+        <strong>${mesLabel}</strong> — cuántos videos le faltan publicar a cada cliente este mes.
+        Cuando a un cliente le quedan ${LINEA_UMBRAL_AGENDAR} o menos por publicar, se marca para agendar la siguiente grabación.
+      </div>
+      <div class="linea-simple-grid">
+  `;
+
+  if(tarjetas.length === 0){
+    html += '<div class="linea-empty">No hay clientes activos.</div>';
+  }
+
+  tarjetas.forEach(t => {
+    const c = t.cliente;
+    if(t.total === 0){
+      html += `
+        <div class="linea-simple-card">
+          <div class="ls-header">${c.Emoji || ''} ${c.Nombre || ''}</div>
+          <div class="ls-sinslots">Sin videos generados este mes todavía.</div>
+        </div>
+      `;
+      return;
+    }
+    const pctVerde = Math.round(t.publicados / t.total * 100);
+    const pctAmarillo = Math.round(t.editados / t.total * 100);
+    const pctRojo = Math.round(t.grabados / t.total * 100);
+    html += `
+      <div class="linea-simple-card${t.necesitaAgendar ? ' alerta' : ''}">
+        <div class="ls-header">${c.Emoji || ''} ${c.Nombre || ''}</div>
+        <div class="ls-numero-row"><span class="ls-numero">${t.restantes}</span></div>
+        <div class="ls-label">por publicar de ${t.total} este mes</div>
+        <div class="ls-barra">
+          <div class="ls-barra-seg" style="width:${pctVerde}%;background:#4caf50;"></div>
+          <div class="ls-barra-seg" style="width:${pctAmarillo}%;background:#e8d97a;"></div>
+          <div class="ls-barra-seg" style="width:${pctRojo}%;background:#f5a89a;"></div>
+        </div>
+        ${t.necesitaAgendar ? '<div class="ls-alerta">⚠ Agendar próxima grabación</div>' : ''}
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+  cuerpo.innerHTML = html;
+}
+
 function renderLineaProduccion(){
   const cuerpo = document.getElementById('linea-cuerpo');
+  if(LINEA_STATE.modo === 'simple'){
+    _renderLineaVistaSimple(cuerpo);
+    return;
+  }
   const todosClientes = LINEA_TODOS_CLIENTES;
   const todoTeam = LINEA_TODO_TEAM;
   const editores = todoTeam.filter(m => m.Puesto === 'Edicion');
@@ -9862,6 +9976,17 @@ function _bindLineaBotones(){
   });
 }
 
+
+// Switch Vista simple / Vista detallada
+document.querySelectorAll('[data-linea-modo]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    LINEA_STATE.modo = btn.dataset.lineaModo;
+    document.querySelectorAll('[data-linea-modo]').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('linea-controles-detallada').style.display = LINEA_STATE.modo === 'detallada' ? 'flex' : 'none';
+    if(LINEA_SLOTS.length > 0) renderLineaProduccion();
+    else cargarLineaProduccion();
+  });
+});
 
 // Navegación de mes ancla — no vuelve a cargar del servidor, solo re-renderiza
 document.querySelectorAll('[data-linea-nav]').forEach(btn => {
