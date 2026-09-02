@@ -1693,6 +1693,12 @@
           <button class="btn ghost" id="btn-migrar-supabase">Migrar a Supabase ahora</button>
           <span id="admin-migracion-status"></span>
         </div>
+
+        <div class="admin-migracion-mini">
+          <span>Conectar videos ya existentes (enlaza las tarjetas viejas de Edición y CM con su slot real de Línea de Producción; segura de correr varias veces) — </span>
+          <button class="btn ghost" id="btn-conectar-videos">Conectar ahora</button>
+          <span id="conectar-videos-status"></span>
+        </div>
       </div>
     </div>
 
@@ -2734,7 +2740,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-02-contrato-monto-pago';
+const APP_BUILD = '2026-09-02-conectar-edicion-cm-slots';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3408,7 +3414,8 @@ function _sbFilaModo(r){
     ID: r.id, Fecha: r.fecha || '', Cliente: r.cliente || '', Emoji: r.emoji || '',
     Folio: r.folio || '', Etapa: r.etapa || '', Responsable: r.responsable || '',
     Listo: r.listo || 'NO', FechaFin: r.fecha_fin || '', Progreso: r.progreso || 0,
-    LinkVideo: r.link_video || '', Copy: r.copy || '', PalabraClave: r.palabra_clave || ''
+    LinkVideo: r.link_video || '', Copy: r.copy || '', PalabraClave: r.palabra_clave || '',
+    SlotId: r.slot_id || ''
   };
 }
 async function sbCargarModo(modoKey){
@@ -3430,6 +3437,7 @@ function _sbFilaModoDesdePayload(payload){
   if('etapa' in payload) row.etapa = payload.etapa;
   if('fechaFin' in payload) row.fecha_fin = payload.fechaFin;
   if('progreso' in payload) row.progreso = payload.progreso;
+  if('slotId' in payload) row.slot_id = payload.slotId;
   return row;
 }
 async function sbActualizarModoCompleto(modoKey, id, payload){
@@ -3442,6 +3450,116 @@ async function sbCrearModo(modoKey, id, payload){
   const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).insert(row);
   if(error){ console.error('Supabase crear ' + modoKey + ':', error); throw error; }
 }
+
+// ============================================================
+// ============ Identidad del video: folio -> slot real ========
+// ============================================================
+// El folio se sigue escribiendo como texto ("9.5", "9.5.2"), pero por debajo se resuelve
+// contra el slot REAL de ese cliente (mismo número/mes/año) en vez de quedarse solo en texto.
+// Así, la tarjeta de Edición y la de CM que corresponden al mismo video quedan enlazadas por
+// ID (slot_id) y no por comparar nombre de cliente + folio como texto (que es lo que fallaba).
+function _parsearFolio(folioTexto, fechaISO){
+  const partes = String(folioTexto || '').trim().split('.').map(s => parseInt(s, 10));
+  if(partes.length < 2 || isNaN(partes[0]) || isNaN(partes[1])) return null;
+  const fecha = fechaISO ? new Date(fechaISO + 'T00:00:00') : new Date();
+  const year = isNaN(fecha.getTime()) ? new Date().getFullYear() : fecha.getFullYear();
+  return { year, month: partes[0], numero: partes[1], sub: partes[2] || 0 };
+}
+// Busca el slot real (cliente_id, year, month, numero, sub_numero). Si no existe (folio fuera
+// del rango contratado, o cliente sin slots generados ese mes), lo crea para no perder el enlace.
+async function _resolverOCrearSlot(clienteId, folioTexto, fechaISO){
+  const parsed = _parsearFolio(folioTexto, fechaISO);
+  if(!clienteId || !parsed) return null;
+  try{
+    const { data: existente, error } = await sb.from('slots').select('id')
+      .eq('cliente_id', clienteId).eq('year', parsed.year).eq('month', parsed.month)
+      .eq('numero', parsed.numero).eq('sub_numero', parsed.sub).maybeSingle();
+    if(error){ console.error('Supabase resolver slot:', error); return null; }
+    if(existente) return existente.id;
+    const nuevoId = _slotIdGenerar(clienteId, parsed.year, parsed.month, parsed.numero, parsed.sub);
+    const { error: errIns } = await sb.from('slots').insert({
+      id: nuevoId, cliente_id: clienteId, year: parsed.year, month: parsed.month,
+      numero: parsed.numero, sub_numero: parsed.sub, editor_id: '', estatus: 'gris'
+    });
+    if(errIns){ console.error('Supabase crear slot desde folio:', errIns); return null; }
+    return nuevoId;
+  } catch(err){ console.error('No se pudo resolver el slot del folio', folioTexto, err); return null; }
+}
+async function _actualizarEstatusSlot(slotId, estatus){
+  if(!slotId) return;
+  try{
+    const { error } = await sb.from('slots').update({ estatus }).eq('id', slotId);
+    if(error) console.error('Supabase actualizar estatus de slot:', error);
+  } catch(err){ console.error('No se pudo actualizar el estatus del slot:', err); }
+}
+
+// Migración de una sola vez: enlaza (slot_id) las tarjetas de Edición y CM que ya existían
+// antes de esta conexión, y recalcula el estatus real de cada slot a partir de ellas.
+// Segura de correr varias veces: si una tarjeta ya tiene slot_id, se deja igual.
+async function migrarIdentidadVideos(){
+  const [clientes, produccion, cmRows, slotsExistentes] = await Promise.all([
+    sbCargarClientes(), sbCargarModo('edicion'), sbCargarModo('cm'), sbCargarSlots()
+  ]);
+  const clientePorNombre = {};
+  clientes.forEach(c => { clientePorNombre[String(c.Nombre || '').trim().toLowerCase()] = c.ID; });
+
+  let enlazadosProduccion = 0, enlazadosCm = 0, sinMatch = 0;
+
+  async function enlazarFila(modoKey, fila){
+    if(fila.SlotId) return fila.SlotId;
+    const clienteId = clientePorNombre[String(fila.Cliente || '').trim().toLowerCase()];
+    if(!clienteId){ sinMatch++; return null; }
+    const slotId = await _resolverOCrearSlot(clienteId, fila.Folio, fila.Fecha);
+    if(!slotId){ sinMatch++; return null; }
+    await sb.from(MODOS_TABLA_SB[modoKey]).update({ slot_id: slotId }).eq('id', fila.ID);
+    if(modoKey === 'edicion') enlazadosProduccion++; else enlazadosCm++;
+    return slotId;
+  }
+
+  const produccionConSlot = [];
+  for(const fila of produccion){
+    const slotId = await enlazarFila('edicion', fila);
+    produccionConSlot.push(Object.assign({}, fila, { SlotId: fila.SlotId || slotId }));
+  }
+  const cmConSlot = [];
+  for(const fila of cmRows){
+    const slotId = await enlazarFila('cm', fila);
+    cmConSlot.push(Object.assign({}, fila, { SlotId: fila.SlotId || slotId }));
+  }
+
+  // Recalcular el estatus real de cada slot a partir de lo que ya sabemos que le pasó
+  // (existe tarjeta de Edición = grabado; Edición lista = editado; CM listo = publicado).
+  let slotsActualizados = 0;
+  for(const slot of slotsExistentes){
+    const prodDelSlot = produccionConSlot.filter(p => String(p.SlotId) === String(slot.ID));
+    const cmDelSlot = cmConSlot.filter(c => String(c.SlotId) === String(slot.ID));
+    let estatusReal = null;
+    if(cmDelSlot.some(c => String(c.Listo).toUpperCase() === 'SI')) estatusReal = 'verde';
+    else if(prodDelSlot.some(p => String(p.Listo).toUpperCase() === 'SI')) estatusReal = 'amarillo';
+    else if(prodDelSlot.length > 0) estatusReal = 'rojo';
+    if(estatusReal && estatusReal !== slot.Estatus){
+      await _actualizarEstatusSlot(slot.ID, estatusReal);
+      slotsActualizados++;
+    }
+  }
+
+  return { enlazadosProduccion, enlazadosCm, slotsActualizados, sinMatch };
+}
+document.getElementById('btn-conectar-videos').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-conectar-videos');
+  const status = document.getElementById('conectar-videos-status');
+  btn.disabled = true;
+  status.textContent = 'Conectando...';
+  try{
+    const r = await migrarIdentidadVideos();
+    status.textContent = `✓ Listo. ${r.enlazadosProduccion} tarjeta(s) de Edición y ${r.enlazadosCm} de CM enlazadas, ${r.slotsActualizados} slot(s) actualizados.` +
+      (r.sinMatch > 0 ? ` ${r.sinMatch} tarjeta(s) no se pudieron enlazar (cliente o folio no reconocido — probablemente texto viejo).` : '');
+  } catch(err){
+    console.error(err);
+    status.textContent = '⚠️ No se pudo completar. Revisa tu conexión e intenta de nuevo.';
+  }
+  btn.disabled = false;
+});
 
 // ============================================================
 // ============ SUPABASE — Team =================================
@@ -5689,12 +5807,15 @@ function renderPanelListosParaPublicar(){
   );
   const nombresClientesConCM = new Set(clientesConCM.map(c => String(c.Nombre || '').trim().toLowerCase()));
 
-  // Índice de tarjetas CM por cliente+folio (case-insensitive)
-  const cmIdx = new Set();
+  // Índice de tarjetas CM por slot (identidad real del video) y, como respaldo para tarjetas
+  // viejas que todavía no tienen slot_id, por cliente+folio (case-insensitive).
+  const cmIdxSlot = new Set();
+  const cmIdxTexto = new Set();
   cmCards.forEach(c => {
+    if(c.SlotId) cmIdxSlot.add(String(c.SlotId));
     const cli = String(c.Cliente || '').trim().toLowerCase();
     const fol = String(c.Folio || '').trim();
-    if(cli && fol) cmIdx.add(cli + '|' + fol);
+    if(cli && fol) cmIdxTexto.add(cli + '|' + fol);
   });
 
   // Filtrar Edición: marcadas Listo, sin contraparte en CM, Y de un cliente que tiene CM activo
@@ -5705,7 +5826,11 @@ function renderPanelListosParaPublicar(){
     const fol = String(e.Folio || '').trim();
     if(!cli || !fol) return false;
     if(!nombresClientesConCM.has(cli)) return false; // cliente sin CM → no aparece
-    return !cmIdx.has(cli + '|' + fol);
+    // Si esta tarjeta ya tiene slot_id, esa es la comparación confiable (identidad real del
+    // video). Si no lo tiene (tarjeta vieja, de antes de esta conexión), usamos el respaldo
+    // de texto para no perder el comportamiento previo hasta que se migre.
+    if(e.SlotId) return !cmIdxSlot.has(String(e.SlotId));
+    return !cmIdxTexto.has(cli + '|' + fol);
   });
 
   // Poblar el dropdown de clientes (solo los que tienen videos listos)
@@ -6076,6 +6201,16 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
 
   const st = estado[modoKey];
 
+  // Resolvemos el slot real (identidad del video) contra el cliente ya seleccionado en el
+  // dropdown (ID real, no el nombre) + el folio + la fecha. Esto es lo que enlaza Edición y CM
+  // al MISMO video en vez de solo comparar nombre de cliente + folio como texto.
+  const clienteIdSeleccionado = document.getElementById('m-cliente-select').value;
+  const slotIdResuelto = await _resolverOCrearSlot(clienteIdSeleccionado, datosForm.Folio, datosForm.Fecha);
+  datosForm.SlotId = slotIdResuelto || '';
+  const estatusSlotDeseado = modoKey === 'edicion'
+    ? (datosForm.Listo === 'SI' ? 'amarillo' : 'rojo')
+    : (datosForm.Listo === 'SI' ? 'verde' : 'amarillo');
+
   if(idExistente){
     const item = st.TODAS.find(r => String(r.ID) === String(idExistente));
     const respaldo = item ? Object.assign({}, item) : null;
@@ -6084,7 +6219,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     render(modoKey);
     const payload = {
       fecha: datosForm.Fecha, cliente: datosForm.Cliente, emoji: datosForm.Emoji,
-      folio: datosForm.Folio, listo: datosForm.Listo
+      folio: datosForm.Folio, listo: datosForm.Listo, slotId: datosForm.SlotId
     };
     if(modo.tieneCopy){ payload.copy = datosForm.Copy; payload.palabraClave = datosForm.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = datosForm.Responsable;
@@ -6092,6 +6227,8 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modoKey === 'edicion'){ payload.fechaFin = datosForm.FechaFin; payload.progreso = datosForm.Progreso; }
     try{
       await sbActualizarModoCompleto(modoKey, idExistente, payload);
+      if(slotIdResuelto) await _actualizarEstatusSlot(slotIdResuelto, estatusSlotDeseado);
+      if((modoKey === 'edicion' || modoKey === 'cm') && typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
       modalBg.classList.remove('open');
       if(modoKey === 'edicion' && respaldo && (respaldo.Progreso || 0) !== datosForm.Progreso){
         registrarActividad({
@@ -6113,7 +6250,7 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     render(modoKey);
     const payload = {
       fecha: nueva.Fecha, cliente: nueva.Cliente, emoji: nueva.Emoji,
-      folio: nueva.Folio, listo: nueva.Listo
+      folio: nueva.Folio, listo: nueva.Listo, slotId: nueva.SlotId
     };
     if(modo.tieneCopy){ payload.copy = nueva.Copy; payload.palabraClave = nueva.PalabraClave; }
     if(modo.tieneResponsable) payload.responsable = nueva.Responsable;
@@ -6121,6 +6258,8 @@ document.getElementById('btn-guardar').addEventListener('click', async () => {
     if(modoKey === 'edicion'){ payload.fechaFin = nueva.FechaFin; payload.progreso = nueva.Progreso; }
     try{
       await sbCrearModo(modoKey, nueva.ID, payload);
+      if(slotIdResuelto) await _actualizarEstatusSlot(slotIdResuelto, estatusSlotDeseado);
+      if((modoKey === 'edicion' || modoKey === 'cm') && typeof renderPanelListosParaPublicar === 'function') renderPanelListosParaPublicar();
       modalBg.classList.remove('open');
       if(modoKey === 'cm'){
         registrarActividad({
