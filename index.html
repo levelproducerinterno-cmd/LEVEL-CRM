@@ -2715,6 +2715,10 @@ Nombre cliente:
       </div>
     </div>
     <div class="field">
+      <label>Monto del pago (opcional)</label>
+      <input type="text" id="ctr-monto" placeholder="Ej. $15,000 MXN">
+    </div>
+    <div class="field">
       <label>Responsabilidades del puesto (editable, una por línea)</label>
       <textarea id="ctr-responsabilidades" style="min-height:170px;"></textarea>
     </div>
@@ -2730,7 +2734,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-02-cobranza-oct-kpis-mensuales';
+const APP_BUILD = '2026-09-02-contrato-monto-pago';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -10036,6 +10040,7 @@ function abrirModalContrato(nombrePrefill, puestoPrefill){
   document.getElementById('ctr-nombre').value = nombrePrefill || '';
   document.getElementById('ctr-puesto').value = puestoPrefill || 'editor';
   document.getElementById('ctr-fecha').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ctr-monto').value = '';
   CTR_PAGO_SELECCIONADO = 'quincenal';
   document.querySelectorAll('#modal-contrato-bg .inf-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.pago === 'quincenal'));
   _ctrAplicarResponsabilidadesDefault();
@@ -10100,8 +10105,10 @@ document.getElementById('btn-generar-contrato-pdf').addEventListener('click', as
     ul.appendChild(li);
   });
 
-  document.getElementById('ctr-r-pago-parrafo').textContent =
-    `El pago correspondiente a tu colaboración se realizará de forma ${CTR_PAGO_TEXTO[CTR_PAGO_SELECCIONADO]}.`;
+  const montoPago = document.getElementById('ctr-monto').value.trim();
+  document.getElementById('ctr-r-pago-parrafo').textContent = montoPago
+    ? `El pago correspondiente a tu colaboración será de ${montoPago} y se realizará de forma ${CTR_PAGO_TEXTO[CTR_PAGO_SELECCIONADO]}.`
+    : `El pago correspondiente a tu colaboración se realizará de forma ${CTR_PAGO_TEXTO[CTR_PAGO_SELECCIONADO]}.`;
 
   await new Promise(r => setTimeout(r, 60));
 
