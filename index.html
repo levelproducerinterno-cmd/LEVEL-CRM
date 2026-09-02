@@ -2740,7 +2740,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-02-conectar-edicion-cm-slots';
+const APP_BUILD = '2026-09-02-fix-slots-duplicados';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3471,17 +3471,31 @@ async function _resolverOCrearSlot(clienteId, folioTexto, fechaISO){
   const parsed = _parsearFolio(folioTexto, fechaISO);
   if(!clienteId || !parsed) return null;
   try{
-    const { data: existente, error } = await sb.from('slots').select('id')
+    // .limit(1) antes de .maybeSingle(): si por algún motivo llegaran a existir slots
+    // duplicados para esta misma combinación, esto evita que la búsqueda truene y en vez
+    // de eso toma uno solo (determinístico) en lugar de fallar por completo.
+    const { data: existentes, error } = await sb.from('slots').select('id')
       .eq('cliente_id', clienteId).eq('year', parsed.year).eq('month', parsed.month)
-      .eq('numero', parsed.numero).eq('sub_numero', parsed.sub).maybeSingle();
+      .eq('numero', parsed.numero).eq('sub_numero', parsed.sub)
+      .order('id', { ascending: true }).limit(1);
     if(error){ console.error('Supabase resolver slot:', error); return null; }
-    if(existente) return existente.id;
+    if(existentes && existentes.length > 0) return existentes[0].id;
     const nuevoId = _slotIdGenerar(clienteId, parsed.year, parsed.month, parsed.numero, parsed.sub);
     const { error: errIns } = await sb.from('slots').insert({
       id: nuevoId, cliente_id: clienteId, year: parsed.year, month: parsed.month,
       numero: parsed.numero, sub_numero: parsed.sub, editor_id: '', estatus: 'gris'
     });
-    if(errIns){ console.error('Supabase crear slot desde folio:', errIns); return null; }
+    if(errIns){
+      // Choque con el índice único (otro proceso creó el mismo slot justo ahora): usamos el
+      // que ya quedó guardado en vez de fallar.
+      if(String(errIns.code) === '23505'){
+        const { data: ganador } = await sb.from('slots').select('id')
+          .eq('cliente_id', clienteId).eq('year', parsed.year).eq('month', parsed.month)
+          .eq('numero', parsed.numero).eq('sub_numero', parsed.sub).limit(1).maybeSingle();
+        return ganador ? ganador.id : null;
+      }
+      console.error('Supabase crear slot desde folio:', errIns); return null;
+    }
     return nuevoId;
   } catch(err){ console.error('No se pudo resolver el slot del folio', folioTexto, err); return null; }
 }
@@ -3680,7 +3694,11 @@ async function sbSlotsGenerarMes(year, month, clientes){
     }
   }
   if(nuevas.length){
-    const { error: errIns } = await sb.from('slots').insert(nuevas);
+    // upsert + ignoreDuplicates en vez de insert: si dos personas abren Línea de Producción
+    // casi al mismo tiempo (o se corre dos veces seguidas), no se generan slots duplicados
+    // para el mismo cliente/mes/número — el segundo intento simplemente no hace nada.
+    const { error: errIns } = await sb.from('slots')
+      .upsert(nuevas, { onConflict: 'cliente_id,year,month,numero,sub_numero', ignoreDuplicates: true });
     if(errIns) console.error('Supabase slots insertar:', errIns);
   }
 }
