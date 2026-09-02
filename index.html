@@ -2730,7 +2730,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-08-17-contratos-boton-team-emojis';
+const APP_BUILD = '2026-08-17-mensaje-cobranza-ajustado';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3189,10 +3189,10 @@ function armarMensajeCobranza(cliente){
   const contacto = cliente.ContactoCobranza || cliente.Nombre || '';
   const monto = cliente.MontoCobro ? ('$' + Number(cliente.MontoCobro).toLocaleString('es-MX')) : '';
   const cfg = CFG_CUENTA_COBRO;
-  return `¡Hola ${contacto}! 👋 Soy Fer, encargada de administración de Level Producer 🎬, la agencia con la que tienes tu contenido.\n\n` +
-    `Este es un amable recordatorio 📅 para realizar tu pago${monto ? ' de ' + monto : ''} 💵 en los próximos 5 días a la siguiente cuenta:\n\n` +
-    `💳 ${cfg.cuentaTitular || ''}\nBanco: ${cfg.cuentaBanco || ''}\nCLABE: ${cfg.cuentaClabe || ''}\nCuenta: ${cfg.cuentaNumero || ''}\n\n` +
-    `Favor de avisarme en cuanto hagas tu pago para mandarte tu recibo 🧾. ¡Gracias! 🙌`;
+  return `¡Hola ${contacto}! 👋🏻 Soy Fer, encargada de administración de Level Producer 🎥, la agencia con la que tienes tu contenido.\n\n` +
+    `Este es un amable recordatorio para realizar tu pago${monto ? ' de ' + monto : ''} en los próximos 5 días a la siguiente cuenta:\n\n` +
+    `${cfg.cuentaTitular || ''}\nBanco: ${cfg.cuentaBanco || ''}\nCLABE: ${cfg.cuentaClabe || ''}\nCuenta: ${cfg.cuentaNumero || ''}\n\n` +
+    `Favor de avisarme en cuanto hagas tu pago para mandarte tu recibo. ¡Gracias! 🙏🏻`;
 }
 
 async function cargarCobranza(){
