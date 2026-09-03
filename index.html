@@ -463,8 +463,21 @@
   .ls-sub{font-size:0.72rem;color:#8a8578;margin-bottom:10px;}
   .ls-alerta{background:#fdecea;color:#7a1a09;font-size:0.76rem;font-weight:700;padding:6px 10px;border-radius:4px;text-align:center;}
   .ls-sinslots{color:#999;font-size:0.78rem;font-style:italic;}
+  .ls-btn-agendar{font-size:0.72rem;padding:8px 10px;}
   body.dark .linea-simple-card{background:#232326;}
   body.dark .ls-header, body.dark .ls-numero{color:#e4e2dd;}
+
+  /* Próximas grabaciones agendadas (Calendario) */
+  .linea-proximas-grabaciones{margin-top:28px;}
+  .linea-proximas-titulo{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.1rem;color:#e4e2dd;margin-bottom:12px;}
+  .linea-proximas-lista{display:flex;flex-direction:column;gap:8px;}
+  .linea-proxima-item{display:flex;align-items:center;gap:14px;background:var(--hueso);border-radius:8px;padding:10px 16px;font-size:0.82rem;}
+  .lp-fecha{font-weight:700;color:#1c1c1c;min-width:170px;}
+  .lp-cliente{color:#1c1c1c;flex:1;}
+  .lp-responsable{color:#8a8578;font-size:0.76rem;}
+  .lp-cancelar{font-size:0.72rem;padding:6px 12px;}
+  body.dark .linea-proxima-item{background:#232326;}
+  body.dark .lp-fecha, body.dark .lp-cliente{color:#e4e2dd;}
 
   /* Header con meses en columnas */
   .linea-meses-header{display:grid;grid-template-columns:260px 1fr;background:#1c1a17;padding:0;color:#fff;}
@@ -1416,6 +1429,7 @@
         <button class="linea-modo-btn active" data-linea-modo="simple">📋 Vista simple</button>
         <button class="linea-modo-btn" data-linea-modo="detallada">🗂️ Vista detallada</button>
       </div>
+      <button class="btn ghost" id="btn-agendar-grabacion" style="margin-right:16px;">📅 Agendar grabación</button>
       <div id="linea-controles-detallada" style="display:none;align-items:center;gap:0;">
         <button class="linea-nav-btn" data-linea-nav="prev">←</button>
         <div class="linea-mes-actual" id="linea-mes-actual">—</div>
@@ -1859,6 +1873,10 @@
         </select>
       </div>
       <div class="field" style="grid-column:1/-1;">
+        <label>Correo del cliente (para invitarlo a Calendar al agendar grabaciones)</label>
+        <input type="email" id="nc-email" placeholder="cliente@ejemplo.com">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
         <label>Link a su carpeta de Frame.io (para editores)</label>
         <input type="text" id="nc-frame" placeholder="https://...">
       </div>
@@ -1909,6 +1927,43 @@
     <div class="modal-actions">
       <button class="btn ghost" id="btn-cancelar-cliente">Cancelar</button>
       <button class="btn" id="btn-guardar-cliente">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: agendar grabación (Calendario) ============ -->
+<div class="modal-bg" id="modal-grabacion-bg">
+  <div class="modal" style="max-width:560px;">
+    <h2>📅 Agendar grabación</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="field" style="grid-column:1/-1;">
+        <label>Cliente</label>
+        <select id="gr-cliente"><option value="">— Selecciona un cliente —</option></select>
+        <div class="hint" id="gr-aviso-email" style="display:none;margin-top:6px;font-size:0.72rem;color:#c0392b;">
+          ⚠ Este cliente no tiene correo registrado — no se le podrá invitar automáticamente a Calendar. Puedes agregarlo en su ficha de cliente.
+        </div>
+      </div>
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="gr-fecha">
+      </div>
+      <div class="field"></div>
+      <div class="field">
+        <label>Hora de inicio</label>
+        <input type="time" id="gr-hora-inicio" value="10:00">
+      </div>
+      <div class="field">
+        <label>Hora de fin</label>
+        <input type="time" id="gr-hora-fin" value="11:00">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Notas (opcional)</label>
+        <textarea id="gr-notas" rows="2" placeholder="Ej. Grabación mensual en estudio"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cancelar-grabacion">Cancelar</button>
+      <button class="btn" id="btn-guardar-grabacion">Agendar</button>
     </div>
   </div>
 </div>
@@ -2778,7 +2833,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-recibo-desde-cliente-cobranza';
+const APP_BUILD = '2026-09-03-calendario-grabacion';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -2806,7 +2861,7 @@ function _sbFilaCliente(r){
     CMID: r.cm_id || '', Token: r.token || '', Editor2ID: r.editor2_id || '',
     FrameLinkCliente: r.frame_link_cliente || '',
     TelefonoCobranza: r.telefono_cobranza || '', ContactoCobranza: r.contacto_cobranza || '',
-    DiaCobro: r.dia_cobro || '', MontoCobro: r.monto_cobro || ''
+    DiaCobro: r.dia_cobro || '', MontoCobro: r.monto_cobro || '', Email: r.email || ''
   };
 }
 function _sbFilaGuion(r){
@@ -2841,7 +2896,8 @@ async function sbGuardarCliente(datos, esNuevo){
     videos_mes: datos.videosMes || 0, numeracion_modo: datos.numeracionModo || 'simple',
     episodios_mes: datos.episodiosMes || 0, reels_por_episodio: datos.reelsPorEpisodio || 0,
     editor_id: datos.editorId || null, cm_id: datos.cmId || null,
-    editor2_id: datos.editor2Id || null, frame_link_cliente: datos.frameLinkCliente || ''
+    editor2_id: datos.editor2Id || null, frame_link_cliente: datos.frameLinkCliente || '',
+    email: datos.email || ''
   };
   if(esNuevo) row.token = _sbGenerarToken();
   const { error } = await sb.from('clientes').upsert(row, { onConflict: 'id' });
@@ -3676,6 +3732,43 @@ async function sbCargarSlots(){
   const { data, error } = await sb.from('slots').select('*');
   if(error){ console.error('Supabase slots:', error); return []; }
   return data.map(_sbFilaSlot);
+}
+
+// ============================================================
+// ============ SUPABASE — Grabaciones (Calendario) ==========
+// ============================================================
+function _sbFilaGrabacion(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id || '', Fecha: r.fecha || '',
+    HoraInicio: r.hora_inicio || '', HoraFin: r.hora_fin || '', Notas: r.notas || '',
+    ResponsableID: r.responsable_id || '', CalendarEventId: r.calendar_event_id || '',
+    Estatus: r.estatus || 'agendada'
+  };
+}
+// Solo trae las grabaciones vigentes (no canceladas), ordenadas por fecha/hora.
+async function sbCargarGrabaciones(){
+  const { data, error } = await sb.from('grabaciones').select('*')
+    .neq('estatus', 'cancelada').order('fecha', { ascending: true }).order('hora_inicio', { ascending: true });
+  if(error){ console.error('Supabase grabaciones:', error); return []; }
+  return data.map(_sbFilaGrabacion);
+}
+async function sbCrearGrabacion(datos){
+  const row = {
+    id: datos.id, cliente_id: datos.clienteId, fecha: datos.fecha,
+    hora_inicio: datos.horaInicio, hora_fin: datos.horaFin, notas: datos.notas || '',
+    responsable_id: datos.responsableId || null, calendar_event_id: datos.calendarEventId || '',
+    estatus: 'agendada'
+  };
+  const { error } = await sb.from('grabaciones').insert(row);
+  if(error){ console.error('Supabase crear grabación:', error); throw error; }
+}
+async function sbActualizarEventoGrabacion(id, calendarEventId){
+  const { error } = await sb.from('grabaciones').update({ calendar_event_id: calendarEventId }).eq('id', id);
+  if(error){ console.error('Supabase actualizar evento de grabación:', error); }
+}
+async function sbCancelarGrabacion(id){
+  const { error } = await sb.from('grabaciones').update({ estatus: 'cancelada' }).eq('id', id);
+  if(error){ console.error('Supabase cancelar grabación:', error); throw error; }
 }
 function _slotsClavesParaCliente(cliente){
   const modo = cliente.NumeracionModo || 'simple';
@@ -6979,6 +7072,7 @@ function abrirModalClienteVacio(){
   document.getElementById('nc-emoji').value = '';
   document.getElementById('nc-frame').value = '';
   document.getElementById('nc-frame-cliente').value = '';
+  document.getElementById('nc-email').value = '';
   document.getElementById('nc-tipo').value = 'Recurrente';
   document.getElementById('nc-estado').value = 'Activo';
   document.getElementById('nc-videos-mes').value = 4;
@@ -7002,6 +7096,7 @@ function abrirModalClienteEditar(id){
   document.getElementById('nc-emoji').value = c.Emoji || '';
   document.getElementById('nc-frame').value = c.FrameLink || '';
   document.getElementById('nc-frame-cliente').value = c.FrameLinkCliente || '';
+  document.getElementById('nc-email').value = c.Email || '';
   document.getElementById('nc-tipo').value = c.Tipo || 'Recurrente';
   document.getElementById('nc-estado').value = c.Estado || 'Activo';
   document.getElementById('nc-videos-mes').value = c.VideosMes || 4;
@@ -7077,7 +7172,8 @@ document.getElementById('btn-guardar-cliente').addEventListener('click', async (
     editorId: document.getElementById('nc-editor').value,
     editor2Id: document.getElementById('nc-editor2').value,
     cmId: document.getElementById('nc-cm').value,
-    frameLinkCliente: document.getElementById('nc-frame-cliente').value.trim()
+    frameLinkCliente: document.getElementById('nc-frame-cliente').value.trim(),
+    email: document.getElementById('nc-email').value.trim()
   };
   const btnGuardarCliente = document.getElementById('btn-guardar-cliente');
   btnGuardarCliente.disabled = true;
@@ -9610,6 +9706,8 @@ let LINEA_TODOS_CLIENTES = [];
 let LINEA_TODO_TEAM = [];
 let LINEA_SOLO_MIOS = false;
 let LINEA_LAST_GENERATED_KEY = ''; // "2026-07" para no regenerar dos veces el mismo mes
+let LINEA_GRABACIONES = [];
+let GRABACION_CLIENTE_PRESELECCIONADO = '';
 
 function lineaInicializarMesActual(){
   const d = new Date();
@@ -9667,14 +9765,16 @@ async function cargarLineaProduccion(){
   cuerpo.innerHTML = '<div class="linea-empty">Cargando...</div>';
 
   try {
-    const [slots, todosClientes, todoTeam] = await Promise.all([
+    const [slots, todosClientes, todoTeam, grabaciones] = await Promise.all([
       sbCargarSlots(),
       sbCargarClientes(),
-      sbCargarTeam()
+      sbCargarTeam(),
+      sbCargarGrabaciones()
     ]);
     LINEA_SLOTS = slots;
     LINEA_TODOS_CLIENTES = todosClientes;
     LINEA_TODO_TEAM = todoTeam;
+    LINEA_GRABACIONES = grabaciones;
 
     renderLineaProduccion();
   } catch(err) {
@@ -9755,13 +9855,53 @@ function _renderLineaVistaSimple(cuerpo){
           <div class="ls-barra-seg" style="width:${pctRojo}%;background:#f5a89a;"></div>
         </div>
         <div class="ls-sub">${t.publicados} publicados · ${t.restantes} por publicar</div>
-        ${t.necesitaAgendar ? '<div class="ls-alerta">⚠ Agendar próxima grabación</div>' : ''}
+        ${t.necesitaAgendar ? `
+          <div class="ls-alerta">⚠ Agendar próxima grabación</div>
+          <button class="btn ghost ls-btn-agendar" data-agendar-cliente="${c.ID}" style="margin-top:8px;width:100%;">📅 Agendar grabación</button>
+        ` : ''}
       </div>
     `;
   });
 
-  html += `</div></div>`;
+  html += `</div>`;
+  html += _renderPanelProximasGrabaciones();
+  html += `</div>`;
   cuerpo.innerHTML = html;
+  cuerpo.querySelectorAll('[data-agendar-cliente]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalGrabacion(btn.dataset.agendarCliente));
+  });
+  cuerpo.querySelectorAll('[data-cancelar-grabacion]').forEach(btn => {
+    btn.addEventListener('click', () => cancelarGrabacionAgendada(btn.dataset.cancelarGrabacion));
+  });
+}
+
+function _renderPanelProximasGrabaciones(){
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const proximas = (LINEA_GRABACIONES || []).filter(g => g.Fecha >= hoyISO);
+  let html = `
+    <div class="linea-proximas-grabaciones">
+      <div class="linea-proximas-titulo">📅 Próximas grabaciones agendadas</div>
+  `;
+  if(proximas.length === 0){
+    html += '<div class="linea-empty">No hay grabaciones agendadas todavía.</div>';
+  } else {
+    html += '<div class="linea-proximas-lista">';
+    proximas.forEach(g => {
+      const c = (LINEA_TODOS_CLIENTES || []).find(x => String(x.ID) === String(g.ClienteID));
+      const responsable = (LINEA_TODO_TEAM || []).find(x => String(x.ID) === String(g.ResponsableID));
+      html += `
+        <div class="linea-proxima-item">
+          <div class="lp-fecha">${g.Fecha} · ${g.HoraInicio}–${g.HoraFin}</div>
+          <div class="lp-cliente">${c ? (c.Emoji || '') + ' ' + c.Nombre : '(cliente eliminado)'}</div>
+          ${responsable ? `<div class="lp-responsable">${responsable.Nombre}</div>` : ''}
+          <button class="btn ghost lp-cancelar" data-cancelar-grabacion="${g.ID}">Cancelar</button>
+        </div>
+      `;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function renderLineaProduccion(){
@@ -10075,6 +10215,112 @@ document.getElementById('linea-toggle-solo-mios').addEventListener('change', (e)
 document.querySelectorAll('.tab-btn[data-modo="linea"]').forEach(btn => {
   btn.addEventListener('click', () => cargarLineaProduccion());
 });
+
+// ============================================================
+// ============ Calendario de grabación (modal) ==========
+// ============================================================
+function _poblarSelectClientesGrabacion(){
+  const select = document.getElementById('gr-cliente');
+  const activos = (LINEA_TODOS_CLIENTES || []).filter(c => String(c.Estado || 'Activo') === 'Activo')
+    .slice().sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
+  select.innerHTML = '<option value="">— Selecciona un cliente —</option>' +
+    activos.map(c => `<option value="${c.ID}">${c.Emoji || ''} ${c.Nombre}</option>`).join('');
+}
+
+function _actualizarAvisoEmailGrabacion(){
+  const clienteId = document.getElementById('gr-cliente').value;
+  const c = (LINEA_TODOS_CLIENTES || []).find(x => String(x.ID) === String(clienteId));
+  document.getElementById('gr-aviso-email').style.display = (c && !c.Email) ? 'block' : 'none';
+}
+
+function abrirModalGrabacion(clienteIdPreseleccionado){
+  _poblarSelectClientesGrabacion();
+  document.getElementById('gr-cliente').value = clienteIdPreseleccionado || '';
+  document.getElementById('gr-fecha').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('gr-hora-inicio').value = '10:00';
+  document.getElementById('gr-hora-fin').value = '11:00';
+  document.getElementById('gr-notas').value = '';
+  _actualizarAvisoEmailGrabacion();
+  document.getElementById('modal-grabacion-bg').classList.add('open');
+}
+document.getElementById('gr-cliente').addEventListener('change', _actualizarAvisoEmailGrabacion);
+document.getElementById('btn-agendar-grabacion').addEventListener('click', () => abrirModalGrabacion(''));
+document.getElementById('btn-cancelar-grabacion').addEventListener('click', () => {
+  document.getElementById('modal-grabacion-bg').classList.remove('open');
+});
+document.getElementById('modal-grabacion-bg').addEventListener('click', (e) => {
+  if(e.target.id === 'modal-grabacion-bg') document.getElementById('modal-grabacion-bg').classList.remove('open');
+});
+
+document.getElementById('btn-guardar-grabacion').addEventListener('click', async () => {
+  const clienteId = document.getElementById('gr-cliente').value;
+  const fecha = document.getElementById('gr-fecha').value;
+  const horaInicio = document.getElementById('gr-hora-inicio').value;
+  const horaFin = document.getElementById('gr-hora-fin').value;
+  const notas = document.getElementById('gr-notas').value.trim();
+  if(!clienteId){ alert('Selecciona un cliente.'); return; }
+  if(!fecha || !horaInicio || !horaFin){ alert('Completa fecha y horario.'); return; }
+
+  const cliente = (LINEA_TODOS_CLIENTES || []).find(c => String(c.ID) === String(clienteId));
+  const id = 'grab_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  const btnGuardar = document.getElementById('btn-guardar-grabacion');
+  btnGuardar.disabled = true;
+  try{
+    await sbCrearGrabacion({
+      id, clienteId, fecha, horaInicio, horaFin, notas,
+      responsableId: USUARIO_ACTUAL ? USUARIO_ACTUAL.ID : ''
+    });
+    document.getElementById('modal-grabacion-bg').classList.remove('open');
+    LINEA_GRABACIONES = await sbCargarGrabaciones();
+    renderLineaProduccion();
+
+    // Sincronizar con Google Calendar en segundo plano — si falla, la grabación
+    // ya quedó guardada y visible en el CRM, solo no se agendó en Calendar.
+    try{
+      const resp = await fetch(SHEETS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          tipo: 'grabacion_agendar', referenciaId: id,
+          clienteNombre: cliente ? cliente.Nombre : '', clienteEmail: cliente ? cliente.Email : '',
+          fecha, horaInicio, horaFin, notas,
+          responsableNombre: USUARIO_ACTUAL ? USUARIO_ACTUAL.Nombre : ''
+        })
+      });
+      const data = await resp.json();
+      if(data && data.status === 'ok' && data.eventId){
+        await sbActualizarEventoGrabacion(id, data.eventId);
+        const local = (LINEA_GRABACIONES || []).find(x => String(x.ID) === String(id));
+        if(local) local.CalendarEventId = data.eventId;
+      }
+    } catch(err){ console.error('No se pudo sincronizar con Google Calendar:', err); }
+  } catch(err){
+    console.error(err);
+    alert('No se pudo agendar la grabación. Revisa tu conexión e intenta de nuevo.');
+  } finally {
+    btnGuardar.disabled = false;
+  }
+});
+
+async function cancelarGrabacionAgendada(id){
+  const g = (LINEA_GRABACIONES || []).find(x => String(x.ID) === String(id));
+  if(!g) return;
+  const confirmar = confirm('¿Cancelar esta grabación agendada? Esto también eliminará el evento en Google Calendar.');
+  if(!confirmar) return;
+  try{
+    await sbCancelarGrabacion(id);
+    LINEA_GRABACIONES = await sbCargarGrabaciones();
+    renderLineaProduccion();
+    try{
+      await fetch(SHEETS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ tipo: 'grabacion_eliminar', referenciaId: id, eventId: g.CalendarEventId })
+      });
+    } catch(err){ console.error('No se pudo eliminar el evento de Calendar:', err); }
+  } catch(err){
+    console.error(err);
+    alert('No se pudo cancelar. Revisa tu conexión e intenta de nuevo.');
+  }
+}
 
 // ============ SIDEBAR DE LÍNEAS DE NEGOCIO ============
 function leerPreferenciaSidebar(){
