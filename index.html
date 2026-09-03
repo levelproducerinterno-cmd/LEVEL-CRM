@@ -458,8 +458,9 @@
   .ls-numero{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:2.4rem;color:#1c1c1c;line-height:1;}
   .linea-simple-card.alerta .ls-numero{color:var(--rojo);}
   .ls-label{font-size:0.76rem;color:#66625a;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:14px;}
-  .ls-barra{height:8px;border-radius:4px;background:#e4e0d6;overflow:hidden;display:flex;margin-bottom:10px;}
+  .ls-barra{height:8px;border-radius:4px;background:#e4e0d6;overflow:hidden;display:flex;margin-bottom:8px;}
   .ls-barra-seg{height:100%;}
+  .ls-sub{font-size:0.72rem;color:#8a8578;margin-bottom:10px;}
   .ls-alerta{background:#fdecea;color:#7a1a09;font-size:0.76rem;font-weight:700;padding:6px 10px;border-radius:4px;text-align:center;}
   .ls-sinslots{color:#999;font-size:0.78rem;font-style:italic;}
   body.dark .linea-simple-card{background:#232326;}
@@ -1253,7 +1254,7 @@
     <div class="linea-btn active" data-linea="operacion">
       <span class="linea-emoji">🎬</span><span>Operación</span>
     </div>
-    <div class="linea-btn" data-linea="administracion" data-rol-linea="Direccion">
+    <div class="linea-btn" data-linea="administracion" data-rol-linea="Direccion,Administracion">
       <span class="linea-emoji">💰</span><span>Administración</span>
     </div>
   </aside>
@@ -1268,7 +1269,7 @@
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion" data-rol="Direccion,Edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
-  <button class="tab-btn" data-modo="linea" data-rol="Direccion,CM,Edicion">📊 Línea de Producción</button>
+  <button class="tab-btn" data-modo="linea" data-rol="Direccion,CM,Edicion,Administracion">📊 Línea de Producción</button>
   <button class="tab-btn" data-modo="misguiones" data-rol="Direccion,Edicion">📄 Mis Guiones</button>
   <button class="tab-btn" data-modo="dashboard" data-rol="Direccion,CM,Edicion,Filmmaker">📊 Dashboard</button>
 </div>
@@ -2770,7 +2771,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-02-linea-vista-simple';
+const APP_BUILD = '2026-09-03-alerta-por-grabados-y-rol-admin';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -9634,9 +9635,10 @@ async function cargarLineaProduccion(){
   }
 }
 
-// Vista simple: una tarjeta por cliente con "cuántos videos le faltan publicar este mes".
-// Es la vista pensada para que Dirección/Administración decida cuándo agendar la siguiente
-// grabación, sin tener que leer la cuadrícula detallada de cada editor.
+// Vista simple: una tarjeta por cliente. El disparador de "hay que agendar grabación" es
+// cuántos videos de ESTE MES ya se grabaron (no gris) — si son pocos o ninguno, la grabación
+// del mes todavía no pasó y hay que agendarla, sin importar cuánto buffer quede de meses
+// anteriores. "Restantes por publicar" se muestra aparte, solo como referencia.
 function _renderLineaVistaSimple(cuerpo){
   const hoy = new Date();
   const year = hoy.getFullYear();
@@ -9651,15 +9653,16 @@ function _renderLineaVistaSimple(cuerpo){
     const total = slotsCliente.length;
     const publicados = slotsCliente.filter(s => s.Estatus === 'verde').length;
     const editados = slotsCliente.filter(s => s.Estatus === 'amarillo').length;
-    const grabados = slotsCliente.filter(s => s.Estatus === 'rojo').length;
+    const grabadosSinEditar = slotsCliente.filter(s => s.Estatus === 'rojo').length;
+    const grabados = slotsCliente.filter(s => s.Estatus !== 'gris').length; // rojo + amarillo + verde
     const restantes = total - publicados;
-    const necesitaAgendar = total > 0 && restantes <= LINEA_UMBRAL_AGENDAR;
-    return { cliente: c, total, publicados, editados, grabados, restantes, necesitaAgendar };
+    const necesitaAgendar = total > 0 && grabados <= LINEA_UMBRAL_AGENDAR;
+    return { cliente: c, total, publicados, editados, grabadosSinEditar, grabados, restantes, necesitaAgendar };
   });
 
   tarjetas.sort((a, b) => {
     if(a.necesitaAgendar !== b.necesitaAgendar) return a.necesitaAgendar ? -1 : 1;
-    if(a.necesitaAgendar && b.necesitaAgendar) return a.restantes - b.restantes;
+    if(a.necesitaAgendar && b.necesitaAgendar) return a.grabados - b.grabados;
     return (a.cliente.Nombre || '').localeCompare(b.cliente.Nombre || '');
   });
 
@@ -9668,8 +9671,9 @@ function _renderLineaVistaSimple(cuerpo){
   let html = `
     <div class="linea-simple-wrap">
       <div class="linea-simple-hint">
-        <strong>${mesLabel}</strong> — cuántos videos le faltan publicar a cada cliente este mes.
-        Cuando a un cliente le quedan ${LINEA_UMBRAL_AGENDAR} o menos por publicar, se marca para agendar la siguiente grabación.
+        <strong>${mesLabel}</strong> — cuántos videos de este mes ya se grabaron por cliente.
+        Cuando son ${LINEA_UMBRAL_AGENDAR} o menos, se marca para agendar la siguiente grabación
+        (sin importar cuánto le quede publicado de meses anteriores).
       </div>
       <div class="linea-simple-grid">
   `;
@@ -9691,17 +9695,18 @@ function _renderLineaVistaSimple(cuerpo){
     }
     const pctVerde = Math.round(t.publicados / t.total * 100);
     const pctAmarillo = Math.round(t.editados / t.total * 100);
-    const pctRojo = Math.round(t.grabados / t.total * 100);
+    const pctRojo = Math.round(t.grabadosSinEditar / t.total * 100);
     html += `
       <div class="linea-simple-card${t.necesitaAgendar ? ' alerta' : ''}">
         <div class="ls-header">${c.Emoji || ''} ${c.Nombre || ''}</div>
-        <div class="ls-numero-row"><span class="ls-numero">${t.restantes}</span></div>
-        <div class="ls-label">por publicar de ${t.total} este mes</div>
+        <div class="ls-numero-row"><span class="ls-numero">${t.grabados}</span></div>
+        <div class="ls-label">grabados de ${t.total} este mes</div>
         <div class="ls-barra">
           <div class="ls-barra-seg" style="width:${pctVerde}%;background:#4caf50;"></div>
           <div class="ls-barra-seg" style="width:${pctAmarillo}%;background:#e8d97a;"></div>
           <div class="ls-barra-seg" style="width:${pctRojo}%;background:#f5a89a;"></div>
         </div>
+        <div class="ls-sub">${t.publicados} publicados · ${t.restantes} por publicar</div>
         ${t.necesitaAgendar ? '<div class="ls-alerta">⚠ Agendar próxima grabación</div>' : ''}
       </div>
     `;
