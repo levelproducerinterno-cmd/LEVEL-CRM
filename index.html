@@ -1742,6 +1742,13 @@
     <h2>Nuevo recibo</h2>
     <div class="hint" style="margin-bottom:14px;">Se genera el PDF y se guarda en el registro automáticamente.</div>
     <div class="field">
+      <label>Cargar desde cliente (cobranza)</label>
+      <select id="rec-desde-cliente">
+        <option value="">— Ninguno, llenar manualmente —</option>
+      </select>
+      <div class="hint" style="margin-top:6px;font-size:0.72rem;">Trae el contacto y el monto que ya tienes capturados en Administración &gt; Cobranza.</div>
+    </div>
+    <div class="field">
       <label>Cargar desde cotización cerrada (opcional)</label>
       <select id="rec-desde-cotizacion">
         <option value="">— Ninguna, llenar manualmente —</option>
@@ -2771,7 +2778,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-alerta-por-grabados-y-rol-admin';
+const APP_BUILD = '2026-09-03-recibo-desde-cliente-cobranza';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4363,6 +4370,43 @@ if(modalReciboBg){
   document.getElementById('rec-empresa').addEventListener('input', _actualizarFolioPreview);
   document.getElementById('rec-fecha').addEventListener('input', _actualizarFolioPreview);
 
+  let CLIENTES_RECIBO = [];
+
+  async function _cargarClientesParaRecibo(){
+    const sel = document.getElementById('rec-desde-cliente');
+    sel.innerHTML = '<option value="">— Ninguno, llenar manualmente —</option>';
+    try{
+      const todos = await sbCargarClientes();
+      CLIENTES_RECIBO = todos.filter(c => String(c.Estado || 'Activo') === 'Activo');
+      CLIENTES_RECIBO.sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
+      CLIENTES_RECIBO.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.ID;
+        const montoTxt = c.MontoCobro ? ' ($' + Number(c.MontoCobro).toLocaleString('es-MX') + ')' : '';
+        opt.textContent = (c.Emoji ? c.Emoji + ' ' : '') + c.Nombre + montoTxt;
+        sel.appendChild(opt);
+      });
+    } catch(err){ console.error(err); }
+  }
+
+  document.getElementById('rec-desde-cliente').addEventListener('change', (e) => {
+    const cli = CLIENTES_RECIBO.find(c => String(c.ID) === String(e.target.value));
+    if(!cli) return;
+    document.getElementById('rec-empresa').value = cli.Nombre || '';
+    document.getElementById('rec-contacto').value = cli.ContactoCobranza || '';
+    if(cli.MontoCobro) document.getElementById('rec-monto').value = cli.MontoCobro;
+    const selCat = document.getElementById('rec-categoria');
+    const match = Array.from(selCat.options).find(o => o.value === 'Producción de contenido');
+    if(match) selCat.value = match.value;
+    if(!document.getElementById('rec-descripcion').value.trim()){
+      const mesLabel = new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+      document.getElementById('rec-descripcion').value = 'Servicio mensual de producción de contenido — ' + mesLabel;
+    }
+    // Limpia el selector de cotización para no mezclar ambos orígenes de datos.
+    document.getElementById('rec-desde-cotizacion').value = '';
+    _actualizarFolioPreview();
+  });
+
   let COTIZACIONES_CERRADAS_RECIBO = [];
 
   async function _cargarCotizacionesCerradasParaRecibo(){
@@ -4389,6 +4433,8 @@ if(modalReciboBg){
     const selCat = document.getElementById('rec-categoria');
     const match = Array.from(selCat.options).find(o => o.value.toLowerCase() === (cot.Servicio || '').toLowerCase());
     if(match) selCat.value = match.value;
+    // Limpia el selector de cliente para no mezclar ambos orígenes de datos.
+    document.getElementById('rec-desde-cliente').value = '';
     _actualizarFolioPreview();
   });
 
@@ -4402,7 +4448,9 @@ if(modalReciboBg){
     document.getElementById('rec-error').textContent = '';
     document.getElementById('rec-folio-preview').textContent = '';
     document.getElementById('rec-desde-cotizacion').value = '';
+    document.getElementById('rec-desde-cliente').value = '';
     _cargarCotizacionesCerradasParaRecibo();
+    _cargarClientesParaRecibo();
     modalReciboBg.classList.add('open');
   });
   document.getElementById('btn-cancelar-recibo').addEventListener('click', () => modalReciboBg.classList.remove('open'));
