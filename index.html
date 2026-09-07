@@ -2869,7 +2869,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-todolist-prioridad';
+const APP_BUILD = '2026-09-03-portal-cliente-editado-video';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -11309,6 +11309,7 @@ async function arrancarVistaPublicaCliente(token){
   let VP_GUIONES = [];
   let VP_GUIONES_DIRTY = new Set(); // IDs de guiones con cambios sin guardar en Supabase
   let VP_CALENDARIO = [];
+  let VP_PRODUCCION = [];
   let VP_EXPEDIENTE = null;
   let VP_EXP_PDFS = [];
   let VP_INFORME = null;
@@ -11333,9 +11334,10 @@ async function arrancarVistaPublicaCliente(token){
       }
       document.getElementById('vp-status').innerHTML = '';
 
-      const [guionesResp, calResp, expResp, expPdfsResp, infResp, infPdfsResp] = await Promise.all([
+      const [guionesResp, calResp, prodResp, expResp, expPdfsResp, infResp, infPdfsResp] = await Promise.all([
         sb.from('guiones').select('*').eq('cliente_id', VP_CLIENTE.id),
         sb.from('cm').select('*').ilike('cliente', VP_CLIENTE.nombre),
+        sb.from('produccion').select('*').ilike('cliente', VP_CLIENTE.nombre),
         sb.from('expedientes').select('*').eq('cliente_id', VP_CLIENTE.id).maybeSingle(),
         sb.from('expedientes_pdfs').select('*').eq('cliente_id', VP_CLIENTE.id),
         sb.from('informes').select('*').eq('cliente_id', VP_CLIENTE.id).maybeSingle(),
@@ -11344,10 +11346,15 @@ async function arrancarVistaPublicaCliente(token){
       if(guionesResp.error){
         document.getElementById('vp-guiones-lista').innerHTML = '<div class="vp-empty" style="color:#c72a09;">No se pudieron cargar tus guiones. Recarga la página antes de crear uno nuevo (para no duplicar).</div>';
       } else {
-        VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion).sort((a, b) => _compararFolios(a.Folio, b.Folio));
+        // Una vez que el equipo marca un guion como "Editado" el video correspondiente ya se
+        // grabó, así que deja de tener sentido que el cliente lo vea o lo siga editando aquí.
+        VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion)
+          .filter(g => (g.Estatus || 'Borrador') !== 'Editado')
+          .sort((a, b) => _compararFolios(a.Folio, b.Folio));
         renderVpGuiones();
       }
       VP_CALENDARIO = (calResp.data || []).map(_sbFilaModo);
+      VP_PRODUCCION = (prodResp.data || []).map(_sbFilaModo);
       renderVpCalendario();
       VP_EXPEDIENTE = expResp.data ? _sbFilaExpediente(expResp.data) : null;
       VP_EXP_PDFS = (expPdfsResp.data || []).map(_sbFilaPdf);
@@ -11677,6 +11684,24 @@ async function arrancarVistaPublicaCliente(token){
     });
   }
 
+  // Busca la tarjeta de Edición (produccion) que corresponde a esta publicación de CM: primero
+  // por SlotId (identidad exacta del video), y si no hay match cae a comparar el Folio.
+  function _vpBuscarVideoEditado(ev){
+    if(!VP_PRODUCCION || VP_PRODUCCION.length === 0) return null;
+    let match = null;
+    if(ev.SlotId){
+      match = VP_PRODUCCION.find(p => p.SlotId && String(p.SlotId) === String(ev.SlotId));
+    }
+    if(!match && ev.Folio){
+      const folioEv = String(ev.Folio).trim().toLowerCase();
+      match = VP_PRODUCCION.find(p => String(p.Folio || '').trim().toLowerCase() === folioEv);
+    }
+    if(!match) return null;
+    const link = String(match.LinkVideo || '').trim();
+    if(!link || !esUrlValida(link)) return null;
+    return link;
+  }
+
   function abrirVpModalPost(ev){
     if(VP_CAL_MODAL_ABIERTO) return;
     VP_CAL_MODAL_ABIERTO = true;
@@ -11684,6 +11709,7 @@ async function arrancarVistaPublicaCliente(token){
     const fecha = ev.Fecha ? new Date(ev.Fecha).toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric', weekday:'long' }) : 'Sin fecha';
     const copy = String(ev.Copy || '').trim();
     const palabra = String(ev.PalabraClave || '').trim();
+    const linkVideoEditado = _vpBuscarVideoEditado(ev);
     const bg = document.createElement('div');
     bg.className = 'vp-cal-modal-bg';
     bg.innerHTML = `
@@ -11692,6 +11718,9 @@ async function arrancarVistaPublicaCliente(token){
         <div class="vp-cal-modal-badge ${listo ? 'publicado' : 'agendado'}">${listo ? '✓ Publicado' : 'Agendado'}</div>
         <div class="vp-cal-modal-titulo">${ev.Folio ? ev.Folio : ''}${palabra ? ' · ' + palabra : ''}</div>
         <div class="vp-cal-modal-fecha">${fecha}</div>
+        ${linkVideoEditado
+          ? `<a href="${linkVideoEditado}" target="_blank" rel="noopener" class="vp-btn-secundario" style="display:inline-block;text-decoration:none;margin-top:16px;">🎬 Ver tu video editado</a>`
+          : ''}
         <div class="vp-cal-modal-copy-label">Copy de la publicación</div>
         ${copy
           ? `<div class="vp-cal-modal-copy">${copy.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`
