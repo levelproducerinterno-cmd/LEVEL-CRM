@@ -576,6 +576,13 @@
   .vp-body textarea.vp-notas{min-height:80px;}
   .vp-msg{margin-left:12px;color:#666;font-size:0.82rem;}
 
+  /* Evaluación mensual del cliente */
+  .vp-eval-intro{color:#cfc9bc;font-size:0.9rem;margin-bottom:22px;}
+  .vp-eval-campo{background:var(--hueso);border-radius:6px;padding:16px 18px;margin-bottom:14px;color:#1c1c1c;}
+  .vp-eval-campo label{display:block;font-size:0.82rem;font-weight:700;color:#1c1c1c;margin-bottom:8px;line-height:1.4;}
+  .vp-eval-campo textarea, .vp-eval-campo select{width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;font-family:inherit;font-size:0.88rem;background:#fff;color:#1c1c1c;min-height:70px;}
+  .vp-eval-campo select{min-height:auto;}
+
   /* ============ CM LAYOUT + PANEL LISTOS PARA PUBLICAR ============ */
   /* CM: calendario a la izquierda (con SU barra de filtros dentro, para que compartan ancho)
      y el panel de "listos para publicar" a la derecha. */
@@ -1699,6 +1706,18 @@
               <tbody id="kpis-tbody"></tbody>
             </table>
           </div>
+
+          <h3 style="margin:32px 0 10px;">Evaluaciones de clientes (mensual)</h3>
+          <div class="hint" style="margin-bottom:14px;">Los clientes pueden responder esta evaluación desde su link general, solo del 1 al 7 de cada mes. Sus respuestas solo las ve el equipo interno.</div>
+          <div class="status-msg" id="eval-clientes-status" style="margin:10px 0;"></div>
+          <div class="team-tabla-wrap" style="padding:0;">
+            <table class="team-tabla">
+              <thead>
+                <tr><th>Cliente</th><th>Mes</th><th>Calificación</th><th>Fecha</th><th></th></tr>
+              </thead>
+              <tbody id="eval-clientes-tbody"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="admin-subpanel" id="admin-panel-redes">
@@ -2000,6 +2019,17 @@
     <div class="modal-actions">
       <button class="btn ghost" id="btn-cancelar-grabacion">Cancelar</button>
       <button class="btn" id="btn-guardar-grabacion">Agendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ver evaluación mensual de un cliente ============ -->
+<div class="modal-bg" id="modal-eval-cliente-bg">
+  <div class="modal" style="max-width:600px;">
+    <h2 id="modal-eval-cliente-title">Evaluación mensual</h2>
+    <div id="modal-eval-cliente-cuerpo"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cerrar-eval-cliente">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2869,7 +2899,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-portal-cliente-editado-video';
+const APP_BUILD = '2026-09-03-evaluacion-mensual-clientes';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4200,6 +4230,23 @@ async function sbCargarReportes(){
   if(error){ console.error('Supabase reportes:', error); return []; }
   return data.map(_sbFilaReporte);
 }
+
+// ============================================================
+// ============ SUPABASE — Evaluaciones mensuales de clientes ====
+// ============================================================
+function _sbFilaEvaluacionCliente(r){
+  return {
+    ID: r.id, ClienteID: r.cliente_id || '', VentanaMes: r.ventana_mes || '',
+    Experiencia: r.experiencia || '', Mejorarias: r.mejorarias || '', Comprometido: r.comprometido || '',
+    QuePasaria: r.que_pasaria || '', Calificacion: r.calificacion, CalificacionPorQue: r.calificacion_por_que || '',
+    CreatedAt: r.created_at || ''
+  };
+}
+async function sbCargarEvaluacionesClientes(){
+  const { data, error } = await sb.from('evaluaciones_clientes').select('*').order('created_at', { ascending: false });
+  if(error){ console.error('Supabase evaluaciones_clientes:', error); return []; }
+  return data.map(_sbFilaEvaluacionCliente);
+}
 // Regla: si HOY es lunes >= 8am, o martes-jueves, y no hay reporte de la semana anterior → pendiente
 async function sbReportePendiente(miembroId){
   const hoy = new Date();
@@ -5122,6 +5169,83 @@ function renderKpisSemanalesTabla(){
     });
   });
 }
+
+// ============================================================
+// ============ Evaluaciones mensuales de clientes (Administración) ====
+// ============================================================
+let EVALUACIONES_CLIENTES_ACTUAL = [];
+let EVAL_CLIENTES_MAPA = [];
+
+async function cargarEvaluacionesClientesAdmin(){
+  const status = document.getElementById('eval-clientes-status');
+  if(status) status.textContent = 'Cargando...';
+  try{
+    const [evaluaciones, clientes] = await Promise.all([sbCargarEvaluacionesClientes(), sbCargarClientes()]);
+    EVALUACIONES_CLIENTES_ACTUAL = evaluaciones;
+    EVAL_CLIENTES_MAPA = clientes;
+    if(status) status.textContent = '';
+  } catch(err){
+    console.error(err);
+    if(status) status.textContent = 'No se pudieron cargar las evaluaciones de clientes.';
+  }
+  renderEvaluacionesClientesTabla();
+}
+
+function renderEvaluacionesClientesTabla(){
+  const tbody = document.getElementById('eval-clientes-tbody');
+  if(!tbody) return;
+  if(EVALUACIONES_CLIENTES_ACTUAL.length === 0){
+    tbody.innerHTML = '';
+    const status = document.getElementById('eval-clientes-status');
+    if(status) status.textContent = 'Todavía no hay evaluaciones de clientes.';
+    return;
+  }
+  tbody.innerHTML = EVALUACIONES_CLIENTES_ACTUAL.map(ev => {
+    const cliente = EVAL_CLIENTES_MAPA.find(c => String(c.ID) === String(ev.ClienteID));
+    const nombreCliente = cliente ? ((cliente.Emoji || '') + ' ' + cliente.Nombre) : '(cliente eliminado)';
+    const fecha = ev.CreatedAt ? new Date(ev.CreatedAt).toLocaleDateString('es-MX') : '';
+    return `
+      <tr data-id="${ev.ID}">
+        <td>${nombreCliente}</td>
+        <td>${ev.VentanaMes}</td>
+        <td>${ev.Calificacion != null ? ev.Calificacion + ' / 10' : '—'}</td>
+        <td>${fecha}</td>
+        <td><button class="btn ghost" data-ver-eval="${ev.ID}" style="padding:5px 12px;font-size:0.75rem;">Ver respuestas</button></td>
+      </tr>`;
+  }).join('');
+  tbody.querySelectorAll('[data-ver-eval]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ev = EVALUACIONES_CLIENTES_ACTUAL.find(x => String(x.ID) === String(btn.dataset.verEval));
+      if(ev) abrirModalEvalCliente(ev);
+    });
+  });
+}
+
+function abrirModalEvalCliente(ev){
+  const cliente = EVAL_CLIENTES_MAPA.find(c => String(c.ID) === String(ev.ClienteID));
+  const nombreCliente = cliente ? cliente.Nombre : '(cliente eliminado)';
+  document.getElementById('modal-eval-cliente-title').textContent = `Evaluación mensual — ${nombreCliente} (${ev.VentanaMes})`;
+  const bloque = (pregunta, respuesta) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:0.72rem;text-transform:uppercase;color:#888;font-weight:700;margin-bottom:4px;">${pregunta}</div>
+      <div style="white-space:pre-wrap;">${(respuesta || '(sin respuesta)').replace(/</g,'&lt;')}</div>
+    </div>
+  `;
+  document.getElementById('modal-eval-cliente-cuerpo').innerHTML =
+    bloque('¿Cómo ha sido tu experiencia con nuestro servicio?', ev.Experiencia) +
+    bloque('¿Qué mejorarías?', ev.Mejorarias) +
+    bloque('¿Consideras que estás comprometido con nuestro servicio?', ev.Comprometido) +
+    bloque('¿Qué tendría que pasar con tu marca para que este servicio supere tus expectativas?', ev.QuePasaria) +
+    bloque('Calificación del mes (1-10)', ev.Calificacion != null ? String(ev.Calificacion) : '') +
+    bloque('¿Por qué esa calificación?', ev.CalificacionPorQue);
+  document.getElementById('modal-eval-cliente-bg').classList.add('open');
+}
+document.getElementById('btn-cerrar-eval-cliente').addEventListener('click', () => {
+  document.getElementById('modal-eval-cliente-bg').classList.remove('open');
+});
+document.getElementById('modal-eval-cliente-bg').addEventListener('click', (e) => {
+  if(e.target.id === 'modal-eval-cliente-bg') document.getElementById('modal-eval-cliente-bg').classList.remove('open');
+});
 
 function generarReporteTextoPDF(reporte, nombreMiembro){
   const { jsPDF } = window.jspdf;
@@ -10638,7 +10762,7 @@ function cambiarLinea(lineaKey){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
-    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
+    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
   }
 }
 
@@ -11268,6 +11392,7 @@ async function arrancarVistaPublicaCliente(token){
       <button class="vp-tab" data-vp-tab="videos" id="vp-tab-videos" style="display:none;">🎬 Tus videos</button>
       <button class="vp-tab" data-vp-tab="expediente">📋 Expediente</button>
       <button class="vp-tab" data-vp-tab="informes">📈 Informes</button>
+      <button class="vp-tab" data-vp-tab="evaluacion" id="vp-tab-evaluacion" style="display:none;">📝 Evaluación mensual</button>
     </div>
 
     <div class="vp-contenido">
@@ -11279,6 +11404,9 @@ async function arrancarVistaPublicaCliente(token){
           <button id="vp-guardar-todos" class="vp-btn-secundario" style="display:none;">💾 Guardar todos los cambios</button>
           <span id="vp-guardar-todos-msg" class="vp-msg"></span>
         </div>
+      </div>
+      <div class="vp-seccion" id="vp-seccion-evaluacion" style="display:none;">
+        <div id="vp-evaluacion-contenido"></div>
       </div>
       <div class="vp-seccion" id="vp-seccion-conectar" style="display:none;">
         <div id="vp-conectar-resumen"></div>
@@ -11310,6 +11438,7 @@ async function arrancarVistaPublicaCliente(token){
   let VP_GUIONES_DIRTY = new Set(); // IDs de guiones con cambios sin guardar en Supabase
   let VP_CALENDARIO = [];
   let VP_PRODUCCION = [];
+  let VP_EVALUACION_EXISTENTE = null;
   let VP_EXPEDIENTE = null;
   let VP_EXP_PDFS = [];
   let VP_INFORME = null;
@@ -11363,8 +11492,109 @@ async function arrancarVistaPublicaCliente(token){
       VP_INF_PDFS = (infPdfsResp.data || []).map(_sbFilaPdf);
       renderVpInformes();
       cargarVpConexionSocial(); // aparte: si falla, no debe tumbar el resto de la vista
+      cargarVpEvaluacion(); // aparte: si falla, no debe tumbar el resto de la vista
     } catch(err) {
       document.getElementById('vp-status').innerHTML = '<div style="color:#c72a09;">No se pudo conectar. Recarga en unos segundos.</div>';
+    }
+  }
+
+  // ============ EVALUACIÓN MENSUAL (solo del 1 al 7 de cada mes) ============
+  function _vpVentanaEvaluacionActiva(){
+    return new Date().getDate() <= 7;
+  }
+  function _vpVentanaMesActual(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  async function cargarVpEvaluacion(){
+    if(!_vpVentanaEvaluacionActiva()) return; // pestaña se queda oculta el resto del mes
+    document.getElementById('vp-tab-evaluacion').style.display = '';
+    try{
+      const { data } = await sb.from('evaluaciones_clientes').select('*')
+        .eq('cliente_id', VP_CLIENTE.id).eq('ventana_mes', _vpVentanaMesActual()).maybeSingle();
+      VP_EVALUACION_EXISTENTE = data || null;
+    } catch(err){ console.error('No se pudo revisar la evaluación del mes:', err); }
+    renderVpEvaluacion();
+  }
+
+  function renderVpEvaluacion(){
+    const cont = document.getElementById('vp-evaluacion-contenido');
+    if(!cont) return;
+    if(VP_EVALUACION_EXISTENTE){
+      cont.innerHTML = `
+        <div class="vp-empty">✓ Gracias, ya respondiste la evaluación de este mes. Tus respuestas se comparten solo con nuestro equipo.</div>
+      `;
+      return;
+    }
+    cont.innerHTML = `
+      <div class="vp-eval-intro">Nos ayuda mucho tu opinión honesta cada mes. Tus respuestas solo las ve nuestro equipo interno.</div>
+      <div class="vp-eval-campo">
+        <label>¿Cómo ha sido tu experiencia con nuestro servicio?</label>
+        <textarea id="vp-eval-experiencia"></textarea>
+      </div>
+      <div class="vp-eval-campo">
+        <label>¿Qué mejorarías?</label>
+        <textarea id="vp-eval-mejorarias"></textarea>
+      </div>
+      <div class="vp-eval-campo">
+        <label>¿Consideras que estás comprometido con nuestro servicio?: Revisas videos, das feedback, y mandas tus opiniones al grupo</label>
+        <textarea id="vp-eval-comprometido"></textarea>
+      </div>
+      <div class="vp-eval-campo">
+        <label>¿Qué tendría que pasar con tu marca para que puedas considerar que este servicio supera tus expectativas?</label>
+        <textarea id="vp-eval-que-pasaria"></textarea>
+      </div>
+      <div class="vp-eval-campo">
+        <label>Del 1 al 10 ¿cómo calificas el servicio en este mes que pasó?</label>
+        <select id="vp-eval-calificacion">
+          <option value="">— Selecciona —</option>
+          ${Array.from({length:10}, (_, i) => i + 1).map(n => `<option value="${n}">${n}</option>`).join('')}
+        </select>
+      </div>
+      <div class="vp-eval-campo">
+        <label>¿Por qué?</label>
+        <textarea id="vp-eval-calificacion-por-que"></textarea>
+      </div>
+      <button id="vp-eval-enviar" class="vp-btn-primario">Enviar evaluación</button>
+      <span id="vp-eval-msg" class="vp-msg"></span>
+    `;
+    document.getElementById('vp-eval-enviar').addEventListener('click', _vpEnviarEvaluacion);
+  }
+
+  async function _vpEnviarEvaluacion(){
+    const experiencia = document.getElementById('vp-eval-experiencia').value.trim();
+    const mejorarias = document.getElementById('vp-eval-mejorarias').value.trim();
+    const comprometido = document.getElementById('vp-eval-comprometido').value.trim();
+    const quePasaria = document.getElementById('vp-eval-que-pasaria').value.trim();
+    const calificacion = document.getElementById('vp-eval-calificacion').value;
+    const calificacionPorQue = document.getElementById('vp-eval-calificacion-por-que').value.trim();
+    const msg = document.getElementById('vp-eval-msg');
+    if(!experiencia || !mejorarias || !comprometido || !quePasaria || !calificacion || !calificacionPorQue){
+      msg.style.color = '#c72a09';
+      msg.textContent = 'Por favor responde todas las preguntas antes de enviar.';
+      return;
+    }
+    const btn = document.getElementById('vp-eval-enviar');
+    btn.disabled = true;
+    msg.style.color = '';
+    msg.textContent = 'Enviando...';
+    try{
+      const row = {
+        id: 'eval_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+        cliente_id: VP_CLIENTE.id, ventana_mes: _vpVentanaMesActual(),
+        experiencia, mejorarias, comprometido, que_pasaria: quePasaria,
+        calificacion: parseInt(calificacion, 10), calificacion_por_que: calificacionPorQue
+      };
+      const { error } = await sb.from('evaluaciones_clientes').insert(row);
+      if(error) throw error;
+      VP_EVALUACION_EXISTENTE = row;
+      renderVpEvaluacion();
+    } catch(err){
+      console.error(err);
+      msg.style.color = '#c72a09';
+      msg.textContent = 'No se pudo enviar. Revisa tu conexión e intenta de nuevo.';
+      btn.disabled = false;
     }
   }
 
