@@ -17,6 +17,7 @@
     --rojo:#c72a09;
     --verde:#1a8f4c;
     --amarillo:#d9a916;
+    color-scheme: light;
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Montserrat',sans-serif;background:#141312;color:#1c1c1c;min-height:100vh;}
@@ -1101,7 +1102,7 @@
   .u-darkmode{background:none;border:1px solid #666;color:#fff;padding:4px 9px;border-radius:3px;cursor:pointer;font-size:0.9rem;margin-left:6px;line-height:1;}
   .u-darkmode:hover{border-color:#fff;background:#3a3733;}
 
-  body.dark{background:#0d0d0f;color:#e4e2dd;}
+  body.dark{background:#0d0d0f;color:#e4e2dd;color-scheme:dark;}
   /* Superficies claras → oscuras */
   body.dark .toolbar{background:#1a1a1d;border-bottom-color:#2a2a2e;}
   body.dark .toolbar label{color:#9a968e;}
@@ -2899,7 +2900,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-evaluacion-mensual-clientes';
+const APP_BUILD = '2026-09-03-color-scheme-fix';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
