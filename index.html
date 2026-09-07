@@ -762,6 +762,17 @@
   .team-badge-direccion{background:#f0e6ff;color:#5a1ca6;}
   .team-badge-administracion{background:#e3f7ec;color:#0f7a4a;}
   .team-tabla .team-actions{display:flex;gap:6px;justify-content:flex-end;}
+
+  /* To do list de Dirección */
+  .todolist-select{border:none;border-radius:14px;padding:6px 10px;font-size:0.76rem;font-weight:700;background:#e4e0d6;color:#4a463d;cursor:pointer;width:100%;}
+  .todolist-input-texto{border:1px solid transparent;background:transparent;font-size:0.88rem;color:inherit;width:100%;padding:6px 4px;border-radius:6px;}
+  .todolist-input-texto:hover, .todolist-input-texto:focus{border-color:#d8d3c9;background:#faf8f4;outline:none;}
+  .todolist-btn-borrar{background:none;border:none;cursor:pointer;font-size:0.9rem;opacity:0.55;padding:4px;}
+  .todolist-btn-borrar:hover{opacity:1;}
+  .todolist-completado .todolist-input-texto{text-decoration:line-through;color:#999;}
+  .todolist-completado{opacity:0.55;}
+  body.dark .todolist-input-texto:hover, body.dark .todolist-input-texto:focus{background:#232326;border-color:#3a3a3e;}
+
   .recl-detalle-row td{background:#faf8f4;padding:18px 20px;}
   .recl-detalle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px 24px;}
   .recl-detalle-item{display:flex;flex-direction:column;gap:3px;}
@@ -1279,6 +1290,7 @@
 
 <div class="tabs-switch">
   <button class="tab-btn" data-modo="team" data-rol="Direccion">🧑‍🎨 Team</button>
+  <button class="tab-btn" data-modo="todolist" data-rol="Direccion">✅ To do list</button>
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion" data-rol="Direccion,Edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
@@ -1314,6 +1326,30 @@
         </tr>
       </thead>
       <tbody id="team-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ PANEL: TO DO LIST (solo Dirección) ============ -->
+<div class="modo-panel" id="panel-todolist">
+  <div class="panel-header">
+    <div class="titulo-panel">✅ To do list</div>
+    <button class="btn" id="btn-nueva-tarea-todolist">+ Nueva tarea</button>
+  </div>
+  <div class="team-tabla-wrap">
+    <table class="team-tabla todolist-tabla">
+      <thead>
+        <tr>
+          <th style="width:34px;"></th>
+          <th>DOD — Definition of Done</th>
+          <th style="width:190px;">Tiempo</th>
+          <th style="width:170px;">Necesitaré</th>
+          <th style="width:150px;">Tipo</th>
+          <th style="width:150px;">Persona</th>
+          <th style="width:44px;"></th>
+        </tr>
+      </thead>
+      <tbody id="todolist-tbody"></tbody>
     </table>
   </div>
 </div>
@@ -2833,7 +2869,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-calendario-grabacion';
+const APP_BUILD = '2026-09-03-todolist-direccion';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3707,6 +3743,39 @@ async function sbGuardarTeam(datos, esNuevo){
       });
     } catch(err){ console.error('No se pudo sincronizar cumpleaños:', err); }
   }
+}
+
+// ============================================================
+// ============ SUPABASE — To do list de Dirección ==========
+// ============================================================
+function _sbFilaTodo(r){
+  return {
+    ID: r.id, Texto: r.texto || '', Completado: !!r.completado,
+    Tiempo: r.tiempo || '', Necesitare: r.necesitare || '', Tipo: r.tipo || '',
+    PersonaID: r.persona_id || '', Orden: r.orden || 0
+  };
+}
+async function sbCargarTodoList(){
+  const { data, error } = await sb.from('todos_direccion').select('*').order('orden', { ascending: true });
+  if(error){ console.error('Supabase todos_direccion:', error); return []; }
+  return data.map(_sbFilaTodo);
+}
+async function sbCrearTareaTodoList(orden){
+  const id = 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  const row = { id, texto: '', completado: false, tiempo: '', necesitare: '', tipo: '', persona_id: null, orden };
+  const { error } = await sb.from('todos_direccion').insert(row);
+  if(error){ console.error('Supabase crear tarea:', error); throw error; }
+  return id;
+}
+async function sbActualizarTareaTodoList(id, campo, valor){
+  const patch = {};
+  patch[campo] = valor;
+  const { error } = await sb.from('todos_direccion').update(patch).eq('id', id);
+  if(error){ console.error('Supabase actualizar tarea:', error); throw error; }
+}
+async function sbEliminarTareaTodoList(id){
+  const { error } = await sb.from('todos_direccion').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar tarea:', error); throw error; }
 }
 async function sbEliminarTeam(id){
   const { error } = await sb.from('team').delete().eq('id', id);
@@ -6487,6 +6556,163 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       }
     }
   });
+});
+
+// ============================================================
+// ============ TO DO LIST DE DIRECCIÓN ==========
+// ============================================================
+const TODOLIST_TIEMPO_OPCIONES = ['2 Minutos (HAZLO YA)', '5 Minutos', '15 Minutos', '30 Minutos', '1 Hora', '+ 2 Horas (Deep Focus)'];
+const TODOLIST_NECESITARE_OPCIONES = ['Computadora', 'Teléfono', 'Carro', 'Cámara'];
+const TODOLIST_TIPO_OPCIONES = ['Delegar', 'Urgente', 'Pendiente', 'No urge'];
+const TODOLIST_COLORES_TIEMPO = {
+  '2 Minutos (HAZLO YA)': '#3f6fb0', '5 Minutos': '#4a4a4a', '15 Minutos': '#a5652f',
+  '30 Minutos': '#3f7a5c', '1 Hora': '#7a5fa0', '+ 2 Horas (Deep Focus)': '#8a4a5c'
+};
+const TODOLIST_COLORES_NECESITARE = { 'Computadora': '#3f7a5c', 'Teléfono': '#3f6fb0', 'Carro': '#a5652f', 'Cámara': '#a5453f' };
+const TODOLIST_COLORES_TIPO = { 'Delegar': '#8a6a4a', 'Urgente': '#a5453f', 'Pendiente': '#3f7a5c', 'No urge': '#7a6a4a' };
+
+let TODOLIST_TAREAS = [];
+let TODOLIST_TEAM = [];
+
+async function cargarTodoList(){
+  const tbody = document.getElementById('todolist-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">Cargando...</td></tr>';
+  try{
+    const [tareas, team] = await Promise.all([sbCargarTodoList(), sbCargarTeam()]);
+    TODOLIST_TAREAS = tareas;
+    TODOLIST_TEAM = team;
+    renderTodoList();
+  } catch(err){
+    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">Error al cargar. Revisa tu conexión.</td></tr>';
+  }
+}
+
+function _celdaSelectTodoList(t, campoObj, campoDb, opciones, colores){
+  const td = document.createElement('td');
+  const sel = document.createElement('select');
+  sel.className = 'todolist-select';
+  sel.innerHTML = '<option value="">—</option>' + opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+  sel.value = t[campoObj] || '';
+  const aplicarColor = () => {
+    const c = colores[sel.value];
+    sel.style.background = c || '';
+    sel.style.color = c ? '#fff' : '';
+  };
+  aplicarColor();
+  sel.addEventListener('change', async () => {
+    t[campoObj] = sel.value;
+    aplicarColor();
+    try{ await sbActualizarTareaTodoList(t.ID, campoDb, t[campoObj]); }
+    catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+  });
+  td.appendChild(sel);
+  return td;
+}
+
+function renderTodoList(){
+  const tbody = document.getElementById('todolist-tbody');
+  if(TODOLIST_TAREAS.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">No hay tareas todavía. Agrega la primera con "+ Nueva tarea".</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  TODOLIST_TAREAS.forEach(t => {
+    const tr = document.createElement('tr');
+    if(t.Completado) tr.classList.add('todolist-completado');
+
+    const tdCheck = document.createElement('td');
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = t.Completado;
+    check.addEventListener('change', async () => {
+      t.Completado = check.checked;
+      tr.classList.toggle('todolist-completado', t.Completado);
+      try{ await sbActualizarTareaTodoList(t.ID, 'completado', t.Completado); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdCheck.appendChild(check);
+    tr.appendChild(tdCheck);
+
+    const tdTexto = document.createElement('td');
+    const inputTexto = document.createElement('input');
+    inputTexto.type = 'text';
+    inputTexto.value = t.Texto;
+    inputTexto.placeholder = 'Describe la tarea...';
+    inputTexto.className = 'todolist-input-texto';
+    inputTexto.addEventListener('change', async () => {
+      t.Texto = inputTexto.value.trim();
+      try{ await sbActualizarTareaTodoList(t.ID, 'texto', t.Texto); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdTexto.appendChild(inputTexto);
+    tr.appendChild(tdTexto);
+
+    tr.appendChild(_celdaSelectTodoList(t, 'Tiempo', 'tiempo', TODOLIST_TIEMPO_OPCIONES, TODOLIST_COLORES_TIEMPO));
+    tr.appendChild(_celdaSelectTodoList(t, 'Necesitare', 'necesitare', TODOLIST_NECESITARE_OPCIONES, TODOLIST_COLORES_NECESITARE));
+    tr.appendChild(_celdaSelectTodoList(t, 'Tipo', 'tipo', TODOLIST_TIPO_OPCIONES, TODOLIST_COLORES_TIPO));
+
+    const tdPersona = document.createElement('td');
+    const selPersona = document.createElement('select');
+    selPersona.className = 'todolist-select';
+    selPersona.innerHTML = '<option value="">—</option>' + TODOLIST_TEAM.map(m => `<option value="${m.ID}">${m.Nombre}</option>`).join('');
+    selPersona.value = t.PersonaID || '';
+    const aplicarColorPersona = () => {
+      const m = TODOLIST_TEAM.find(x => String(x.ID) === String(selPersona.value));
+      selPersona.style.background = m ? (m.Color || '#c72a09') : '';
+      selPersona.style.color = m ? '#fff' : '';
+    };
+    aplicarColorPersona();
+    selPersona.addEventListener('change', async () => {
+      t.PersonaID = selPersona.value;
+      aplicarColorPersona();
+      try{ await sbActualizarTareaTodoList(t.ID, 'persona_id', t.PersonaID || null); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdPersona.appendChild(selPersona);
+    tr.appendChild(tdPersona);
+
+    const tdBorrar = document.createElement('td');
+    const btnBorrar = document.createElement('button');
+    btnBorrar.className = 'todolist-btn-borrar';
+    btnBorrar.textContent = '🗑';
+    btnBorrar.title = 'Eliminar tarea';
+    btnBorrar.addEventListener('click', async () => {
+      if(!confirm('¿Eliminar esta tarea?')) return;
+      try{
+        await sbEliminarTareaTodoList(t.ID);
+        TODOLIST_TAREAS = TODOLIST_TAREAS.filter(x => x.ID !== t.ID);
+        renderTodoList();
+      } catch(err){ console.error(err); alert('No se pudo eliminar. Revisa tu conexión.'); }
+    });
+    tdBorrar.appendChild(btnBorrar);
+    tr.appendChild(tdBorrar);
+
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-nueva-tarea-todolist').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-nueva-tarea-todolist');
+  btn.disabled = true;
+  try{
+    const orden = TODOLIST_TAREAS.length > 0 ? Math.max.apply(null, TODOLIST_TAREAS.map(t => t.Orden || 0)) + 1 : 0;
+    const id = await sbCrearTareaTodoList(orden);
+    TODOLIST_TAREAS.push({ ID: id, Texto: '', Completado: false, Tiempo: '', Necesitare: '', Tipo: '', PersonaID: '', Orden: orden });
+    renderTodoList();
+    const filas = document.querySelectorAll('#todolist-tbody tr');
+    const ultimaFila = filas[filas.length - 1];
+    if(ultimaFila) ultimaFila.querySelector('.todolist-input-texto').focus();
+  } catch(err){
+    console.error(err);
+    alert('No se pudo crear la tarea. Revisa tu conexión e intenta de nuevo.');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.querySelectorAll('.tab-btn[data-modo="todolist"]').forEach(btn => {
+  btn.addEventListener('click', () => cargarTodoList());
 });
 
 document.getElementById('notif-clientes-header').addEventListener('click', () => {
