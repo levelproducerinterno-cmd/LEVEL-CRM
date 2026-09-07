@@ -2869,7 +2869,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-todolist-direccion';
+const APP_BUILD = '2026-09-03-todolist-prioridad';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -6571,6 +6571,14 @@ const TODOLIST_COLORES_TIEMPO = {
 const TODOLIST_COLORES_NECESITARE = { 'Computadora': '#3f7a5c', 'Teléfono': '#3f6fb0', 'Carro': '#a5652f', 'Cámara': '#a5453f' };
 const TODOLIST_COLORES_TIPO = { 'Delegar': '#8a6a4a', 'Urgente': '#a5453f', 'Pendiente': '#3f7a5c', 'No urge': '#7a6a4a' };
 
+// Entre más bajo el número, más arriba se ordena. Tipo manda (Urgente primero); Tiempo
+// desempata dentro del mismo Tipo (las tareas rápidas de "HAZLO YA" suben primero).
+const TODOLIST_TIPO_PRIORIDAD = { 'Urgente': 0, 'Delegar': 1, 'Pendiente': 2, 'No urge': 3, '': 4 };
+const TODOLIST_TIEMPO_PRIORIDAD = {
+  '2 Minutos (HAZLO YA)': 0, '5 Minutos': 1, '15 Minutos': 2, '30 Minutos': 3, '1 Hora': 4,
+  '+ 2 Horas (Deep Focus)': 5, '': 6
+};
+
 let TODOLIST_TAREAS = [];
 let TODOLIST_TEAM = [];
 
@@ -6581,14 +6589,37 @@ async function cargarTodoList(){
     const [tareas, team] = await Promise.all([sbCargarTodoList(), sbCargarTeam()]);
     TODOLIST_TAREAS = tareas;
     TODOLIST_TEAM = team;
-    renderTodoList();
+    await ordenarTodoListPorPrioridad();
   } catch(err){
     console.error(err);
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">Error al cargar. Revisa tu conexión.</td></tr>';
   }
 }
 
-function _celdaSelectTodoList(t, campoObj, campoDb, opciones, colores){
+// Reordena TODOLIST_TAREAS por prioridad (pendientes primero, ordenadas por Tipo y luego
+// Tiempo; completadas siempre al final), guarda el nuevo "orden" en Supabase solo para las
+// tareas que cambiaron de posición, y vuelve a pintar la tabla.
+async function ordenarTodoListPorPrioridad(){
+  TODOLIST_TAREAS.sort((a, b) => {
+    if(a.Completado !== b.Completado) return a.Completado ? 1 : -1;
+    const tipoA = TODOLIST_TIPO_PRIORIDAD[a.Tipo || ''];
+    const tipoB = TODOLIST_TIPO_PRIORIDAD[b.Tipo || ''];
+    if(tipoA !== tipoB) return tipoA - tipoB;
+    return TODOLIST_TIEMPO_PRIORIDAD[a.Tiempo || ''] - TODOLIST_TIEMPO_PRIORIDAD[b.Tiempo || ''];
+  });
+  const actualizaciones = [];
+  TODOLIST_TAREAS.forEach((t, idx) => {
+    if(t.Orden !== idx){
+      t.Orden = idx;
+      actualizaciones.push(sbActualizarTareaTodoList(t.ID, 'orden', idx));
+    }
+  });
+  try{ await Promise.all(actualizaciones); }
+  catch(err){ console.error('No se pudo guardar el nuevo orden de prioridad:', err); }
+  renderTodoList();
+}
+
+function _celdaSelectTodoList(t, campoObj, campoDb, opciones, colores, reordenar){
   const td = document.createElement('td');
   const sel = document.createElement('select');
   sel.className = 'todolist-select';
@@ -6603,7 +6634,10 @@ function _celdaSelectTodoList(t, campoObj, campoDb, opciones, colores){
   sel.addEventListener('change', async () => {
     t[campoObj] = sel.value;
     aplicarColor();
-    try{ await sbActualizarTareaTodoList(t.ID, campoDb, t[campoObj]); }
+    try{
+      await sbActualizarTareaTodoList(t.ID, campoDb, t[campoObj]);
+      if(reordenar) await ordenarTodoListPorPrioridad();
+    }
     catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
   });
   td.appendChild(sel);
@@ -6628,7 +6662,10 @@ function renderTodoList(){
     check.addEventListener('change', async () => {
       t.Completado = check.checked;
       tr.classList.toggle('todolist-completado', t.Completado);
-      try{ await sbActualizarTareaTodoList(t.ID, 'completado', t.Completado); }
+      try{
+        await sbActualizarTareaTodoList(t.ID, 'completado', t.Completado);
+        await ordenarTodoListPorPrioridad();
+      }
       catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
     });
     tdCheck.appendChild(check);
@@ -6648,9 +6685,9 @@ function renderTodoList(){
     tdTexto.appendChild(inputTexto);
     tr.appendChild(tdTexto);
 
-    tr.appendChild(_celdaSelectTodoList(t, 'Tiempo', 'tiempo', TODOLIST_TIEMPO_OPCIONES, TODOLIST_COLORES_TIEMPO));
-    tr.appendChild(_celdaSelectTodoList(t, 'Necesitare', 'necesitare', TODOLIST_NECESITARE_OPCIONES, TODOLIST_COLORES_NECESITARE));
-    tr.appendChild(_celdaSelectTodoList(t, 'Tipo', 'tipo', TODOLIST_TIPO_OPCIONES, TODOLIST_COLORES_TIPO));
+    tr.appendChild(_celdaSelectTodoList(t, 'Tiempo', 'tiempo', TODOLIST_TIEMPO_OPCIONES, TODOLIST_COLORES_TIEMPO, true));
+    tr.appendChild(_celdaSelectTodoList(t, 'Necesitare', 'necesitare', TODOLIST_NECESITARE_OPCIONES, TODOLIST_COLORES_NECESITARE, false));
+    tr.appendChild(_celdaSelectTodoList(t, 'Tipo', 'tipo', TODOLIST_TIPO_OPCIONES, TODOLIST_COLORES_TIPO, true));
 
     const tdPersona = document.createElement('td');
     const selPersona = document.createElement('select');
