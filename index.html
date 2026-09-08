@@ -2900,7 +2900,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-03-color-scheme-fix';
+const APP_BUILD = '2026-09-03-guiones-color-en-vivo';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -9017,9 +9017,24 @@ function _guionBindCampos(item, id){
   });
   const selEstatus = item.querySelector('.gi-estatus');
   if(selEstatus) selEstatus.addEventListener('change', () => {
+    const estatusAnterior = g.Estatus || 'Borrador';
     g.Estatus = selEstatus.value;
     _guionMarcarSinGuardar(id, true);
     _guionProgramarAutoguardado(id);
+    // Si cruza de/hacia "Editado" hay que mover la tarjeta entre la lista activa y el
+    // archivo de "Guiones editados", lo cual requiere reconstruir toda la lista. Para el
+    // resto de los cambios de estatus (Borrador/Aprobado/Grabado entre sí) basta con
+    // repintar el color y la etiqueta al momento, sin esperar a un refresh de página.
+    if(estatusAnterior === 'Editado' || g.Estatus === 'Editado'){
+      renderGuionesLista();
+    } else {
+      item.dataset.estatus = g.Estatus;
+      const badgeEst = item.querySelector('.g-badge-est');
+      if(badgeEst){
+        badgeEst.textContent = g.Estatus;
+        badgeEst.className = 'g-badge-est ' + g.Estatus.toLowerCase();
+      }
+    }
   });
 }
 
