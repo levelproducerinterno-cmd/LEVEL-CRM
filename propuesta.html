@@ -107,6 +107,21 @@
     background:#fbeae6;
     font-weight:600;
   }
+  .paq-count-btn{
+    flex:1;
+    border:1.5px solid #d8d3c9;
+    padding:14px;
+    text-align:center;
+    cursor:pointer;
+    border-radius:2px;
+    transition:all .15s;
+    font-size:0.9rem;
+  }
+  .paq-count-btn.active{
+    border-color:var(--rojo);
+    background:#fbeae6;
+    font-weight:600;
+  }
   .net-row{display:flex;gap:10px;flex-wrap:wrap;}
   .net-chip{
     border:1.5px solid #d8d3c9;
@@ -118,6 +133,9 @@
   }
   .net-chip.active{background:var(--negro);color:#fff;border-color:var(--negro);}
   .hint{font-size:0.78rem;color:#8a8578;margin-top:6px;}
+  .paquete-form-block{border:1.5px solid #e4e0d6;border-radius:6px;padding:18px 20px;margin-bottom:16px;background:#fbfaf7;}
+  .paquete-form-block h4{margin:0 0 14px;font-size:0.95rem;color:var(--rojo);}
+  .paquete-form-block textarea{min-height:90px;}
   .generate-btn{
     width:100%;
     background:var(--rojo);
@@ -238,17 +256,28 @@
     font-family:'Cormorant Garamond',serif; font-weight:600; font-size:26px; letter-spacing:0.14em; text-transform:uppercase; color:#111;
   }
   .price-slide .topline{position:absolute; left:236px; right:236px; top:170px; height:1px; background:var(--rojo);}
+  /* Contenedor flexible: 1 paquete = tarjeta única centrada (diseño original);
+     2-4 paquetes = misma fila se reparte en partes iguales, sin matemáticas manuales. */
+  #r-price-cards-wrap{
+    position:absolute; top:250px; left:236px; right:236px; bottom:70px;
+    display:flex; gap:24px; justify-content:center; align-items:stretch;
+  }
+  #r-price-cards-wrap.price-cards-single .price-card{flex:0 0 424px;}
+  #r-price-cards-wrap:not(.price-cards-single) .price-card{flex:1 1 0; min-width:0;}
   .price-card{
-    position:absolute; top:250px; left:588px; width:424px;
     background-color:transparent;
     border:1.5px solid #111; border-radius:0;
     box-sizing:border-box;
     padding:36px 40px 34px;
+    display:flex; flex-direction:column;
+  }
+  .price-card .pkg-title{
+    font-family:'Cormorant Garamond',serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:0.05em; text-align:center; color:var(--rojo); margin-bottom:10px;
   }
   .price-card .inc-title{
     font-family:'Cormorant Garamond',serif; font-weight:600; font-size:20px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:20px; text-align:center; color:#111;
   }
-  .price-card ul{list-style:none; margin:0 0 22px; padding:0;}
+  .price-card ul{list-style:none; margin:0 0 22px; padding:0; flex:1;}
   .price-card li{
     position:relative; padding-left:30px; margin-bottom:12px; font-size:15.5px; color:#1c1c1c; line-height:1.4;
   }
@@ -257,8 +286,27 @@
     width:18px; height:18px; border-radius:50%; background:var(--verde); color:#fff;
     font-size:11px; text-align:center; line-height:18px;
   }
+  .price-card .amount-block{text-align:center; margin-top:auto;}
   .price-card .amount{font-size:44px; font-weight:700; color:#111;}
   .price-card .amount .mxn{font-size:16px; font-weight:600; color:#444; margin-left:6px;}
+  .price-card .amount-iva{font-size:14px; font-weight:600; color:#4a4a4a; margin-top:6px;}
+
+  /* Tarjetas compactas: cuando hay 2+ paquetes, todo se achica para que quepa en columnas angostas. */
+  #r-price-cards-wrap.price-cards-n2 .price-card, #r-price-cards-wrap.price-cards-n3 .price-card{padding:26px 24px 22px;}
+  #r-price-cards-wrap.price-cards-n2 .pkg-title, #r-price-cards-wrap.price-cards-n3 .pkg-title{font-size:17px;}
+  #r-price-cards-wrap.price-cards-n2 .inc-title, #r-price-cards-wrap.price-cards-n3 .inc-title{font-size:17px; margin-bottom:14px;}
+  #r-price-cards-wrap.price-cards-n2 li, #r-price-cards-wrap.price-cards-n3 li{font-size:14px; margin-bottom:9px;}
+  #r-price-cards-wrap.price-cards-n2 .amount, #r-price-cards-wrap.price-cards-n3 .amount{font-size:32px;}
+
+  #r-price-cards-wrap.price-cards-n4 .price-card{padding:18px 16px 16px;}
+  #r-price-cards-wrap.price-cards-n4 .pkg-title{font-size:14px;}
+  #r-price-cards-wrap.price-cards-n4 .inc-title{font-size:14px; margin-bottom:10px;}
+  #r-price-cards-wrap.price-cards-n4 li{font-size:11.5px; padding-left:22px; margin-bottom:6px;}
+  #r-price-cards-wrap.price-cards-n4 li:before{width:14px; height:14px; font-size:9px; line-height:14px;}
+  #r-price-cards-wrap.price-cards-n4 .amount{font-size:22px;}
+  #r-price-cards-wrap.price-cards-n4 .amount .mxn{font-size:12px;}
+  #r-price-cards-wrap.price-cards-n4 .amount-iva{font-size:10.5px;}
+
 
 
   /* ============ CONTRATO (página del contrato de cliente) ============ */
@@ -345,8 +393,19 @@
       </div>
     </div>
 
+    <div class="field">
+      <label>Número de opciones / paquetes en esta cotización</label>
+      <div class="plan-options" id="paquetes-count-options">
+        <div class="paq-count-btn active" data-paquetes="1">1 opción</div>
+        <div class="paq-count-btn" data-paquetes="2">2 opciones</div>
+        <div class="paq-count-btn" data-paquetes="3">3 opciones</div>
+        <div class="paq-count-btn" data-paquetes="4">4 opciones</div>
+      </div>
+      <div class="hint">Con 2 o más, la slide de precio muestra una tarjeta por cada paquete, una junto a otra.</div>
+    </div>
+
     <div class="grid2">
-      <div class="field">
+      <div class="field" id="precio-unico-wrap">
         <label>Precio (MXN)</label>
         <input type="number" id="f-precio" placeholder="15000">
         <div class="hint" id="f-precio-preview"></div>
@@ -357,17 +416,12 @@
       </div>
     </div>
 
-    <div class="field">
-      <label style="display:inline-block; margin-bottom:0;">
-        <input type="checkbox" id="f-iva" style="width:auto; margin-right:8px; vertical-align:middle;">
-        Agregar IVA (16%) al precio de arriba
-      </label>
-    </div>
-
-    <div class="field">
+    <div class="field" id="incluye-unico-wrap">
       <label>Lo que incluye (una línea por punto)</label>
       <textarea id="f-incluye"></textarea>
     </div>
+
+    <div id="paquetes-wrap" style="display:none;"></div>
 
     <div class="field">
       <label>Folio (se genera solo, editable si quieres ajustarlo)</label>
@@ -375,12 +429,15 @@
       <div class="hint">Formato igual que Recibos: AAMMDD-NOMBRE. Se recalcula si cambias fecha o nombre, salvo que lo edites tú a mano.</div>
     </div>
 
-    <div class="field contract-checkbox-field">
+    <div class="field contract-checkbox-field" id="tambien-contrato-wrap">
       <label style="display:inline-block; margin-bottom:0;">
         <input type="checkbox" id="f-tambien-contrato" checked style="width:auto; margin-right:8px; vertical-align:middle;">
         También generar el contrato PDF con estos mismos datos
       </label>
       <div class="hint">Descarga un segundo PDF: el contrato de colaboración con el cliente, listo para firmar. Desmárcalo si solo quieres mandar la cotización por ahora.</div>
+    </div>
+    <div class="field hint" id="tambien-contrato-multi-hint" style="display:none;">
+      Con varias opciones de paquete no se genera el contrato aquí — hazlo por separado una vez que el cliente elija cuál quiere.
     </div>
 
     <button class="generate-btn" id="btn-generar">Generar cotización PDF</button>
@@ -415,11 +472,7 @@
   <div class="slide price-slide" id="slide-price">
     <div class="ptitle" id="r-price-title">Precio Mensual</div>
     <div class="topline"></div>
-    <div class="price-card">
-      <div class="inc-title">Incluye:</div>
-      <ul id="r-incluye-list"></ul>
-      <div class="amount"><span id="r-amount">$15,000</span><span class="mxn">MXN</span></div>
-    </div>
+    <div id="r-price-cards-wrap" class="price-cards-single"></div>
   </div>
 
   <div class="contract-page" id="contract-page">
@@ -514,10 +567,10 @@ async function sbGuardarPropuestaPdfMeta({ id, clienteId, clienteNombre, nombreA
 }
 
 // ============ Cotizaciones (Supabase) ============
-async function sbGuardarCotizacion({ id, folio, fecha, proyecto, servicio, plan, precio, incluye }){
+async function sbGuardarCotizacion({ id, folio, fecha, proyecto, servicio, plan, precio, incluye, paquetes }){
   const { error } = await sb.from('cotizaciones').insert({
     id, folio, fecha, proyecto, servicio, plan: plan || '', precio,
-    incluye: incluye || '', estatus: 'Pendiente'
+    incluye: incluye || '', estatus: 'Pendiente', paquetes: paquetes || null
   });
   if(error){ console.error('Supabase guardar cotizacion:', error); throw error; }
 }
@@ -527,7 +580,7 @@ async function sbCargarCotizaciones(){
   return data.map(r => ({
     ID: r.id, Folio: r.folio || '', Fecha: r.fecha || '', Proyecto: r.proyecto || '',
     Servicio: r.servicio || '', Plan: r.plan || '', Precio: r.precio || 0, Incluye: r.incluye || '',
-    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || ''
+    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || '', Paquetes: r.paquetes || null
   }));
 }
 // Si el diagnóstico y la cotización se generan el mismo día para el mismo prospecto,
@@ -607,18 +660,75 @@ folioInput.addEventListener('input', () => { folioEditadoManualmente = true; });
 calculaFolio();
 
 function actualizaPreviewPrecio(){
-  const ivaEl = document.getElementById('f-iva');
   const previewEl = document.getElementById('f-precio-preview');
   const base = parseInt(precioInput.value || '0', 10);
-  if(ivaEl.checked && base > 0){
+  if(base > 0){
     const total = Math.round(base * 1.16);
-    previewEl.textContent = `Con IVA (16%): $${total.toLocaleString('es-MX')} MXN`;
+    previewEl.textContent = `+ IVA (16%): $${total.toLocaleString('es-MX')} MXN`;
   } else {
     previewEl.textContent = '';
   }
 }
 precioInput.addEventListener('input', actualizaPreviewPrecio);
-document.getElementById('f-iva').addEventListener('change', actualizaPreviewPrecio);
+
+// ============ Número de paquetes / opciones ============
+let numPaquetes = 1;
+
+function renderPaquetesWrap(){
+  const wrap = document.getElementById('paquetes-wrap');
+  wrap.innerHTML = '';
+  for(let i = 1; i <= numPaquetes; i++){
+    const bloque = document.createElement('div');
+    bloque.className = 'paquete-form-block';
+    bloque.dataset.paquete = i;
+    bloque.innerHTML = `
+      <h4>Paquete ${i}</h4>
+      <div class="field">
+        <label>Nombre de este paquete</label>
+        <input type="text" class="pq-nombre" value="Paquete ${i}">
+      </div>
+      <div class="field">
+        <label>Precio (MXN)</label>
+        <input type="number" class="pq-precio" placeholder="15000">
+        <div class="hint pq-precio-preview"></div>
+      </div>
+      <div class="field">
+        <label>Lo que incluye (una línea por punto)</label>
+        <textarea class="pq-incluye"></textarea>
+      </div>
+    `;
+    wrap.appendChild(bloque);
+    const precioEl = bloque.querySelector('.pq-precio');
+    const previewEl = bloque.querySelector('.pq-precio-preview');
+    precioEl.addEventListener('input', () => {
+      const base = parseInt(precioEl.value || '0', 10);
+      previewEl.textContent = base > 0 ? `+ IVA (16%): $${Math.round(base*1.16).toLocaleString('es-MX')} MXN` : '';
+    });
+  }
+  // Al pasar a modo multi-paquete, precargamos el paquete 1 con lo que ya tenías en los
+  // campos únicos, para no perder lo que ya habías escrito.
+  const primero = wrap.querySelector('[data-paquete="1"]');
+  if(primero){
+    if(precioInput.value) primero.querySelector('.pq-precio').value = precioInput.value;
+    if(incluyeArea.value) primero.querySelector('.pq-incluye').value = incluyeArea.value;
+    primero.querySelector('.pq-precio').dispatchEvent(new Event('input'));
+  }
+}
+
+document.querySelectorAll('#paquetes-count-options .paq-count-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#paquetes-count-options .paq-count-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    numPaquetes = parseInt(btn.dataset.paquetes, 10);
+    const esMulti = numPaquetes > 1;
+    document.getElementById('precio-unico-wrap').style.display = esMulti ? 'none' : 'block';
+    document.getElementById('incluye-unico-wrap').style.display = esMulti ? 'none' : 'block';
+    document.getElementById('paquetes-wrap').style.display = esMulti ? 'block' : 'none';
+    document.getElementById('tambien-contrato-wrap').style.display = esMulti ? 'none' : 'block';
+    document.getElementById('tambien-contrato-multi-hint').style.display = esMulti ? 'block' : 'none';
+    if(esMulti) renderPaquetesWrap();
+  });
+});
 
 const DEFAULTS = {
   contenido: {
@@ -845,14 +955,23 @@ async function generarPDF(){
     fotografia: 'Fotografías',
     podcast: 'Producción de Podcast'
   }[servicio];
-  const ivaInput = document.getElementById('f-iva');
-  const precioBase = parseInt(precioInput.value || '0', 10);
-  const aplicaIVA = ivaInput.checked;
-  const precio = aplicaIVA ? Math.round(precioBase * 1.16) : precioBase;
-  const incluyeLines = incluyeArea.value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(aplicaIVA && !incluyeLines.some(l => l.toLowerCase().includes('iva'))){
-    incluyeLines.push('*Este precio ya incluye IVA');
+  const paquetes = [];
+  if(numPaquetes <= 1){
+    const precioBase = parseInt(precioInput.value || '0', 10);
+    const incluyeLines = incluyeArea.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    paquetes.push({ nombre: '', precio: precioBase, incluye: incluyeLines });
+  } else {
+    document.querySelectorAll('#paquetes-wrap .paquete-form-block').forEach(bloque => {
+      const nombre = bloque.querySelector('.pq-nombre').value.trim();
+      const precioBase = parseInt(bloque.querySelector('.pq-precio').value || '0', 10);
+      const incluyeLines = bloque.querySelector('.pq-incluye').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      paquetes.push({ nombre, precio: precioBase, incluye: incluyeLines });
+    });
   }
+  // El precio "principal" que se guarda en el registro de la cotización es el del primer
+  // paquete (o el único, en el caso más común) — sirve para el listado y para autollenar
+  // recibos desde una cotización cerrada.
+  const precio = paquetes[0] ? paquetes[0].precio : 0;
   const fechaISO = fechaInput.value || hoyISO;
   const fechaObj = new Date(fechaISO + 'T00:00:00');
   const fechaLegible = fechaObj.toLocaleDateString('es-MX', {year:'numeric', month:'long', day:'numeric'});
@@ -863,16 +982,32 @@ async function generarPDF(){
   document.getElementById('r-service').textContent = servicioLabel;
   document.getElementById('r-date').textContent = fechaLegible;
 
-  // ---- fill dynamic slide: precio ----
+  // ---- fill dynamic slide: precio (una tarjeta por paquete, con precio con y sin IVA) ----
   document.getElementById('r-price-title').textContent = servicio === 'contenido' ? 'Precio Mensual' : 'Precio';
-  const ul = document.getElementById('r-incluye-list');
-  ul.innerHTML = '';
-  incluyeLines.forEach(txt => {
-    const li = document.createElement('li');
-    li.textContent = txt;
-    ul.appendChild(li);
+  const cardsWrap = document.getElementById('r-price-cards-wrap');
+  cardsWrap.className = paquetes.length <= 1 ? 'price-cards-single' : 'price-cards-n' + paquetes.length;
+  cardsWrap.innerHTML = '';
+  paquetes.forEach(pq => {
+    const conIVA = Math.round((pq.precio || 0) * 1.16);
+    const card = document.createElement('div');
+    card.className = 'price-card';
+    card.innerHTML = `
+      ${pq.nombre ? `<div class="pkg-title">${pq.nombre.replace(/</g,'&lt;')}</div>` : ''}
+      <div class="inc-title">Incluye:</div>
+      <ul></ul>
+      <div class="amount-block">
+        <div class="amount">$${(pq.precio || 0).toLocaleString('es-MX')}<span class="mxn">MXN</span></div>
+        <div class="amount-iva">Sin IVA · Con IVA (16%): $${conIVA.toLocaleString('es-MX')} MXN</div>
+      </div>
+    `;
+    const ul = card.querySelector('ul');
+    pq.incluye.forEach(txt => {
+      const li = document.createElement('li');
+      li.textContent = txt;
+      ul.appendChild(li);
+    });
+    cardsWrap.appendChild(card);
   });
-  document.getElementById('r-amount').textContent = '$' + precio.toLocaleString('es-MX');
 
   // small delay to ensure DOM paints before capture
   await new Promise(r => setTimeout(r, 60));
@@ -937,11 +1072,11 @@ async function generarPDF(){
     }
   } catch(err){ console.error('No se pudo subir la propuesta a Drive:', err); }
 
-  const tambienContrato = document.getElementById('f-tambien-contrato').checked;
+  const tambienContrato = numPaquetes <= 1 && document.getElementById('f-tambien-contrato').checked;
   if(tambienContrato){
     status.textContent = 'Generando también el contrato...';
     try{
-      await generarContratoPDF({nombre, servicio, servicioLabel, precio, incluyeLines, fechaLegible, folio});
+      await generarContratoPDF({nombre, servicio, servicioLabel, precio, incluyeLines: paquetes[0].incluye, fechaLegible, folio});
     } catch(err){
       console.error('No se pudo generar el contrato:', err);
     }
@@ -950,11 +1085,15 @@ async function generarPDF(){
   // ---- registrar la cotización en Supabase (el estatus de cierre se marca luego en el historial) ----
   status.textContent = 'Guardando en tu base de datos...';
   let guardadoOk = false;
+  const incluyeResumen = paquetes.length <= 1
+    ? paquetes[0].incluye.join(' | ')
+    : paquetes.map(pq => `${pq.nombre || 'Paquete'} ($${(pq.precio||0).toLocaleString('es-MX')}): ${pq.incluye.join(', ')}`).join(' || ');
   try{
     await sbGuardarCotizacion({
       id: uuid(), folio: folio, fecha: fechaISO, proyecto: nombre,
       servicio: servicioLabel, plan: servicio === 'contenido' ? (planSeleccionado + ' videos') : '',
-      precio: precio, incluye: incluyeLines.join(' | ')
+      precio: precio, incluye: incluyeResumen,
+      paquetes: paquetes.length > 1 ? paquetes : null
     });
     guardadoOk = true;
     cargarCotizaciones();
@@ -1025,11 +1164,18 @@ async function cargarCotizaciones(){
     }
     status.textContent = '';
     const ordenadas = cotizaciones.slice().sort((a,b) => new Date(b.Fecha || 0) - new Date(a.Fecha || 0));
+    const precioTexto = (c) => {
+      if(Array.isArray(c.Paquetes) && c.Paquetes.length > 1){
+        const montos = c.Paquetes.map(p => p.precio || 0);
+        return `$${Math.min(...montos).toLocaleString('es-MX')} – $${Math.max(...montos).toLocaleString('es-MX')} (${c.Paquetes.length} paquetes)`;
+      }
+      return `$${(c.Precio || 0).toLocaleString('es-MX')}`;
+    };
     cont.innerHTML = ordenadas.map(c => `
       <div class="cot-item" data-id="${c.ID}">
         <div class="cot-info">
           <div class="cot-nombre">${c.Folio ? c.Folio + ' — ' : ''}${c.Proyecto}</div>
-          <div class="cot-meta">${c.Servicio}${c.Plan ? ' (' + c.Plan + ')' : ''} · $${(c.Precio || 0).toLocaleString('es-MX')}</div>
+          <div class="cot-meta">${c.Servicio}${c.Plan ? ' (' + c.Plan + ')' : ''} · ${precioTexto(c)}</div>
         </div>
         <select class="cot-estatus" data-est="${c.Estatus}" data-id="${c.ID}">
           <option value="Pendiente" ${c.Estatus === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
