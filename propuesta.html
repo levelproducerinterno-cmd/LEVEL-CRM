@@ -277,15 +277,22 @@
   .price-card .inc-title{
     font-family:'Cormorant Garamond',serif; font-weight:600; font-size:20px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:20px; text-align:center; color:#111;
   }
-  .price-card ul{list-style:none; margin:0 0 22px; padding:0; flex:1;}
+  .price-card ul{list-style:none; margin:0 0 22px; padding:0;}
+  .price-card .inc-list{flex:1;}
   .price-card li{
     position:relative; padding-left:30px; margin-bottom:12px; font-size:15.5px; color:#1c1c1c; line-height:1.4;
   }
-  .price-card li:before{
+  .price-card .inc-list li:before{
     content:"✓"; position:absolute; left:0; top:1px;
     width:18px; height:18px; border-radius:50%; background:var(--verde); color:#fff;
     font-size:11px; text-align:center; line-height:18px;
   }
+  .price-card .equipo-title{
+    font-family:'Cormorant Garamond',serif; font-weight:600; font-size:15px; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 10px; text-align:center; color:#4a4a4a;
+  }
+  .price-card .equipo-list{margin:0 0 20px;}
+  .price-card .equipo-list li{padding-left:16px; font-size:13.5px; color:#4a4a4a;}
+  .price-card .equipo-list li:before{content:"–"; position:absolute; left:0; top:0; color:#8a8578; border-radius:0; background:none; width:auto; height:auto; font-size:13.5px; line-height:inherit;}
   .price-card .amount-block{text-align:center; margin-top:auto;}
   .price-card .amount{font-size:44px; font-weight:700; color:#111;}
   .price-card .amount .mxn{font-size:16px; font-weight:600; color:#444; margin-left:6px;}
@@ -296,13 +303,16 @@
   #r-price-cards-wrap.price-cards-n2 .pkg-title, #r-price-cards-wrap.price-cards-n3 .pkg-title{font-size:17px;}
   #r-price-cards-wrap.price-cards-n2 .inc-title, #r-price-cards-wrap.price-cards-n3 .inc-title{font-size:17px; margin-bottom:14px;}
   #r-price-cards-wrap.price-cards-n2 li, #r-price-cards-wrap.price-cards-n3 li{font-size:14px; margin-bottom:9px;}
+  #r-price-cards-wrap.price-cards-n2 .equipo-list li, #r-price-cards-wrap.price-cards-n3 .equipo-list li{font-size:12px;}
   #r-price-cards-wrap.price-cards-n2 .amount, #r-price-cards-wrap.price-cards-n3 .amount{font-size:32px;}
 
   #r-price-cards-wrap.price-cards-n4 .price-card{padding:18px 16px 16px;}
   #r-price-cards-wrap.price-cards-n4 .pkg-title{font-size:14px;}
   #r-price-cards-wrap.price-cards-n4 .inc-title{font-size:14px; margin-bottom:10px;}
   #r-price-cards-wrap.price-cards-n4 li{font-size:11.5px; padding-left:22px; margin-bottom:6px;}
-  #r-price-cards-wrap.price-cards-n4 li:before{width:14px; height:14px; font-size:9px; line-height:14px;}
+  #r-price-cards-wrap.price-cards-n4 .equipo-title{font-size:11px;}
+  #r-price-cards-wrap.price-cards-n4 .equipo-list li{font-size:10px; padding-left:14px;}
+  #r-price-cards-wrap.price-cards-n4 .inc-list li:before{width:14px; height:14px; font-size:9px; line-height:14px;}
   #r-price-cards-wrap.price-cards-n4 .amount{font-size:22px;}
   #r-price-cards-wrap.price-cards-n4 .amount .mxn{font-size:12px;}
   #r-price-cards-wrap.price-cards-n4 .amount-iva{font-size:10.5px;}
@@ -422,6 +432,19 @@
     </div>
 
     <div id="paquetes-wrap" style="display:none;"></div>
+
+    <div class="field">
+      <label style="display:inline-block; margin-bottom:0;">
+        <input type="checkbox" id="f-incluir-equipo" style="width:auto; margin-right:8px; vertical-align:middle;">
+        Incluir el equipo que se va a usar en la cotización
+      </label>
+      <div class="hint">Actívalo solo si el cliente lo pidió (ej. otra productora que quiere saber qué cámaras/equipo usarás). Se muestra como una lista aparte dentro del mismo cuadro de precio, sin palomitas.</div>
+    </div>
+
+    <div class="field" id="equipo-wrap" style="display:none;">
+      <label>Equipo (una línea por punto)</label>
+      <textarea id="f-equipo" placeholder="Ej. Cámara Sony FX3&#10;Lente 24-70mm f/2.8&#10;Gimbal DJI RS3&#10;Set de audio inalámbrico"></textarea>
+    </div>
 
     <div class="field">
       <label>Folio (se genera solo, editable si quieres ajustarlo)</label>
@@ -567,10 +590,10 @@ async function sbGuardarPropuestaPdfMeta({ id, clienteId, clienteNombre, nombreA
 }
 
 // ============ Cotizaciones (Supabase) ============
-async function sbGuardarCotizacion({ id, folio, fecha, proyecto, servicio, plan, precio, incluye, paquetes }){
+async function sbGuardarCotizacion({ id, folio, fecha, proyecto, servicio, plan, precio, incluye, paquetes, equipo }){
   const { error } = await sb.from('cotizaciones').insert({
     id, folio, fecha, proyecto, servicio, plan: plan || '', precio,
-    incluye: incluye || '', estatus: 'Pendiente', paquetes: paquetes || null
+    incluye: incluye || '', estatus: 'Pendiente', paquetes: paquetes || null, equipo: equipo || null
   });
   if(error){ console.error('Supabase guardar cotizacion:', error); throw error; }
 }
@@ -580,7 +603,8 @@ async function sbCargarCotizaciones(){
   return data.map(r => ({
     ID: r.id, Folio: r.folio || '', Fecha: r.fecha || '', Proyecto: r.proyecto || '',
     Servicio: r.servicio || '', Plan: r.plan || '', Precio: r.precio || 0, Incluye: r.incluye || '',
-    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || '', Paquetes: r.paquetes || null
+    Estatus: r.estatus || 'Pendiente', ActualizadoISO: r.actualizado_iso || '', Paquetes: r.paquetes || null,
+    Equipo: r.equipo || null
   }));
 }
 // Si el diagnóstico y la cotización se generan el mismo día para el mismo prospecto,
@@ -728,6 +752,10 @@ document.querySelectorAll('#paquetes-count-options .paq-count-btn').forEach(btn 
     document.getElementById('tambien-contrato-multi-hint').style.display = esMulti ? 'block' : 'none';
     if(esMulti) renderPaquetesWrap();
   });
+});
+
+document.getElementById('f-incluir-equipo').addEventListener('change', (e) => {
+  document.getElementById('equipo-wrap').style.display = e.target.checked ? 'block' : 'none';
 });
 
 const DEFAULTS = {
@@ -972,6 +1000,10 @@ async function generarPDF(){
   // paquete (o el único, en el caso más común) — sirve para el listado y para autollenar
   // recibos desde una cotización cerrada.
   const precio = paquetes[0] ? paquetes[0].precio : 0;
+  const incluirEquipo = document.getElementById('f-incluir-equipo').checked;
+  const equipoLines = incluirEquipo
+    ? document.getElementById('f-equipo').value.split('\n').map(s=>s.trim()).filter(Boolean)
+    : [];
   const fechaISO = fechaInput.value || hoyISO;
   const fechaObj = new Date(fechaISO + 'T00:00:00');
   const fechaLegible = fechaObj.toLocaleDateString('es-MX', {year:'numeric', month:'long', day:'numeric'});
@@ -994,18 +1026,30 @@ async function generarPDF(){
     card.innerHTML = `
       ${pq.nombre ? `<div class="pkg-title">${pq.nombre.replace(/</g,'&lt;')}</div>` : ''}
       <div class="inc-title">Incluye:</div>
-      <ul></ul>
+      <ul class="inc-list"></ul>
+      ${equipoLines.length > 0 ? `
+        <div class="equipo-title">Equipo:</div>
+        <ul class="equipo-list"></ul>
+      ` : ''}
       <div class="amount-block">
         <div class="amount">$${(pq.precio || 0).toLocaleString('es-MX')}<span class="mxn">MXN</span></div>
         <div class="amount-iva">Sin IVA · Con IVA (16%): $${conIVA.toLocaleString('es-MX')} MXN</div>
       </div>
     `;
-    const ul = card.querySelector('ul');
+    const ul = card.querySelector('.inc-list');
     pq.incluye.forEach(txt => {
       const li = document.createElement('li');
       li.textContent = txt;
       ul.appendChild(li);
     });
+    const ulEquipo = card.querySelector('.equipo-list');
+    if(ulEquipo){
+      equipoLines.forEach(txt => {
+        const li = document.createElement('li');
+        li.textContent = txt;
+        ulEquipo.appendChild(li);
+      });
+    }
     cardsWrap.appendChild(card);
   });
 
@@ -1093,7 +1137,8 @@ async function generarPDF(){
       id: uuid(), folio: folio, fecha: fechaISO, proyecto: nombre,
       servicio: servicioLabel, plan: servicio === 'contenido' ? (planSeleccionado + ' videos') : '',
       precio: precio, incluye: incluyeResumen,
-      paquetes: paquetes.length > 1 ? paquetes : null
+      paquetes: paquetes.length > 1 ? paquetes : null,
+      equipo: equipoLines.length > 0 ? equipoLines : null
     });
     guardadoOk = true;
     cargarCotizaciones();
