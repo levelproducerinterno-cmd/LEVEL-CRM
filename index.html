@@ -463,6 +463,9 @@
   .ls-barra-seg{height:100%;}
   .ls-sub{font-size:0.72rem;color:#8a8578;margin-bottom:10px;}
   .ls-alerta{background:#fdecea;color:#7a1a09;font-size:0.76rem;font-weight:700;padding:6px 10px;border-radius:4px;text-align:center;}
+  .ls-alerta-urgente{margin-bottom:8px;}
+  .ls-buffer{font-size:0.8rem;font-weight:700;color:#3a6b4a;background:#e6f4e6;border-radius:4px;padding:5px 9px;display:inline-block;margin-bottom:12px;}
+  .ls-buffer.bajo{color:#fff;background:var(--rojo);}
   .ls-sinslots{color:#999;font-size:0.78rem;font-style:italic;}
   .ls-btn-agendar{font-size:0.72rem;padding:8px 10px;}
   body.dark .linea-simple-card{background:#232326;}
@@ -2900,7 +2903,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-09-28-todolist-check-elimina';
+const APP_BUILD = '2026-10-06-linea-onetime-y-buffer-publicar';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3900,9 +3903,25 @@ async function sbSlotsGenerarMes(year, month, clientes){
     if(!existentesPorCliente[cid]) existentesPorCliente[cid] = {};
     existentesPorCliente[cid][String(s.numero) + '.' + String(s.sub_numero || '')] = s;
   });
+
+  // Los clientes "One time" (proyecto único, no recurrente) NO deben generar fichas cada mes:
+  // su alcance total ya se generó una sola vez. Si alguna vez tuvieron CUALQUIER slot (en
+  // cualquier año/mes), los saltamos por completo en esta pasada mensual.
+  const clienteOneTimeIds = clientes
+    .filter(c => String(c.Estado || 'Activo') === 'Activo' && String(c.Tipo || 'Recurrente') === 'OneTime')
+    .map(c => c.ID);
+  let oneTimeConSlotsPrevios = new Set();
+  if(clienteOneTimeIds.length){
+    const { data: slotsOneTime, error: errOneTime } = await sb.from('slots').select('cliente_id').in('cliente_id', clienteOneTimeIds);
+    if(errOneTime) console.error('Supabase revisar slots one-time:', errOneTime);
+    else oneTimeConSlotsPrevios = new Set((slotsOneTime || []).map(s => String(s.cliente_id)));
+  }
+
   const nuevas = [];
   for(const c of clientes){
     if(String(c.Estado || 'Activo') !== 'Activo') continue;
+    const esOneTime = String(c.Tipo || 'Recurrente') === 'OneTime';
+    if(esOneTime && oneTimeConSlotsPrevios.has(String(c.ID))) continue; // ya generó su alcance total una vez
     const claves = _slotsClavesParaCliente(c);
     const existentesCliente = existentesPorCliente[String(c.ID)] || {};
     let hayGrisDesactualizado = false;
@@ -10109,6 +10128,10 @@ let LINEA_STATE = { year: null, month: null, vista: 'tres', modo: 'simple' };
 // A partir de cuántos videos por publicar (de los contratados este mes) se avisa que ya hay
 // que agendar la siguiente grabación con el cliente.
 const LINEA_UMBRAL_AGENDAR = 3;
+// Buffer mínimo de videos ya editados y listos para publicar (sin importar de qué mes son)
+// que un cliente debe tener en todo momento. Por debajo de esto, CM se puede quedar sin
+// nada que subir el mismo día — es justo lo que esta vista debe prevenir.
+const LINEA_UMBRAL_LISTOS_PARA_PUBLICAR = 2;
 let LINEA_SLOTS = [];
 let LINEA_TODOS_CLIENTES = [];
 let LINEA_TODO_TEAM = [];
@@ -10191,10 +10214,12 @@ async function cargarLineaProduccion(){
   }
 }
 
-// Vista simple: una tarjeta por cliente. El disparador de "hay que agendar grabación" es
-// cuántos videos de ESTE MES ya se grabaron (no gris) — si son pocos o ninguno, la grabación
-// del mes todavía no pasó y hay que agendarla, sin importar cuánto buffer quede de meses
-// anteriores. "Restantes por publicar" se muestra aparte, solo como referencia.
+// Vista simple: una tarjeta por cliente. Dos alertas independientes:
+// - "bufferBajo": cuántos videos YA EDITADOS (amarillo) sigue sin publicar CM, sin importar de
+//   qué mes son — es el inventario real con el que se publica hoy. Si esto llega a 0 o casi 0,
+//   es la emergencia que esta vista debe prevenir (CM se queda sin nada que subir).
+// - "necesitaAgendar": cuántos videos de ESTE MES ya se grabaron (no gris). Si son pocos,
+//   la grabación del mes todavía no pasó y hay que agendarla.
 function _renderLineaVistaSimple(cuerpo){
   const hoy = new Date();
   const year = hoy.getFullYear();
@@ -10213,10 +10238,18 @@ function _renderLineaVistaSimple(cuerpo){
     const grabados = slotsCliente.filter(s => s.Estatus !== 'gris').length; // rojo + amarillo + verde
     const restantes = total - publicados;
     const necesitaAgendar = total > 0 && grabados <= LINEA_UMBRAL_AGENDAR;
-    return { cliente: c, total, publicados, editados, grabadosSinEditar, grabados, restantes, necesitaAgendar };
+
+    const listosParaPublicar = (LINEA_SLOTS || []).filter(s =>
+      String(s.ClienteID) === String(c.ID) && s.Estatus === 'amarillo'
+    ).length;
+    const bufferBajo = listosParaPublicar <= LINEA_UMBRAL_LISTOS_PARA_PUBLICAR;
+
+    return { cliente: c, total, publicados, editados, grabadosSinEditar, grabados, restantes, necesitaAgendar, listosParaPublicar, bufferBajo };
   });
 
   tarjetas.sort((a, b) => {
+    if(a.bufferBajo !== b.bufferBajo) return a.bufferBajo ? -1 : 1;
+    if(a.bufferBajo && b.bufferBajo) return a.listosParaPublicar - b.listosParaPublicar;
     if(a.necesitaAgendar !== b.necesitaAgendar) return a.necesitaAgendar ? -1 : 1;
     if(a.necesitaAgendar && b.necesitaAgendar) return a.grabados - b.grabados;
     return (a.cliente.Nombre || '').localeCompare(b.cliente.Nombre || '');
@@ -10227,9 +10260,10 @@ function _renderLineaVistaSimple(cuerpo){
   let html = `
     <div class="linea-simple-wrap">
       <div class="linea-simple-hint">
-        <strong>${mesLabel}</strong> — cuántos videos de este mes ya se grabaron por cliente.
-        Cuando son ${LINEA_UMBRAL_AGENDAR} o menos, se marca para agendar la siguiente grabación
-        (sin importar cuánto le quede publicado de meses anteriores).
+        <strong>${mesLabel}</strong> — 📦 son los videos ya editados que CM todavía no ha publicado
+        (el inventario real para publicar hoy, sin importar de qué mes son). Con ${LINEA_UMBRAL_LISTOS_PARA_PUBLICAR}
+        o menos, se marca en rojo como urgente. También se marca en rojo cuando van ${LINEA_UMBRAL_AGENDAR}
+        o menos videos grabados en el mes, para agendar la siguiente grabación a tiempo.
       </div>
       <div class="linea-simple-grid">
   `;
@@ -10240,11 +10274,15 @@ function _renderLineaVistaSimple(cuerpo){
 
   tarjetas.forEach(t => {
     const c = t.cliente;
+    const alertaClase = (t.bufferBajo || t.necesitaAgendar) ? ' alerta' : '';
+    const bufferHtml = `<div class="ls-buffer${t.bufferBajo ? ' bajo' : ''}">📦 ${t.listosParaPublicar} listo${t.listosParaPublicar === 1 ? '' : 's'} para publicar</div>`;
     if(t.total === 0){
       html += `
-        <div class="linea-simple-card">
+        <div class="linea-simple-card${alertaClase}">
           <div class="ls-header">${c.Emoji || ''} ${c.Nombre || ''}</div>
+          ${bufferHtml}
           <div class="ls-sinslots">Sin videos generados este mes todavía.</div>
+          ${t.bufferBajo ? '<div class="ls-alerta ls-alerta-urgente">🚨 Sin videos listos para publicar — editar hoy</div>' : ''}
         </div>
       `;
       return;
@@ -10253,8 +10291,9 @@ function _renderLineaVistaSimple(cuerpo){
     const pctAmarillo = Math.round(t.editados / t.total * 100);
     const pctRojo = Math.round(t.grabadosSinEditar / t.total * 100);
     html += `
-      <div class="linea-simple-card${t.necesitaAgendar ? ' alerta' : ''}">
+      <div class="linea-simple-card${alertaClase}">
         <div class="ls-header">${c.Emoji || ''} ${c.Nombre || ''}</div>
+        ${bufferHtml}
         <div class="ls-numero-row"><span class="ls-numero">${t.grabados}</span></div>
         <div class="ls-label">grabados de ${t.total} este mes</div>
         <div class="ls-barra">
@@ -10263,6 +10302,7 @@ function _renderLineaVistaSimple(cuerpo){
           <div class="ls-barra-seg" style="width:${pctRojo}%;background:#f5a89a;"></div>
         </div>
         <div class="ls-sub">${t.publicados} publicados · ${t.restantes} por publicar</div>
+        ${t.bufferBajo ? '<div class="ls-alerta ls-alerta-urgente">🚨 Sin videos listos para publicar — editar hoy</div>' : ''}
         ${t.necesitaAgendar ? `
           <div class="ls-alerta">⚠ Agendar próxima grabación</div>
           <button class="btn ghost ls-btn-agendar" data-agendar-cliente="${c.ID}" style="margin-top:8px;width:100%;">📅 Agendar grabación</button>
