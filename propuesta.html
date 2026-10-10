@@ -814,7 +814,7 @@ function applyDefaults(){
 servicioSelect.addEventListener('change', () => {
   const isContenido = servicioSelect.value === 'contenido';
   planField.style.display = isContenido ? 'block' : 'none';
-  redesField.style.display = isContenido ? 'none' : 'block';
+  redesField.style.display = 'block';
   applyDefaults();
 });
 
@@ -833,7 +833,7 @@ document.querySelectorAll('.net-chip').forEach(chip => {
 
 // init defaults on load
 planField.style.display = 'block';
-redesField.style.display = 'none';
+redesField.style.display = 'block';
 applyDefaults();
 
 // ============ Fixed slide images (base64 jpg) ============
