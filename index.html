@@ -998,6 +998,7 @@
   .inf-net-table td{border:1px solid #e4e0d6;padding:0;}
   .inf-net-table td.mes-cell{background:#f2efe9;padding:8px 10px;font-weight:600;text-align:center;color:var(--negro);}
   .inf-net-table td.mes-cell.mes-actual{background:#fbeae6;color:var(--rojo);}
+  .inf-net-table td.mes-cell.mes-inicial{background:#eef2fb;color:#2a4a8f;}
   .inf-net-table input{border:none;padding:8px 10px;font-size:0.82rem;border-radius:0;width:100%;background:#fff;color:var(--negro);}
   .inf-net-table input:focus{outline:2px solid var(--rojo);outline-offset:-2px;}
   .inf-net-block{margin-bottom:22px;}
@@ -2478,7 +2479,7 @@ Nombre cliente:
               <div class="inf-toggle-btn" data-primer="si">Sí</div>
               <div class="inf-toggle-btn active" data-primer="no">No</div>
             </div>
-            <div class="hint">Los datos de meses anteriores se guardan y se cargan solos cada vez que abres al cliente.</div>
+            <div class="hint">Al marcar "Sí" se muestran dos filas: el mes inicial (las métricas con las que arrancó el cliente antes de empezar, para tener de una vez un punto de comparación) y el mes actual. Los datos de meses anteriores se guardan y se cargan solos cada vez que abres al cliente.</div>
           </div>
           <div id="inf-tablas-redes"></div>
         </div>
@@ -2903,7 +2904,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-06-linea-onetime-y-buffer-publicar';
+const APP_BUILD = '2026-10-13-informe-mes-inicial';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -8320,6 +8321,14 @@ function infOrdenarKeys(keys){
   return keys.slice().sort((a, b) => a.localeCompare(b));
 }
 
+// Devuelve el key del mes inmediatamente anterior a uno dado ("2026-01" -> "2025-12")
+function infMesAnteriorKey(key){
+  const p = infParseKey(key);
+  let year = p.year, idxMes = p.idxMes - 1;
+  if(idxMes < 0){ idxMes = 11; year--; }
+  return year + '-' + String(idxMes + 1).padStart(2, '0');
+}
+
 async function cargarInforme(clienteId){
   INF_TOP_IMAGES = {};
   INF_HONOR_IMAGES = {};
@@ -8455,14 +8464,17 @@ function renderInfTablasForm(){
   const redesActivas = Array.from(document.querySelectorAll('#inf-net-chip-row .net-chip.active')).map(c => c.dataset.red);
   const primerMes = document.querySelector('#cd-panel-informe .inf-toggle-btn.active').dataset.primer === 'si';
   const mesActualKey = infMesActualKey();
+  const mesInicialKey = infMesAnteriorKey(mesActualKey);
 
   redesActivas.forEach(red => {
     // Reunimos todos los meses que aparecen en el tracker de esta red + el mes actual
     const trackerRed = INF_TRACKER[red] || {};
     let keys = Object.keys(trackerRed);
     if(!keys.includes(mesActualKey)) keys.push(mesActualKey);
-    // Si es primer mes: solo mostramos el mes actual (aunque haya datos viejos)
-    if(primerMes) keys = [mesActualKey];
+    // Si es primer mes: mostramos el mes inicial (las métricas con las que arrancó el
+    // cliente, antes de empezar el servicio) junto con el mes actual, para ya tener un
+    // punto de comparación desde el primer informe real.
+    if(primerMes) keys = [mesInicialKey, mesActualKey];
     keys = infOrdenarKeys(keys);
 
     const block = document.createElement('div');
@@ -8472,18 +8484,20 @@ function renderInfTablasForm(){
       const parseado = infParseKey(key);
       const nombreMes = INF_MESES[parseado.idxMes] + ' ' + parseado.year;
       const esActual = key === mesActualKey;
+      const esInicial = primerMes && key === mesInicialKey;
       const datos = trackerRed[key] || { seguidores: '', views: '' };
       const sVal = datos.seguidores === null || datos.seguidores === undefined ? '' : datos.seguidores;
       const vVal = datos.views === null || datos.views === undefined ? '' : datos.views;
+      const etiqueta = esActual ? ' (actual)' : (esInicial ? ' (mes inicial — antes de empezar)' : '');
       filas += `
         <tr>
-          <td class="mes-cell${esActual ? ' mes-actual' : ''}">${nombreMes}${esActual ? ' (actual)' : ''}</td>
+          <td class="mes-cell${esActual ? ' mes-actual' : ''}${esInicial ? ' mes-inicial' : ''}">${nombreMes}${etiqueta}</td>
           <td><input type="number" data-inf-red="${red}" data-inf-key="${key}" data-inf-campo="seguidores" value="${sVal}" placeholder="0"></td>
           <td><input type="number" data-inf-red="${red}" data-inf-key="${key}" data-inf-campo="views" value="${vVal}" placeholder="0"></td>
         </tr>`;
     });
     block.innerHTML = `
-      <h3>${red}<span class="inf-net-mini">${primerMes ? 'primer mes' : 'histórico completo'}</span></h3>
+      <h3>${red}<span class="inf-net-mini">${primerMes ? 'primer informe' : 'histórico completo'}</span></h3>
       <table class="inf-net-table">
         <thead><tr><th>Mes</th><th>Seguidores</th><th>Views</th></tr></thead>
         <tbody>${filas}</tbody>
