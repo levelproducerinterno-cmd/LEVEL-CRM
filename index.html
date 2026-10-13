@@ -565,6 +565,8 @@
   .vp-empty{text-align:center;padding:60px 24px;color:#8a8578;background:rgba(255,255,255,0.03);border:1px dashed #444;border-radius:8px;font-style:italic;}
   .vp-btn-primario{background:var(--rojo);color:#fff;border:none;padding:12px 22px;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;border-radius:3px;cursor:pointer;font-family:inherit;}
   .vp-btn-primario:hover{background:#a01d05;}
+  .vp-copiar{background:#fff;color:#333;border:1.5px solid #d8d3c9;padding:12px 22px;font-size:0.85rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;border-radius:3px;cursor:pointer;font-family:inherit;margin-right:10px;}
+  .vp-copiar:hover{background:#f6f3ec;}
   .vp-btn-secundario{display:inline-block;background:#2a2723;color:#f0ede6;border:1px solid #666;padding:10px 18px;font-size:0.82rem;font-weight:600;text-decoration:none;border-radius:3px;font-family:inherit;}
   .vp-btn-secundario:hover{background:#3a3733;border-color:#888;color:#fff;}
 
@@ -2904,7 +2906,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-13-guion-copiar-teleprompter';
+const APP_BUILD = '2026-10-13-guion-copiar-teleprompter-portal-cliente';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -11831,6 +11833,7 @@ async function arrancarVistaPublicaCliente(token){
             <label>Notas / ideas</label>
             <textarea class="vp-notas">${g.Notas || ''}</textarea>
             <div style="margin-top:14px;">
+              <button class="vp-copiar" data-idx="${idx}">📋 Copiar guion</button>
               <button class="vp-guardar vp-btn-primario" data-idx="${idx}">Guardar cambios</button>
               <span class="vp-msg"></span>
             </div>
@@ -11852,6 +11855,31 @@ async function arrancarVistaPublicaCliente(token){
         const idx = parseInt(btn.dataset.idx, 10);
         const item = btn.closest('.vp-guion');
         await _vpGuardarGuion(idx, item.querySelector('.vp-msg'));
+      });
+    });
+    lista.querySelectorAll('.vp-copiar').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const item = btn.closest('.vp-guion');
+        const textarea = item ? item.querySelector('.vp-texto') : null;
+        const texto = textarea ? textarea.value : '';
+        let copiado = false;
+        try{
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            await navigator.clipboard.writeText(texto);
+            copiado = true;
+          }
+        } catch(err){ /* fallback abajo */ }
+        if(!copiado && textarea){
+          textarea.focus();
+          textarea.select();
+          try{ copiado = document.execCommand('copy'); } catch(err){ copiado = false; }
+          textarea.setSelectionRange(0, 0);
+          textarea.blur();
+        }
+        const original = btn.textContent;
+        btn.textContent = copiado ? '✓ Copiado' : '⚠️ No se pudo copiar';
+        setTimeout(() => { btn.textContent = original; }, 1800);
       });
     });
     const btnTodos = document.getElementById('vp-guardar-todos');
