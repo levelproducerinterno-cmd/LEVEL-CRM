@@ -2904,7 +2904,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-13-informe-mes-inicial';
+const APP_BUILD = '2026-10-13-guion-copiar-teleprompter';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -9000,6 +9000,7 @@ function _guionItemHtml(g){
           <option value="Editado" ${est === 'Editado' ? 'selected' : ''}>Editado</option>
         </select>
         <div class="g-actions">
+          <button class="btn ghost" data-copiar-guion="${g.ID}">📋 Copiar guion</button>
           <button class="btn ghost" data-eliminar-guion="${g.ID}">Eliminar</button>
           <button class="btn ghost" data-marcar-revisado="${g.ID}" ${String(g.PendienteRevision || '') === '1' ? '' : 'style="display:none;"'}>✓ Marcar como revisado</button>
           <button class="btn" data-guardar-guion="${g.ID}">Guardar cambios</button>
@@ -9179,6 +9180,33 @@ function renderGuionesLista(){
         console.error(err);
         alert('⚠️ No se pudo marcar como revisado. Revisa tu conexión (o recarga la página, F5) e intenta de nuevo.');
       }
+    });
+  });
+
+  cont.querySelectorAll('[data-copiar-guion]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.copiarGuion;
+      const item = cont.querySelector(`.guion-item[data-id="${CSS.escape(id)}"]`);
+      const textarea = item ? item.querySelector('.gi-texto') : null;
+      const texto = textarea ? textarea.value : '';
+      let copiado = false;
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(texto);
+          copiado = true;
+        }
+      } catch(err){ /* fallback abajo */ }
+      if(!copiado && textarea){
+        textarea.focus();
+        textarea.select();
+        try{ copiado = document.execCommand('copy'); } catch(err){ copiado = false; }
+        textarea.setSelectionRange(0, 0);
+        textarea.blur();
+      }
+      const original = btn.textContent;
+      btn.textContent = copiado ? '✓ Copiado' : '⚠️ No se pudo copiar';
+      setTimeout(() => { btn.textContent = original; }, 1800);
     });
   });
 
