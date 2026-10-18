@@ -1735,6 +1735,10 @@
               <div class="asc-valor" id="inv-stat-libros">$0</div>
             </div>
             <div class="admin-stat-card">
+              <div class="asc-label">Valor en cursos y mentorías</div>
+              <div class="asc-valor" id="inv-stat-cursos">$0</div>
+            </div>
+            <div class="admin-stat-card">
               <div class="asc-label">Valor total del inventario</div>
               <div class="asc-valor accent" id="inv-stat-total">$0</div>
             </div>
@@ -1986,7 +1990,8 @@
           <option value="Drones">Drones</option>
           <option value="Fondos">Fondos</option>
           <option value="Cómputo y almacenamiento">Cómputo y almacenamiento</option>
-          <option value="Libros / Conocimiento">Libros / Conocimiento</option>
+          <option value="Libros">Libros</option>
+          <option value="Cursos y Mentorías">Cursos y Mentorías</option>
           <option value="__otra">Otra categoría...</option>
         </select>
         <input type="text" id="inv-categoria-otra" placeholder="Nombre de la categoría" style="display:none;margin-top:8px;width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;">
@@ -3026,7 +3031,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-18-inventario-conocimiento-pendiente';
+const APP_BUILD = '2026-10-18-inventario-libros-y-cursos-separados';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -5282,7 +5287,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
 // ============ INVENTARIO DE EQUIPO ====
 // ============================================================
 let INVENTARIO_ACTUAL = [];
-const INV_CATEGORIAS_ORDEN = ['Cámaras','Lentes','Filtros','Estabilizador','Teleprompter','Audio','Iluminación','Drones','Fondos','Cómputo y almacenamiento','Libros / Conocimiento'];
+const INV_CATEGORIAS_ORDEN = ['Cámaras','Lentes','Filtros','Estabilizador','Teleprompter','Audio','Iluminación','Drones','Fondos','Cómputo y almacenamiento','Libros','Cursos y Mentorías'];
 
 function _invFmtMoney(n){
   return '$' + Math.round(n || 0).toLocaleString('es-MX');
@@ -5323,13 +5328,15 @@ function renderInventarioLista(){
     return ia - ib;
   });
 
-  let valorEquipo = 0, valorLibros = 0, valorPendiente = 0, totalArticulos = 0;
+  let valorEquipo = 0, valorLibros = 0, valorCursos = 0, valorPendiente = 0, totalArticulos = 0;
   INVENTARIO_ACTUAL.forEach(it => {
     const subtotal = (it.Cantidad || 0) * (it.PrecioUnitario || 0);
     if(it.Estado === 'Pendiente'){
       valorPendiente += subtotal;
-    } else if(it.Categoria === 'Libros / Conocimiento'){
+    } else if(it.Categoria === 'Libros'){
       valorLibros += subtotal;
+    } else if(it.Categoria === 'Cursos y Mentorías'){
+      valorCursos += subtotal;
     } else {
       valorEquipo += subtotal;
     }
@@ -5337,7 +5344,8 @@ function renderInventarioLista(){
   });
   document.getElementById('inv-stat-equipo').textContent = _invFmtMoney(valorEquipo);
   document.getElementById('inv-stat-libros').textContent = _invFmtMoney(valorLibros);
-  document.getElementById('inv-stat-total').textContent = _invFmtMoney(valorEquipo + valorLibros);
+  document.getElementById('inv-stat-cursos').textContent = _invFmtMoney(valorCursos);
+  document.getElementById('inv-stat-total').textContent = _invFmtMoney(valorEquipo + valorLibros + valorCursos);
   document.getElementById('inv-stat-pendiente').textContent = _invFmtMoney(valorPendiente);
   document.getElementById('inv-stat-articulos').textContent = String(totalArticulos);
 
