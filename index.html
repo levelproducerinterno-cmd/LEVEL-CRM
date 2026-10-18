@@ -797,6 +797,25 @@
   .admin-stat-card .asc-valor.accent{color:#c8973c;}
   body.dark .admin-stat-card{background:#1e1e21;border-color:#3a3a3e;}
   body.dark .admin-stat-card .asc-valor{color:#e4e2dd;}
+  .inv-cat-block{background:#fff;border:1px solid #e4e0d6;border-radius:6px;margin-bottom:16px;overflow:hidden;}
+  .inv-cat-head{padding:12px 16px;background:#f6f3ec;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.85rem;}
+  .inv-cat-subtotal{font-weight:600;color:#8a8578;font-size:0.8rem;}
+  .inv-item-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid #efeae0;flex-wrap:wrap;}
+  .inv-item-nombre{font-weight:700;flex:1 1 220px;min-width:180px;}
+  .inv-item-detalle{color:#8a8578;font-size:0.78rem;flex:1 1 200px;}
+  .inv-item-cant{font-size:0.8rem;color:#555;white-space:nowrap;}
+  .inv-item-precio{font-size:0.82rem;font-weight:600;white-space:nowrap;min-width:110px;text-align:right;}
+  .inv-item-estado{padding:3px 9px;border-radius:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;white-space:nowrap;}
+  .inv-item-estado.disponible{background:#2e7d2e;color:#fff;}
+  .inv-item-estado.prestado{background:#c08b00;color:#fff;}
+  .inv-item-estado.en-reparacion{background:#3e5a78;color:#fff;}
+  .inv-item-estado.perdido{background:#c72a09;color:#fff;}
+  .inv-item-acciones{display:flex;gap:6px;}
+  .inv-item-acciones button{background:none;border:1px solid #d8d3c9;border-radius:3px;padding:5px 9px;cursor:pointer;font-size:0.75rem;}
+  .inv-item-nota{flex-basis:100%;font-size:0.74rem;color:#a0471f;margin-top:-4px;}
+  body.dark .inv-cat-block{background:#1e1e21;border-color:#3a3a3e;}
+  body.dark .inv-cat-head{background:#26262a;}
+  body.dark .inv-item-row{border-top-color:#333;}
   .admin-tabs-switch{display:flex;gap:2px;}
   .admin-tab-btn{background:#1c1a17;color:#b7b2a9;border:none;padding:12px 20px;cursor:pointer;font-size:0.85rem;font-weight:600;letter-spacing:0.02em;border-radius:6px 6px 0 0;}
   .admin-tab-btn.active{background:var(--hueso);color:var(--negro);}
@@ -1642,6 +1661,7 @@
         <div class="admin-tabs-switch">
           <button class="admin-tab-btn active" data-admin="recibos">🧾 Recibos</button>
           <button class="admin-tab-btn" data-admin="renta">🎥 Renta de Equipo</button>
+          <button class="admin-tab-btn" data-admin="inventario">📦 Inventario</button>
           <button class="admin-tab-btn" data-admin="kpis">📋 KPI's semanales</button>
           <button class="admin-tab-btn" data-admin="redes">🔗 Redes sociales</button>
           <button class="admin-tab-btn" data-admin="cobranza">💵 Cobranza</button>
@@ -1700,6 +1720,34 @@
               <tbody id="rentas-tbody"></tbody>
             </table>
           </div>
+        </div>
+
+        <div class="admin-subpanel" id="admin-panel-inventario">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            <div class="admin-stat-card">
+              <div class="asc-label">Valor del equipo</div>
+              <div class="asc-valor" id="inv-stat-equipo">$0</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-label">Valor en libros</div>
+              <div class="asc-valor" id="inv-stat-libros">$0</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-label">Valor total del inventario</div>
+              <div class="asc-valor accent" id="inv-stat-total">$0</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-label">Artículos registrados</div>
+              <div class="asc-valor" id="inv-stat-articulos">0</div>
+            </div>
+          </div>
+          <div class="hint" style="margin-bottom:14px;">
+            Los precios son aproximados — edítalos cuando sepas el costo exacto de algo. Usa "Estado" para marcar si algo
+            está prestado, perdido o en reparación, y en "¿Con quién?" anota quién lo tiene en ese caso.
+          </div>
+          <button class="btn" id="btn-nuevo-inventario">+ Agregar artículo</button>
+          <div class="status-msg" id="inv-status" style="margin:10px 0;"></div>
+          <div id="inv-categorias-cont"></div>
         </div>
 
         <div class="admin-subpanel" id="admin-panel-kpis">
@@ -1910,6 +1958,71 @@
     <div style="display:flex;gap:10px;">
       <button class="btn ghost" id="btn-cancelar-renta" style="flex:1;">Cancelar</button>
       <button class="btn" id="btn-generar-renta" style="flex:1;">Generar contrato PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: nuevo/editar artículo de inventario ============ -->
+<div class="modal-bg" id="modal-inventario-bg">
+  <div class="modal" style="max-width:560px;">
+    <h2 id="modal-inventario-title">Agregar artículo</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="field" style="grid-column:1/-1;">
+        <label>Categoría *</label>
+        <select id="inv-categoria">
+          <option value="Cámaras">Cámaras</option>
+          <option value="Lentes">Lentes</option>
+          <option value="Filtros">Filtros</option>
+          <option value="Estabilizador">Estabilizador</option>
+          <option value="Teleprompter">Teleprompter</option>
+          <option value="Audio">Audio</option>
+          <option value="Iluminación">Iluminación</option>
+          <option value="Drones">Drones</option>
+          <option value="Fondos">Fondos</option>
+          <option value="Cómputo y almacenamiento">Cómputo y almacenamiento</option>
+          <option value="Libros / Conocimiento">Libros / Conocimiento</option>
+          <option value="__otra">Otra categoría...</option>
+        </select>
+        <input type="text" id="inv-categoria-otra" placeholder="Nombre de la categoría" style="display:none;margin-top:8px;width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Nombre *</label>
+        <input type="text" id="inv-nombre" placeholder="Ej. Sony A6400">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Detalle (opcional)</label>
+        <input type="text" id="inv-detalle" placeholder="Ej. Incluye 3 baterías y control RC">
+      </div>
+      <div class="field">
+        <label>Cantidad</label>
+        <input type="number" id="inv-cantidad" min="1" value="1">
+      </div>
+      <div class="field">
+        <label>Precio unitario estimado (MXN)</label>
+        <input type="number" id="inv-precio" min="0" step="1" value="0">
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="inv-estado">
+          <option value="Disponible">Disponible</option>
+          <option value="Prestado">Prestado</option>
+          <option value="En reparación">En reparación</option>
+          <option value="Perdido">Perdido</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>¿Con quién? (si está prestado)</label>
+        <input type="text" id="inv-persona" placeholder="Nombre de la persona">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Notas</label>
+        <textarea id="inv-notas" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;font-family:inherit;"></textarea>
+      </div>
+    </div>
+    <div id="inv-error" style="color:#c72a09;font-size:0.8rem;margin:10px 0;"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cancelar-inventario">Cancelar</button>
+      <button class="btn" id="btn-guardar-inventario">Guardar</button>
     </div>
   </div>
 </div>
@@ -2906,7 +3019,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-13-guion-copiar-teleprompter-portal-cliente';
+const APP_BUILD = '2026-10-18-inventario-equipo';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4813,6 +4926,32 @@ async function sbEliminarRenta(id){
   if(error){ console.error('Supabase eliminar renta:', error); throw error; }
 }
 
+function _sbFilaInventario(r){
+  return {
+    ID: r.id, Categoria: r.categoria || '', Nombre: r.nombre || '', Detalle: r.detalle || '',
+    Cantidad: r.cantidad || 1, PrecioUnitario: r.precio_unitario || 0, Estado: r.estado || 'Disponible',
+    Persona: r.persona || '', Notas: r.notas || '', Orden: r.orden || 0
+  };
+}
+async function sbCargarInventario(){
+  const { data, error } = await sb.from('inventario_equipo').select('*');
+  if(error){ console.error('Supabase inventario_equipo:', error); return []; }
+  return data.map(_sbFilaInventario);
+}
+async function sbGuardarInventarioItem(datos){
+  const row = {
+    id: datos.id, categoria: datos.categoria, nombre: datos.nombre, detalle: datos.detalle || '',
+    cantidad: datos.cantidad || 1, precio_unitario: datos.precioUnitario || 0, estado: datos.estado || 'Disponible',
+    persona: datos.persona || '', notas: datos.notas || '', orden: datos.orden || 0
+  };
+  const { error } = await sb.from('inventario_equipo').upsert(row, { onConflict: 'id' });
+  if(error){ console.error('Supabase guardar inventario:', error); throw error; }
+}
+async function sbEliminarInventarioItem(id){
+  const { error } = await sb.from('inventario_equipo').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar inventario:', error); throw error; }
+}
+
 function generarContratoRentaPDF(data){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'letter' });
@@ -5131,6 +5270,210 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     if(panel) panel.classList.add('active');
   });
 });
+
+// ============================================================
+// ============ INVENTARIO DE EQUIPO ====
+// ============================================================
+let INVENTARIO_ACTUAL = [];
+const INV_CATEGORIAS_ORDEN = ['Cámaras','Lentes','Filtros','Estabilizador','Teleprompter','Audio','Iluminación','Drones','Fondos','Cómputo y almacenamiento','Libros / Conocimiento'];
+
+function _invFmtMoney(n){
+  return '$' + Math.round(n || 0).toLocaleString('es-MX');
+}
+function _invEstadoClass(estado){
+  return String(estado || 'Disponible').toLowerCase()
+    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u')
+    .replace(/\s+/g,'-');
+}
+
+async function cargarInventario(){
+  const status = document.getElementById('inv-status');
+  if(status) status.textContent = 'Cargando...';
+  try{
+    INVENTARIO_ACTUAL = await sbCargarInventario();
+    if(status) status.textContent = '';
+  } catch(err){
+    console.error(err);
+    if(status) status.textContent = 'No se pudo cargar el inventario.';
+  }
+  renderInventarioLista();
+}
+
+function renderInventarioLista(){
+  const cont = document.getElementById('inv-categorias-cont');
+  if(!cont) return;
+  const porCategoria = {};
+  INVENTARIO_ACTUAL.forEach(it => {
+    const cat = it.Categoria || 'Otros';
+    if(!porCategoria[cat]) porCategoria[cat] = [];
+    porCategoria[cat].push(it);
+  });
+  const categorias = Object.keys(porCategoria).sort((a, b) => {
+    const ia = INV_CATEGORIAS_ORDEN.indexOf(a), ib = INV_CATEGORIAS_ORDEN.indexOf(b);
+    if(ia === -1 && ib === -1) return a.localeCompare(b);
+    if(ia === -1) return 1;
+    if(ib === -1) return -1;
+    return ia - ib;
+  });
+
+  let valorEquipo = 0, valorLibros = 0, totalArticulos = 0;
+  INVENTARIO_ACTUAL.forEach(it => {
+    const subtotal = (it.Cantidad || 0) * (it.PrecioUnitario || 0);
+    if(it.Categoria === 'Libros / Conocimiento') valorLibros += subtotal; else valorEquipo += subtotal;
+    totalArticulos += (it.Cantidad || 0);
+  });
+  document.getElementById('inv-stat-equipo').textContent = _invFmtMoney(valorEquipo);
+  document.getElementById('inv-stat-libros').textContent = _invFmtMoney(valorLibros);
+  document.getElementById('inv-stat-total').textContent = _invFmtMoney(valorEquipo + valorLibros);
+  document.getElementById('inv-stat-articulos').textContent = String(totalArticulos);
+
+  if(categorias.length === 0){
+    cont.innerHTML = '<div class="hint">Todavía no hay artículos registrados. Da clic en "+ Agregar artículo" para empezar.</div>';
+    return;
+  }
+
+  cont.innerHTML = categorias.map(cat => {
+    const items = porCategoria[cat].slice().sort((a, b) => (a.Orden || 0) - (b.Orden || 0) || a.Nombre.localeCompare(b.Nombre));
+    const subtotalCat = items.reduce((s, it) => s + (it.Cantidad || 0) * (it.PrecioUnitario || 0), 0);
+    const filas = items.map(it => {
+      const estadoClase = _invEstadoClass(it.Estado);
+      const notaPersona = it.Estado === 'Prestado' && it.Persona ? `<div class="inv-item-nota">🤝 Con: ${it.Persona}</div>` : '';
+      const notaExtra = it.Notas ? `<div class="inv-item-nota">${it.Notas}</div>` : '';
+      return `
+        <div class="inv-item-row" data-id="${it.ID}">
+          <span class="inv-item-nombre">${it.Nombre}</span>
+          ${it.Detalle ? `<span class="inv-item-detalle">${it.Detalle}</span>` : ''}
+          <span class="inv-item-cant">x${it.Cantidad}</span>
+          <span class="inv-item-precio">${_invFmtMoney((it.Cantidad || 0) * (it.PrecioUnitario || 0))}</span>
+          <span class="inv-item-estado ${estadoClase}">${it.Estado}</span>
+          <span class="inv-item-acciones">
+            <button data-inv-editar="${it.ID}">Editar</button>
+            <button data-inv-eliminar="${it.ID}">Eliminar</button>
+          </span>
+          ${notaPersona}${notaExtra}
+        </div>`;
+    }).join('');
+    return `
+      <div class="inv-cat-block">
+        <div class="inv-cat-head"><span>${cat}</span><span class="inv-cat-subtotal">${_invFmtMoney(subtotalCat)}</span></div>
+        ${filas}
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('[data-inv-editar]').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalInventario(btn.dataset.invEditar));
+  });
+  cont.querySelectorAll('[data-inv-eliminar]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('¿Eliminar este artículo del inventario?')) return;
+      const id = btn.dataset.invEliminar;
+      const respaldo = INVENTARIO_ACTUAL.slice();
+      INVENTARIO_ACTUAL = INVENTARIO_ACTUAL.filter(it => it.ID !== id);
+      renderInventarioLista();
+      try{
+        await sbEliminarInventarioItem(id);
+      } catch(err){
+        console.error(err);
+        INVENTARIO_ACTUAL = respaldo;
+        renderInventarioLista();
+        alert('⚠️ No se pudo eliminar el artículo. Revisa tu conexión e intenta de nuevo.');
+      }
+    });
+  });
+}
+
+const modalInventarioBg = document.getElementById('modal-inventario-bg');
+if(modalInventarioBg){
+  let invEditandoId = null;
+  const catSelect = document.getElementById('inv-categoria');
+  const catOtra = document.getElementById('inv-categoria-otra');
+
+  catSelect.addEventListener('change', () => {
+    catOtra.style.display = catSelect.value === '__otra' ? 'block' : 'none';
+  });
+
+  function abrirModalInventarioNuevo(){
+    invEditandoId = null;
+    document.getElementById('modal-inventario-title').textContent = 'Agregar artículo';
+    catSelect.value = 'Cámaras';
+    catOtra.style.display = 'none';
+    catOtra.value = '';
+    document.getElementById('inv-nombre').value = '';
+    document.getElementById('inv-detalle').value = '';
+    document.getElementById('inv-cantidad').value = 1;
+    document.getElementById('inv-precio').value = 0;
+    document.getElementById('inv-estado').value = 'Disponible';
+    document.getElementById('inv-persona').value = '';
+    document.getElementById('inv-notas').value = '';
+    document.getElementById('inv-error').textContent = '';
+    modalInventarioBg.classList.add('open');
+  }
+
+  window.abrirModalInventario = function(id){
+    const it = INVENTARIO_ACTUAL.find(x => x.ID === id);
+    if(!it) return;
+    invEditandoId = id;
+    document.getElementById('modal-inventario-title').textContent = 'Editar artículo';
+    const tieneCategoria = INV_CATEGORIAS_ORDEN.includes(it.Categoria);
+    if(tieneCategoria){
+      catSelect.value = it.Categoria;
+      catOtra.style.display = 'none';
+      catOtra.value = '';
+    } else {
+      catSelect.value = '__otra';
+      catOtra.style.display = 'block';
+      catOtra.value = it.Categoria;
+    }
+    document.getElementById('inv-nombre').value = it.Nombre;
+    document.getElementById('inv-detalle').value = it.Detalle || '';
+    document.getElementById('inv-cantidad').value = it.Cantidad || 1;
+    document.getElementById('inv-precio').value = it.PrecioUnitario || 0;
+    document.getElementById('inv-estado').value = it.Estado || 'Disponible';
+    document.getElementById('inv-persona').value = it.Persona || '';
+    document.getElementById('inv-notas').value = it.Notas || '';
+    document.getElementById('inv-error').textContent = '';
+    modalInventarioBg.classList.add('open');
+  };
+
+  document.getElementById('btn-nuevo-inventario').addEventListener('click', abrirModalInventarioNuevo);
+  document.getElementById('btn-cancelar-inventario').addEventListener('click', () => modalInventarioBg.classList.remove('open'));
+  modalInventarioBg.addEventListener('click', (e) => { if(e.target === modalInventarioBg) modalInventarioBg.classList.remove('open'); });
+
+  document.getElementById('btn-guardar-inventario').addEventListener('click', async () => {
+    const errEl = document.getElementById('inv-error');
+    const categoria = catSelect.value === '__otra' ? catOtra.value.trim() : catSelect.value;
+    const nombre = document.getElementById('inv-nombre').value.trim();
+    if(!categoria || !nombre){
+      errEl.textContent = 'Completa la categoría y el nombre.';
+      return;
+    }
+    const datos = {
+      id: invEditandoId || uuid(),
+      categoria, nombre,
+      detalle: document.getElementById('inv-detalle').value.trim(),
+      cantidad: parseInt(document.getElementById('inv-cantidad').value, 10) || 1,
+      precioUnitario: parseFloat(document.getElementById('inv-precio').value) || 0,
+      estado: document.getElementById('inv-estado').value,
+      persona: document.getElementById('inv-persona').value.trim(),
+      notas: document.getElementById('inv-notas').value.trim(),
+      orden: (() => {
+        const existente = INVENTARIO_ACTUAL.find(x => x.ID === invEditandoId);
+        return existente ? existente.Orden : 999;
+      })()
+    };
+    const btn = document.getElementById('btn-guardar-inventario');
+    btn.disabled = true;
+    try{
+      await sbGuardarInventarioItem(datos);
+      modalInventarioBg.classList.remove('open');
+      await cargarInventario();
+    } catch(err){
+      console.error(err);
+      errEl.textContent = '⚠️ No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+    }
+    btn.disabled = false;
+  });
+}
 
 // ============================================================
 // ============ KPI's semanales — respuestas de texto libre del check-in ====
@@ -10867,7 +11210,7 @@ function cambiarLinea(lineaKey){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
-    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
+    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarInventario(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
   }
 }
 
