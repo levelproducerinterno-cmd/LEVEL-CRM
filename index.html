@@ -810,6 +810,8 @@
   .inv-item-estado.prestado{background:#c08b00;color:#fff;}
   .inv-item-estado.en-reparacion{background:#3e5a78;color:#fff;}
   .inv-item-estado.perdido{background:#c72a09;color:#fff;}
+  .inv-item-estado.pendiente{background:#8a4c9c;color:#fff;}
+  .inv-item-row.inv-row-pendiente{opacity:0.72;}
   .inv-item-acciones{display:flex;gap:6px;}
   .inv-item-acciones button{background:none;border:1px solid #d8d3c9;border-radius:3px;padding:5px 9px;cursor:pointer;font-size:0.75rem;}
   .inv-item-nota{flex-basis:100%;font-size:0.74rem;color:#a0471f;margin-top:-4px;}
@@ -1737,6 +1739,10 @@
               <div class="asc-valor accent" id="inv-stat-total">$0</div>
             </div>
             <div class="admin-stat-card">
+              <div class="asc-label">Pendiente por invertir</div>
+              <div class="asc-valor" id="inv-stat-pendiente">$0</div>
+            </div>
+            <div class="admin-stat-card">
               <div class="asc-label">Artículos registrados</div>
               <div class="asc-valor" id="inv-stat-articulos">0</div>
             </div>
@@ -2008,6 +2014,7 @@
           <option value="Prestado">Prestado</option>
           <option value="En reparación">En reparación</option>
           <option value="Perdido">Perdido</option>
+          <option value="Pendiente">Pendiente (todavía no se compra/invierte)</option>
         </select>
       </div>
       <div class="field">
@@ -3019,7 +3026,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-18-inventario-equipo';
+const APP_BUILD = '2026-10-18-inventario-conocimiento-pendiente';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -5316,15 +5323,22 @@ function renderInventarioLista(){
     return ia - ib;
   });
 
-  let valorEquipo = 0, valorLibros = 0, totalArticulos = 0;
+  let valorEquipo = 0, valorLibros = 0, valorPendiente = 0, totalArticulos = 0;
   INVENTARIO_ACTUAL.forEach(it => {
     const subtotal = (it.Cantidad || 0) * (it.PrecioUnitario || 0);
-    if(it.Categoria === 'Libros / Conocimiento') valorLibros += subtotal; else valorEquipo += subtotal;
+    if(it.Estado === 'Pendiente'){
+      valorPendiente += subtotal;
+    } else if(it.Categoria === 'Libros / Conocimiento'){
+      valorLibros += subtotal;
+    } else {
+      valorEquipo += subtotal;
+    }
     totalArticulos += (it.Cantidad || 0);
   });
   document.getElementById('inv-stat-equipo').textContent = _invFmtMoney(valorEquipo);
   document.getElementById('inv-stat-libros').textContent = _invFmtMoney(valorLibros);
   document.getElementById('inv-stat-total').textContent = _invFmtMoney(valorEquipo + valorLibros);
+  document.getElementById('inv-stat-pendiente').textContent = _invFmtMoney(valorPendiente);
   document.getElementById('inv-stat-articulos').textContent = String(totalArticulos);
 
   if(categorias.length === 0){
@@ -5340,7 +5354,7 @@ function renderInventarioLista(){
       const notaPersona = it.Estado === 'Prestado' && it.Persona ? `<div class="inv-item-nota">🤝 Con: ${it.Persona}</div>` : '';
       const notaExtra = it.Notas ? `<div class="inv-item-nota">${it.Notas}</div>` : '';
       return `
-        <div class="inv-item-row" data-id="${it.ID}">
+        <div class="inv-item-row${it.Estado === 'Pendiente' ? ' inv-row-pendiente' : ''}" data-id="${it.ID}">
           <span class="inv-item-nombre">${it.Nombre}</span>
           ${it.Detalle ? `<span class="inv-item-detalle">${it.Detalle}</span>` : ''}
           <span class="inv-item-cant">x${it.Cantidad}</span>
