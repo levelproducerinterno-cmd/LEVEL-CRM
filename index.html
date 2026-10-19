@@ -584,6 +584,17 @@
   .vp-gn-form{display:flex;gap:10px;padding:12px;border-top:1px solid #e4e0d6;background:#fff;}
   .vp-gn-form textarea{flex:1;resize:none;min-height:46px;max-height:160px;padding:11px 12px;border:1px solid #d8d3c9;border-radius:6px;font-family:inherit;font-size:0.9rem;}
   .vp-gn-form button{align-self:flex-end;}
+  .vp-gn-opciones{display:flex;flex-direction:column;align-items:flex-start;gap:8px;}
+  .vp-gn-opcion{background:#fff;border:1px solid #1c1a17;color:#1c1a17;border-radius:999px;padding:10px 16px;font-family:inherit;font-size:0.88rem;cursor:pointer;text-align:left;transition:background .15s,color .15s;}
+  .vp-gn-opcion:hover{background:#1c1a17;color:#f0ede6;}
+  .vp-gn-mic{align-self:flex-end;width:46px;height:46px;flex:none;border-radius:50%;border:1px solid #d8d3c9;background:#fff;color:#1c1a17;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .vp-gn-mic svg{width:20px;height:20px;}
+  .vp-gn-mic.grabando{background:#c72a09;border-color:#c72a09;color:#fff;animation:vpGnPulso 1.2s ease-in-out infinite;}
+  @keyframes vpGnPulso{0%,100%{box-shadow:0 0 0 0 rgba(199,42,9,.45);}50%{box-shadow:0 0 0 8px rgba(199,42,9,0);}}
+  .vp-gn-puntos{display:inline-flex;gap:4px;}
+  .vp-gn-puntos i{width:6px;height:6px;border-radius:50%;background:#8a8578;animation:vpGnPunto 1s infinite;}
+  .vp-gn-puntos i:nth-child(2){animation-delay:.15s;} .vp-gn-puntos i:nth-child(3){animation-delay:.3s;}
+  @keyframes vpGnPunto{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
   .vp-gn-copiar{margin-top:8px;background:none;border:1px solid #d8d3c9;border-radius:4px;padding:4px 10px;font-size:0.72rem;cursor:pointer;color:#555;}
 
   /* Guiones */
@@ -11998,7 +12009,8 @@ async function arrancarVistaPublicaCliente(token){
           <div class="vp-gn-log" id="vp-gn-log"></div>
           <form class="vp-gn-form" id="vp-gn-form">
             <label for="vp-gn-input" style="position:absolute;left:-9999px;">Mensaje</label>
-            <textarea id="vp-gn-input" rows="1" placeholder="Pega tus ideas o escribe aquí…"></textarea>
+            <textarea id="vp-gn-input" rows="1" placeholder="Escribe aquí o toca el micrófono…"></textarea>
+            <button class="vp-gn-mic" type="button" id="vp-gn-mic" title="Hablar" aria-label="Hablar con el micrófono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
             <button class="vp-btn-primario" type="submit" id="vp-gn-enviar">Enviar</button>
           </form>
         </div>
@@ -12757,6 +12769,40 @@ async function arrancarVistaPublicaCliente(token){
     if(!r.ok || !data.ok) throw new Error(data.error || 'No se pudo conectar.');
     return data;
   }
+  let GN_VIDEOS_MES = 12;
+  const GN_OPCIONES = {
+    idea: { pregunta: 'Ayúdame con una idea que tengo', respuesta: 'Claro, pégala aquí o, de preferencia, da clic en el micrófono que tienes aquí abajo y cuéntame tu idea.' },
+    guion: { pregunta: 'Ayúdame a generar un guión', respuesta: 'Claro. Cuéntame de qué quieres que trate tu guion: pégalo aquí o, de preferencia, da clic en el micrófono que tienes aquí abajo y platícamelo.' }
+  };
+  function _gnMostrarOpciones(){
+    const log = document.getElementById('vp-gn-log');
+    const caja = document.createElement('div');
+    caja.className = 'vp-gn-opciones'; caja.id = 'vp-gn-opciones';
+    const lista = [
+      ['idea', GN_OPCIONES.idea.pregunta],
+      ['ideas', '¿Me puedes ayudar a generar mis ' + GN_VIDEOS_MES + ' ideas del mes?'],
+      ['guion', GN_OPCIONES.guion.pregunta]
+    ];
+    lista.forEach(([clave, texto]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'vp-gn-opcion'; b.textContent = texto;
+      b.addEventListener('click', () => _gnElegirOpcion(clave, texto));
+      caja.appendChild(b);
+    });
+    log.appendChild(caja);
+    log.scrollTop = log.scrollHeight;
+  }
+  function _gnQuitarOpciones(){ const c = document.getElementById('vp-gn-opciones'); if(c) c.remove(); }
+  function _gnElegirOpcion(clave, texto){
+    if(GN_ENVIANDO) return;
+    _gnQuitarOpciones();
+    if(clave === 'ideas'){ _gnEnviar(texto); return; }
+    const op = GN_OPCIONES[clave];
+    _gnAgregar('user', op.pregunta);
+    _gnAgregar('assistant', op.respuesta);
+    _gnLlamar({ accion: 'registrar', opcion: clave }).catch(() => {});
+    document.getElementById('vp-gn-input').focus();
+  }
   async function _gnCargarHistorial(){
     if(GN_CARGADO) return;
     GN_CARGADO = true;
@@ -12764,8 +12810,10 @@ async function arrancarVistaPublicaCliente(token){
     log.innerHTML = '';
     try{
       const data = await _gnLlamar({ accion: 'historial' });
+      GN_VIDEOS_MES = Math.min(12, Math.max(1, parseInt(data.videos_mes, 10) || 12));
       if(!data.mensajes.length){
-        _gnAgregar('assistant', '¡Hola! Soy tu Guionista Level. Pégame las ideas de tu grupo de WhatsApp o pídeme que te proponga las ideas de tu mes.');
+        _gnAgregar('assistant', '¡Hola! Soy tu Guionista Level. ¿En qué te ayudo hoy?');
+        _gnMostrarOpciones();
       } else {
         data.mensajes.forEach(m => _gnAgregar(m.role, m.content));
       }
@@ -12774,39 +12822,130 @@ async function arrancarVistaPublicaCliente(token){
       GN_CARGADO = false;
     }
   }
-  async function _gnEnviar(){
+  // Manda el mensaje y va mostrando la respuesta mientras el Guionista la escribe.
+  async function _gnEnviar(textoDirecto){
     const input = document.getElementById('vp-gn-input');
-    const texto = input.value.trim();
+    const texto = (typeof textoDirecto === 'string' ? textoDirecto : input.value).trim();
     if(!texto || GN_ENVIANDO) return;
+    _gnDetenerMic();
+    _gnQuitarOpciones();
     GN_ENVIANDO = true;
     document.getElementById('vp-gn-enviar').disabled = true;
-    input.value = '';
+    if(typeof textoDirecto !== 'string') input.value = '';
     _gnAgregar('user', texto);
-    const pensando = _gnAgregar('assistant', 'Escribiendo…');
+    const burbuja = _gnAgregar('assistant', '');
+    burbuja.innerHTML = '<span class="vp-gn-puntos"><i></i><i></i><i></i></span>';
+    const log = document.getElementById('vp-gn-log');
+    let acumulado = '', terminado = false, guardados = [];
     try{
-      const data = await _gnLlamar({ accion: 'enviar', mensaje: texto });
-      pensando.remove();
-      _gnAgregar('assistant', data.respuesta);
-      if(data.guardados && data.guardados.length){
-        _gnAgregar('aviso', '✓ Guardado en tu pestaña de Guiones: ' + data.guardados.join(', '));
+      const r = await fetch(GN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        body: JSON.stringify({ token, accion: 'enviar', mensaje: texto })
+      });
+      if(!r.ok || !(r.headers.get('content-type') || '').includes('text/event-stream')){
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.error || 'No se pudo conectar.');
+      }
+      const lector = r.body.getReader();
+      const dec = new TextDecoder();
+      let buffer = '';
+      while(true){
+        const { value, done } = await lector.read();
+        if(done) break;
+        buffer += dec.decode(value, { stream: true });
+        let corte;
+        while((corte = buffer.indexOf('\n\n')) >= 0){
+          const linea = buffer.slice(0, corte).trim();
+          buffer = buffer.slice(corte + 2);
+          if(!linea.startsWith('data:')) continue;
+          let d; try{ d = JSON.parse(linea.slice(5)); } catch(e){ continue; }
+          if(d.t){
+            acumulado += d.t;
+            burbuja.innerHTML = _gnFormato(acumulado);
+            const cerca = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
+            if(cerca) log.scrollTop = log.scrollHeight;
+          }
+          if(d.guardado) guardados.push(d.guardado);
+          if(d.error) throw new Error(d.error);
+          if(d.fin){ terminado = true; acumulado = d.texto || acumulado; if(d.guardados) guardados = d.guardados; }
+        }
+      }
+      if(!terminado) throw new Error('Se cortó la conexión. Intenta de nuevo.');
+      burbuja.remove();
+      _gnAgregar('assistant', acumulado);
+      if(guardados.length){
+        _gnAgregar('aviso', '✓ Guardado en tu pestaña de Guiones: ' + guardados.join(', '));
         cargarVista();
       }
     } catch(e){
-      pensando.remove();
+      if(!acumulado) burbuja.remove();
       _gnAgregar('error', e.message);
-      input.value = texto;
+      if(typeof textoDirecto !== 'string' && !input.value) input.value = texto;
     } finally {
       GN_ENVIANDO = false;
       document.getElementById('vp-gn-enviar').disabled = false;
-      input.focus();
+      if(window.matchMedia('(min-width: 700px)').matches) input.focus();
     }
   }
+
+  // ---- Micrófono (dictado por voz del navegador) ----
+  const GN_Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let GN_REC = null, GN_GRABANDO = false;
+  function _gnDetenerMic(){
+    if(GN_REC && GN_GRABANDO){ try{ GN_REC.stop(); } catch(e){} }
+  }
+  function _gnMicEstado(on){
+    GN_GRABANDO = on;
+    const b = document.getElementById('vp-gn-mic');
+    b.classList.toggle('grabando', on);
+    b.title = on ? 'Toca para terminar' : 'Hablar';
+    document.getElementById('vp-gn-input').placeholder = on ? 'Te escucho… toca el micrófono para terminar' : 'Escribe aquí o toca el micrófono…';
+  }
+  document.getElementById('vp-gn-mic').addEventListener('click', () => {
+    if(!GN_Reconocimiento){
+      _gnAgregar('error', 'Tu navegador no permite dictar aquí. Ábrelo en Chrome o Safari, o usa el micrófono del teclado de tu celular.');
+      return;
+    }
+    if(GN_GRABANDO){ _gnDetenerMic(); return; }
+    const input = document.getElementById('vp-gn-input');
+    const base = input.value ? input.value.replace(/\s*$/, ' ') : '';
+    let finalTxt = '';
+    GN_REC = new GN_Reconocimiento();
+    GN_REC.lang = 'es-MX';
+    GN_REC.continuous = true;
+    GN_REC.interimResults = true;
+    GN_REC.onresult = (ev) => {
+      let provisional = '';
+      for(let i = ev.resultIndex; i < ev.results.length; i++){
+        const t = ev.results[i][0].transcript;
+        if(ev.results[i].isFinal) finalTxt += t + ' ';
+        else provisional += t;
+      }
+      input.value = base + finalTxt + provisional;
+      input.scrollTop = input.scrollHeight;
+    };
+    GN_REC.onerror = (ev) => {
+      if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
+        _gnAgregar('error', 'Necesito permiso para usar tu micrófono. Actívalo en el candado junto a la dirección de la página y vuelve a intentar.');
+      } else if(ev.error === 'no-speech'){
+        // no dijo nada; solo se apaga
+      } else {
+        _gnAgregar('error', 'No pude escucharte bien. Intenta otra vez.');
+      }
+    };
+    GN_REC.onend = () => { _gnMicEstado(false); input.value = input.value.trim(); };
+    try{ GN_REC.start(); _gnMicEstado(true); }
+    catch(e){ _gnMicEstado(false); }
+  });
+
   document.getElementById('vp-gn-form').addEventListener('submit', (e) => { e.preventDefault(); _gnEnviar(); });
   document.getElementById('vp-gn-input').addEventListener('keydown', (e) => {
     if(e.key === 'Enter' && !e.shiftKey && window.matchMedia('(min-width: 700px)').matches){ e.preventDefault(); _gnEnviar(); }
   });
   document.getElementById('vp-gn-nueva').addEventListener('click', async () => {
     if(GN_ENVIANDO) return;
+    _gnDetenerMic();
     try{ await _gnLlamar({ accion: 'reiniciar' }); } catch(e){}
     GN_CARGADO = false;
     _gnCargarHistorial();

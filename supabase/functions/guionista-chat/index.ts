@@ -67,8 +67,10 @@ function reparto(n: number) {
 async function contextoCliente(cliente: { id: string; nombre: string; videos_mes: number | null }) {
   const { mes, anio, dia } = ahoraMx();
   const videosMes = Math.min(12, Math.max(1, Math.round(Number(cliente.videos_mes) || 12)));
-  const { data: exp } = await supabase.from("expedientes").select("*").eq("cliente_id", cliente.id).maybeSingle();
-  const { data: gs } = await supabase.from("guiones").select("folio,titulo").eq("cliente_id", cliente.id);
+  const [{ data: exp }, { data: gs }] = await Promise.all([
+    supabase.from("expedientes").select("*").eq("cliente_id", cliente.id).maybeSingle(),
+    supabase.from("guiones").select("folio,titulo").eq("cliente_id", cliente.id),
+  ]);
   const folios = (gs || []).map((g) => String(g.folio || "").trim()).filter(Boolean);
   const delMes = folios.filter((f) => f.split(".")[0] === String(mes))
     .sort((a, b) => Number(a.split(".")[1]) - Number(b.split(".")[1]));
@@ -135,7 +137,8 @@ async function guardarGuion(clienteId: string, input: Record<string, unknown>) {
   return { ok: true, folio, titulo };
 }
 
-async function llamarClaude(system: unknown[], messages: unknown[]) {
+// Llama a Claude en modo streaming y va mandando el texto al navegador mientras se escribe.
+async function llamarClaudeStream(system: unknown[], messages: unknown[], alTexto: (t: string) => void) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -143,12 +146,65 @@ async function llamarClaude(system: unknown[], messages: unknown[]) {
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },
-    body: JSON.stringify({ model: MODELO, max_tokens: 2500, system, messages, tools: HERRAMIENTAS }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 2500, system, messages, tools: HERRAMIENTAS, stream: true }),
   });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data?.error?.message || `Error ${r.status}`);
-  return data;
+  if (!r.ok || !r.body) {
+    const data = await r.json().catch(() => ({}));
+    throw new Error((data as any)?.error?.message || `Error ${r.status}`);
+  }
+  const bloques: any[] = [];
+  let stopReason = "";
+  const lector = r.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await lector.read();
+    if (done) break;
+    buffer += value;
+    let corte;
+    while ((corte = buffer.indexOf("\n\n")) >= 0) {
+      const evento = buffer.slice(0, corte);
+      buffer = buffer.slice(corte + 2);
+      const linea = evento.split("\n").find((l) => l.startsWith("data:"));
+      if (!linea) continue;
+      let d: any;
+      try { d = JSON.parse(linea.slice(5).trim()); } catch { continue; }
+      if (d.type === "content_block_start") {
+        const b = { ...d.content_block };
+        if (b.type === "tool_use") { b._json = ""; b.input = {}; }
+        if (b.type === "text") b.text = "";
+        bloques[d.index] = b;
+      } else if (d.type === "content_block_delta") {
+        const b = bloques[d.index];
+        if (!b) continue;
+        if (d.delta.type === "text_delta") { b.text += d.delta.text; alTexto(d.delta.text); }
+        else if (d.delta.type === "input_json_delta") b._json += d.delta.partial_json;
+      } else if (d.type === "content_block_stop") {
+        const b = bloques[d.index];
+        if (b && b.type === "tool_use") {
+          try { b.input = b._json ? JSON.parse(b._json) : {}; } catch { b.input = {}; }
+          delete b._json;
+        }
+      } else if (d.type === "message_delta") {
+        if (d.delta?.stop_reason) stopReason = d.delta.stop_reason;
+      } else if (d.type === "error") {
+        throw new Error(d.error?.message || "Error del modelo");
+      }
+    }
+  }
+  return { content: bloques.filter(Boolean), stop_reason: stopReason };
 }
+
+// Respuestas fijas de los botones de inicio: salen al instante, sin gastar en la IA.
+const OPCIONES: Record<string, { pregunta: string; respuesta: string }> = {
+  idea: {
+    pregunta: "Ayúdame con una idea que tengo",
+    respuesta: "Claro, pégala aquí o, de preferencia, da clic en el micrófono que tienes aquí abajo y cuéntame tu idea.",
+  },
+  guion: {
+    pregunta: "Ayúdame a generar un guión",
+    respuesta: "Claro. Cuéntame de qué quieres que trate tu guion: pégalo aquí o, de preferencia, da clic en el micrófono que tienes aquí abajo y platícamelo.",
+  },
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -167,7 +223,17 @@ Deno.serve(async (req) => {
   if (accion === "historial") {
     const { data } = await supabase.from("guionista_mensajes").select("role, content, created_at")
       .eq("cliente_id", cliente.id).eq("archivado", false).order("created_at", { ascending: false }).limit(80);
-    return json(200, { ok: true, mensajes: (data || []).reverse() });
+    return json(200, { ok: true, mensajes: (data || []).reverse(), videos_mes: cliente.videos_mes || 12 });
+  }
+
+  if (accion === "registrar") {
+    const op = OPCIONES[String(body.opcion ?? "")];
+    if (!op) return json(400, { ok: false, error: "Opción inválida." });
+    await supabase.from("guionista_mensajes").insert([
+      { cliente_id: cliente.id, role: "user", content: op.pregunta },
+      { cliente_id: cliente.id, role: "assistant", content: op.respuesta },
+    ]);
+    return json(200, { ok: true });
   }
 
   if (accion === "reiniciar") {
@@ -185,54 +251,68 @@ Deno.serve(async (req) => {
 
   const { anio, mes } = ahoraMx();
   const inicioMes = new Date(Date.UTC(anio, mes - 1, 1, 6)).toISOString(); // 00:00 en CDMX aprox.
-  const { count } = await supabase.from("guionista_mensajes").select("id", { count: "exact", head: true })
-    .eq("cliente_id", cliente.id).eq("role", "user").gte("created_at", inicioMes);
-  if ((count || 0) >= MAX_MENSAJES_MES) {
+  // Todo lo que se necesita de la base se pide al mismo tiempo para no hacer esperar.
+  const [conteo, previosR, metodoR, contexto] = await Promise.all([
+    supabase.from("guionista_mensajes").select("id", { count: "exact", head: true })
+      .eq("cliente_id", cliente.id).eq("role", "user").gte("created_at", inicioMes),
+    supabase.from("guionista_mensajes").select("role, content")
+      .eq("cliente_id", cliente.id).eq("archivado", false)
+      .order("created_at", { ascending: false }).limit(HISTORIAL_CONTEXTO),
+    cargarMetodo().then((t) => t, () => ""),
+    contextoCliente(cliente),
+  ]);
+  if ((conteo.count || 0) >= MAX_MENSAJES_MES) {
     return json(429, { ok: false, error: "Llegaste al límite de mensajes de este mes. Escríbele a Level Producer si necesitas más." });
   }
+  if (!metodoR) return json(500, { ok: false, error: "El Guionista no está disponible. Intenta más tarde." });
 
-  const { data: previos } = await supabase.from("guionista_mensajes").select("role, content")
-    .eq("cliente_id", cliente.id).eq("archivado", false)
-    .order("created_at", { ascending: false }).limit(HISTORIAL_CONTEXTO);
-  const historia = (previos || []).reverse().map((m) => ({ role: m.role, content: m.content }));
+  const historia = (previosR.data || []).reverse().map((m) => ({ role: m.role, content: m.content }));
   while (historia.length && historia[0].role !== "user") historia.shift();
-
-  let metodo = "";
-  try { metodo = await cargarMetodo(); } catch { return json(500, { ok: false, error: "El Guionista no está disponible. Intenta más tarde." }); }
   const system = [
-    { type: "text", text: metodo, cache_control: { type: "ephemeral" } },
-    { type: "text", text: await contextoCliente(cliente) },
+    { type: "text", text: metodoR, cache_control: { type: "ephemeral" } },
+    { type: "text", text: contexto },
   ];
   const messages: any[] = [...historia, { role: "user", content: mensaje }];
+  const cifrado = new TextEncoder();
 
-  let texto = "";
-  let guardados: string[] = [];
-  try {
-    for (let i = 0; i < 4; i++) {
-      const resp = await llamarClaude(system, messages);
-      const bloquesTexto = (resp.content || []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-      if (bloquesTexto) texto = texto ? `${texto}\n\n${bloquesTexto}` : bloquesTexto;
-      const usos = (resp.content || []).filter((b: any) => b.type === "tool_use");
-      if (resp.stop_reason !== "tool_use" || !usos.length) break;
-      messages.push({ role: "assistant", content: resp.content });
-      const resultados = [];
-      for (const u of usos) {
-        const r = u.name === "guardar_guion" ? await guardarGuion(cliente.id, u.input || {}) : { ok: false, error: "Herramienta desconocida." };
-        if ((r as any).ok) guardados.push((r as any).folio);
-        resultados.push({ type: "tool_result", tool_use_id: u.id, content: JSON.stringify(r) });
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const enviar = (obj: Record<string, unknown>) => ctrl.enqueue(cifrado.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      let texto = "";
+      const guardados: string[] = [];
+      try {
+        for (let i = 0; i < 4; i++) {
+          if (texto && !texto.endsWith("\n")) { texto += "\n\n"; enviar({ t: "\n\n" }); }
+          const resp = await llamarClaudeStream(system, messages, (t) => { texto += t; enviar({ t }); });
+          const usos = resp.content.filter((b: any) => b.type === "tool_use");
+          if (resp.stop_reason !== "tool_use" || !usos.length) break;
+          messages.push({ role: "assistant", content: resp.content.filter((b: any) => !(b.type === "text" && !b.text.trim())) });
+          const resultados = [];
+          for (const u of usos) {
+            const r = u.name === "guardar_guion" ? await guardarGuion(cliente.id, u.input || {}) : { ok: false, error: "Herramienta desconocida." };
+            if ((r as any).ok) { guardados.push((r as any).folio); enviar({ guardado: (r as any).folio }); }
+            resultados.push({ type: "tool_result", tool_use_id: u.id, content: JSON.stringify(r) });
+          }
+          messages.push({ role: "user", content: resultados });
+        }
+        texto = texto.trim();
+        if (!texto) {
+          texto = guardados.length ? `Listo, ya está en tu sistema como ${guardados.join(", ")}.` : "No tengo respuesta, ¿me lo repites?";
+          enviar({ t: texto });
+        }
+        await supabase.from("guionista_mensajes").insert([
+          { cliente_id: cliente.id, role: "user", content: mensaje },
+          { cliente_id: cliente.id, role: "assistant", content: texto },
+        ]);
+        enviar({ fin: true, texto, guardados });
+      } catch (e) {
+        console.error("Guionista:", e);
+        enviar({ error: "El Guionista no pudo responder. Intenta de nuevo en un momento." });
       }
-      messages.push({ role: "user", content: resultados });
-      texto = ""; // el texto final es el de la respuesta después de guardar
-    }
-  } catch (e) {
-    console.error("Guionista:", e);
-    return json(502, { ok: false, error: "El Guionista no pudo responder. Intenta de nuevo en un momento." });
-  }
-
-  if (!texto) texto = guardados.length ? `Listo, ya está en tu sistema como ${guardados.join(", ")}.` : "No tengo respuesta, ¿me lo repites?";
-  await supabase.from("guionista_mensajes").insert([
-    { cliente_id: cliente.id, role: "user", content: mensaje },
-    { cliente_id: cliente.id, role: "assistant", content: texto },
-  ]);
-  return json(200, { ok: true, respuesta: texto, guardados });
+      ctrl.close();
+    },
+  });
+  return new Response(stream, {
+    headers: { ...CORS, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache" },
+  });
 });
