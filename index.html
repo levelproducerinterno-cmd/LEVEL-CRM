@@ -2691,7 +2691,7 @@ Nombre cliente:
         <div class="guiones-toolbar" style="background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:14px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
           <div>
             <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#555;margin-bottom:4px;">Link para el cliente</div>
-            <div style="font-size:0.78rem;color:#8a8578;">El cliente puede ver, crear y editar sus guiones desde aquí. No puede cambiar el estatus ni borrar.</div>
+            <div style="font-size:0.78rem;color:#8a8578;">El cliente puede ver, crear y editar sus guiones y cambiar su estatus desde aquí. No puede borrar.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
             <input type="text" id="guiones-link-magico" readonly style="width:320px;padding:9px 12px;border:1px solid #d8d3c9;border-radius:4px;background:#fbfaf7;font-size:0.78rem;color:#333;">
@@ -12044,9 +12044,14 @@ async function arrancarVistaPublicaCliente(token){
       } else {
         // Una vez que el equipo marca un guion como "Editado" el video correspondiente ya se
         // grabó, así que deja de tener sentido que el cliente lo vea o lo siga editando aquí.
+        // Los guiones "Editado" se muestran al final, en su propio bloque, para que el cliente
+        // pueda llevar su propio estatus (Borrador → Aprobado → Grabado → Editado).
         VP_GUIONES = (guionesResp.data || []).map(_sbFilaGuion)
-          .filter(g => (g.Estatus || 'Borrador') !== 'Editado')
-          .sort((a, b) => _compararFolios(a.Folio, b.Folio));
+          .sort((a, b) => {
+            const ea = (a.Estatus || 'Borrador') === 'Editado' ? 1 : 0;
+            const eb = (b.Estatus || 'Borrador') === 'Editado' ? 1 : 0;
+            return ea - eb || _compararFolios(a.Folio, b.Folio);
+          });
         renderVpGuiones();
       }
       VP_CALENDARIO = (calResp.data || []).map(_sbFilaModo);
@@ -12264,7 +12269,9 @@ async function arrancarVistaPublicaCliente(token){
       const est = g.Estatus || 'Borrador';
       const col = estatusColor(est);
       const sinGuardar = VP_GUIONES_DIRTY.has(g.ID);
-      return `
+      const primerEditado = est === 'Editado' && (idx === 0 || (VP_GUIONES[idx-1].Estatus || 'Borrador') !== 'Editado');
+      const separador = primerEditado ? '<div class="vp-sep-editados" style="margin:22px 0 10px;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#3e5a78;">Videos ya editados</div>' : '';
+      return separador + `
         <div class="vp-guion" data-idx="${idx}" data-id="${g.ID}" style="background:${col.bg};border:1px solid ${col.border};">
           <div class="vp-head">
             <span>${g.Folio ? g.Folio + ' — ' : ''}${g.Titulo || '(sin título)'}</span>
@@ -12275,6 +12282,10 @@ async function arrancarVistaPublicaCliente(token){
             </span>
           </div>
           <div class="vp-body">
+            <label>Estatus</label>
+            <select class="vp-estatus" data-idx="${idx}" style="padding:8px 10px;border:1px solid #d8d3c9;border-radius:4px;font:inherit;background:#fff;">
+              ${['Borrador','Aprobado','Grabado','Editado'].map(o => `<option value="${o}"${o === est ? ' selected' : ''}>${o}</option>`).join('')}
+            </select>
             <label>Folio</label>
             <input type="text" class="vp-folio" value="${(g.Folio || '').replace(/"/g,'&quot;')}">
             <label>Título</label>
@@ -12310,6 +12321,35 @@ async function arrancarVistaPublicaCliente(token){
     });
     lista.querySelectorAll('.vp-guion').forEach(item => {
       _vpBindCamposGuion(item, parseInt(item.dataset.idx, 10));
+    });
+    lista.querySelectorAll('.vp-estatus').forEach(sel => {
+      sel.addEventListener('click', e => e.stopPropagation());
+      sel.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const idx = parseInt(sel.dataset.idx, 10);
+        const g = VP_GUIONES[idx];
+        const anterior = g.Estatus || 'Borrador';
+        const nuevo = sel.value;
+        const msgEl = sel.closest('.vp-guion').querySelector('.vp-msg');
+        if(msgEl) msgEl.textContent = 'Guardando estatus...';
+        try {
+          const { data, error } = await sb.from('guiones').update({ estatus: nuevo })
+            .eq('id', g.ID).eq('cliente_id', VP_CLIENTE.id).select('id');
+          if(error) throw error;
+          if(!data || data.length === 0) throw new Error('Guarda primero el guion antes de cambiar su estatus.');
+          g.Estatus = nuevo;
+          VP_GUIONES.sort((a, b) => {
+            const ea = (a.Estatus || 'Borrador') === 'Editado' ? 1 : 0;
+            const eb = (b.Estatus || 'Borrador') === 'Editado' ? 1 : 0;
+            return ea - eb || _compararFolios(a.Folio, b.Folio);
+          });
+          renderVpGuiones();
+        } catch(err){
+          console.error('Cambiar estatus (portal cliente):', err);
+          sel.value = anterior;
+          if(msgEl) msgEl.textContent = err && err.message && err.message.startsWith('Guarda') ? err.message : 'No se pudo cambiar el estatus. Revisa tu conexión.';
+        }
+      });
     });
     lista.querySelectorAll('.vp-guardar').forEach(btn => {
       btn.addEventListener('click', async (e) => {
