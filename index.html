@@ -11969,8 +11969,8 @@ async function arrancarVistaPublicaCliente(token){
     </div>
 
     <div class="vp-tabs" id="vp-tabs">
-      <button class="vp-tab active" data-vp-tab="guiones">📄 Guiones</button>
-      <button class="vp-tab" data-vp-tab="guionista">✍️ Guionista</button>
+      <button class="vp-tab active" data-vp-tab="guionista">✍️ Guionista</button>
+      <button class="vp-tab" data-vp-tab="guiones">📄 Guiones</button>
       <button class="vp-tab" data-vp-tab="conectar" id="vp-tab-conectar" style="display:none;">🔗 Conecta tus cuentas</button>
       <button class="vp-tab" data-vp-tab="calendario">📆 Calendario de publicaciones</button>
       <button class="vp-tab" data-vp-tab="videos" id="vp-tab-videos" style="display:none;">🎬 Tus videos</button>
@@ -11981,7 +11981,7 @@ async function arrancarVistaPublicaCliente(token){
 
     <div class="vp-contenido">
       <div id="vp-status" style="text-align:center;color:#8a8578;padding:20px;"></div>
-      <div class="vp-seccion" id="vp-seccion-guiones">
+      <div class="vp-seccion" id="vp-seccion-guiones" style="display:none;">
         <div id="vp-guiones-lista"></div>
         <div class="vp-guiones-acciones" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
           <button id="vp-nuevo" class="vp-btn-primario">+ Nuevo guion</button>
@@ -11989,7 +11989,7 @@ async function arrancarVistaPublicaCliente(token){
           <span id="vp-guardar-todos-msg" class="vp-msg"></span>
         </div>
       </div>
-      <div class="vp-seccion" id="vp-seccion-guionista" style="display:none;">
+      <div class="vp-seccion" id="vp-seccion-guionista">
         <div class="vp-gn-wrap">
           <div class="vp-gn-head">
             <div><b>Guionista Level</b><br><span>Convierte tus ideas en guiones y guárdalos en tu sistema.</span></div>
@@ -12812,6 +12812,7 @@ async function arrancarVistaPublicaCliente(token){
     _gnCargarHistorial();
   });
   document.querySelector('.vp-tab[data-vp-tab="guionista"]').addEventListener('click', _gnCargarHistorial);
+  _gnCargarHistorial(); // el Guionista es la pestaña que abre al entrar
 
   // Nuevo guion
   document.getElementById('vp-nuevo').addEventListener('click', () => {
