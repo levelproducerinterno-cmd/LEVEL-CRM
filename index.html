@@ -856,6 +856,12 @@
     display:flex;align-items:center;justify-content:center;font-size:2.2rem;
   }
   .cliente-pill .nombre{padding:12px 14px;font-weight:700;font-size:0.95rem;text-align:center;color:#1c1c1c;}
+  .cliente-btn-mensaje{
+    position:absolute;bottom:8px;right:8px;width:26px;height:26px;border-radius:50%;
+    background:#25d366;color:#fff;border:none;cursor:pointer;font-size:0.85rem;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25);z-index:2;
+  }
+  .cliente-btn-mensaje:hover{background:#1ebe5a;}
 
   .cliente-detalle-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:60;overflow-y:auto;}
   .cliente-detalle-bg.open{display:block;}
@@ -2039,6 +2045,35 @@
   </div>
 </div>
 
+<!-- ============ MODAL: mensaje semanal para el cliente ============ -->
+<div class="modal-bg" id="modal-mensaje-cliente-bg">
+  <div class="modal" style="max-width:560px;">
+    <h2 id="mc-titulo">Mensaje semanal</h2>
+    <div class="hint" style="margin-bottom:14px;">Escribe hasta 3 pendientes/actividades de esta semana. El mensaje se va armando solo — luego dale "Copiar mensaje" y pégalo en el grupo de WhatsApp de este cliente.</div>
+    <div class="field">
+      <label>Actividad 1</label>
+      <input type="text" id="mc-actividad-1" placeholder="Ej. Grabación el jueves 10am">
+    </div>
+    <div class="field">
+      <label>Actividad 2</label>
+      <input type="text" id="mc-actividad-2" placeholder="Ej. Revisar guiones de la semana">
+    </div>
+    <div class="field">
+      <label>Actividad 3</label>
+      <input type="text" id="mc-actividad-3" placeholder="Ej. Aprobar ideas del mes">
+    </div>
+    <div class="field">
+      <label>Mensaje</label>
+      <textarea id="mc-preview" readonly style="width:100%;min-height:160px;padding:10px 12px;border:1px solid #d8d3c9;border-radius:2px;font-family:inherit;background:#f9f7f2;"></textarea>
+    </div>
+    <div id="mc-copiado-msg" style="color:#2e7d2e;font-size:0.8rem;font-weight:600;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="btn-cerrar-mensaje-cliente">Cerrar</button>
+      <button class="btn" id="btn-copiar-mensaje-cliente">📋 Copiar mensaje</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL: nuevo/editar cliente ============ -->
 <div class="modal-bg" id="modal-cliente-bg">
   <div class="modal" style="max-width:640px;">
@@ -3031,7 +3066,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-18-inventario-libros-y-cursos-separados';
+const APP_BUILD = '2026-10-19-mensaje-semanal-cliente';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -7721,10 +7756,72 @@ function renderClientesGrid(){
         ${tipoBadge}${inactivoOverlay}
         <div class="portada">${c.Emoji || '👤'}</div>
         <div class="nombre">${c.Nombre || ''}</div>
+        <button type="button" class="cliente-btn-mensaje" data-mensaje-cliente="${c.ID}" title="Mensaje semanal para este cliente">💬</button>
       </div>`;
   }).join('');
   grid.querySelectorAll('.cliente-pill').forEach(pill => {
     pill.addEventListener('click', () => abrirClienteDetalle(pill.dataset.id));
+  });
+  grid.querySelectorAll('[data-mensaje-cliente]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      abrirModalMensajeCliente(btn.dataset.mensajeCliente);
+    });
+  });
+}
+
+// ============ Mensaje semanal (WhatsApp) para un cliente ============
+function _mcComponerMensaje(nombreCliente){
+  const acts = [1, 2, 3].map(n => document.getElementById('mc-actividad-' + n).value.trim()).filter(Boolean);
+  const lista = acts.length > 0
+    ? acts.map((a, i) => (i + 1) + '. ' + a).join('\n')
+    : '1. (agrega aquí la primera actividad)';
+  return `Hola team ${nombreCliente} 👋\n\n¡Excelente inicio de semana! Esperamos que estén muy bien.\n\nPasamos a recordarles las actividades de esta semana:\n${lista}\n\n¡Muy emocionados de seguir con este gran contenido! 🚀`;
+}
+
+const modalMensajeClienteBg = document.getElementById('modal-mensaje-cliente-bg');
+if(modalMensajeClienteBg){
+  let mcClienteNombre = '';
+
+  function actualizarPreviewMensajeCliente(){
+    document.getElementById('mc-preview').value = _mcComponerMensaje(mcClienteNombre);
+  }
+
+  window.abrirModalMensajeCliente = function(clienteId){
+    const c = CLIENTES.find(x => String(x.ID) === String(clienteId));
+    if(!c) return;
+    mcClienteNombre = c.Nombre || '';
+    document.getElementById('mc-titulo').textContent = 'Mensaje semanal para ' + mcClienteNombre;
+    document.getElementById('mc-actividad-1').value = '';
+    document.getElementById('mc-actividad-2').value = '';
+    document.getElementById('mc-actividad-3').value = '';
+    document.getElementById('mc-copiado-msg').textContent = '';
+    actualizarPreviewMensajeCliente();
+    modalMensajeClienteBg.classList.add('open');
+  };
+
+  ['mc-actividad-1', 'mc-actividad-2', 'mc-actividad-3'].forEach(id => {
+    document.getElementById(id).addEventListener('input', actualizarPreviewMensajeCliente);
+  });
+
+  document.getElementById('btn-cerrar-mensaje-cliente').addEventListener('click', () => modalMensajeClienteBg.classList.remove('open'));
+  modalMensajeClienteBg.addEventListener('click', (e) => { if(e.target === modalMensajeClienteBg) modalMensajeClienteBg.classList.remove('open'); });
+
+  document.getElementById('btn-copiar-mensaje-cliente').addEventListener('click', async () => {
+    const txt = document.getElementById('mc-preview');
+    const msgEl = document.getElementById('mc-copiado-msg');
+    let copiado = false;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(txt.value);
+        copiado = true;
+      }
+    } catch(err){ /* fallback abajo */ }
+    if(!copiado){
+      txt.select();
+      try{ copiado = document.execCommand('copy'); } catch(err){ copiado = false; }
+    }
+    msgEl.textContent = copiado ? '✓ Copiado. Ahora pégalo en el grupo de WhatsApp de este cliente.' : '⚠️ No se pudo copiar. Selecciona el texto manualmente.';
   });
 }
 
