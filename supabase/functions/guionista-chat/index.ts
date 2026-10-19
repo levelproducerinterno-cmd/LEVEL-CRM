@@ -3,7 +3,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
-const MODELO = "claude-sonnet-5-5";
+const MODELO = "claude-haiku-5-5";
 const MAX_MENSAJES_MES = 400;      // tope de mensajes del cliente por mes
 const HISTORIAL_CONTEXTO = 40;     // mensajes previos que se mandan al modelo
 const MAX_LARGO_MENSAJE = 6000;
