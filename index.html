@@ -12765,7 +12765,7 @@ async function arrancarVistaPublicaCliente(token){
     try{
       const data = await _gnLlamar({ accion: 'historial' });
       if(!data.mensajes.length){
-        _gnAgregar('assistant', '¡Hola! Soy tu Guionista Level. Pégame las ideas de tu grupo de WhatsApp o pídeme que te proponga 12 ideas para este mes.');
+        _gnAgregar('assistant', '¡Hola! Soy tu Guionista Level. Pégame las ideas de tu grupo de WhatsApp o pídeme que te proponga las ideas de tu mes.');
       } else {
         data.mensajes.forEach(m => _gnAgregar(m.role, m.content));
       }

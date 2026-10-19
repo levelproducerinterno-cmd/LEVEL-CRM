@@ -56,15 +56,24 @@ function ahoraMx() {
 
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-async function contextoCliente(cliente: { id: string; nombre: string }) {
+function reparto(n: number) {
+  if (n <= 1) return "1 video (el formato que mejor le funcione).";
+  const camara = Math.ceil(n / 3);
+  const cortos = Math.ceil((n - camara) / 2);
+  const dinamicos = n - camara - cortos;
+  return `${camara} a cámara, ${cortos} cortos o inspiracionales y ${dinamicos} dinámicos.`;
+}
+
+async function contextoCliente(cliente: { id: string; nombre: string; videos_mes: number | null }) {
   const { mes, anio, dia } = ahoraMx();
+  const videosMes = Math.min(12, Math.max(1, Math.round(Number(cliente.videos_mes) || 12)));
   const { data: exp } = await supabase.from("expedientes").select("*").eq("cliente_id", cliente.id).maybeSingle();
   const { data: gs } = await supabase.from("guiones").select("folio,titulo").eq("cliente_id", cliente.id);
   const folios = (gs || []).map((g) => String(g.folio || "").trim()).filter(Boolean);
   const delMes = folios.filter((f) => f.split(".")[0] === String(mes))
     .sort((a, b) => Number(a.split(".")[1]) - Number(b.split(".")[1]));
   let siguiente = "";
-  for (let n = 1; n <= 12; n++) { if (!folios.includes(`${mes}.${n}`)) { siguiente = `${mes}.${n}`; break; } }
+  for (let n = 1; n <= videosMes; n++) { if (!folios.includes(`${mes}.${n}`)) { siguiente = `${mes}.${n}`; break; } }
   const mesSig = mes === 12 ? 1 : mes + 1;
 
   let expTxt = "No tiene expediente en el sistema. Ármale un mini expediente antes de proponer ideas.";
@@ -83,8 +92,9 @@ async function contextoCliente(cliente: { id: string; nombre: string }) {
   return `CONTEXTO DEL CLIENTE
 Nombre: ${cliente.nombre}
 Fecha de hoy: ${dia} de ${MESES[mes - 1]} de ${anio}. Mes actual: ${mes}.
+Videos al mes contratados: ${videosMes}. Reparto de formatos: ${reparto(videosMes)}
 Folios de este mes que ya existen en su sistema: ${delMes.length ? delMes.join(", ") : "ninguno"}.
-Siguiente folio libre de este mes: ${siguiente || `ya usó los 12 de este mes; usa el mes ${mesSig} (${mesSig}.1 en adelante) si el cliente está de acuerdo`}.
+Siguiente folio libre de este mes: ${siguiente || `ya completó sus ${videosMes} videos de este mes; usa el mes ${mesSig} (${mesSig}.1 en adelante) si el cliente está de acuerdo`}.
 
 EXPEDIENTE
 ${expTxt}`;
@@ -149,7 +159,7 @@ Deno.serve(async (req) => {
 
   const token = String(body.token ?? "").trim();
   if (!/^[A-Za-z0-9]{10,40}$/.test(token)) return json(400, { ok: false, error: "Link inválido." });
-  const { data: cliente } = await supabase.from("clientes").select("id, nombre").eq("token", token).maybeSingle();
+  const { data: cliente } = await supabase.from("clientes").select("id, nombre, videos_mes").eq("token", token).maybeSingle();
   if (!cliente) return json(404, { ok: false, error: "Link inválido o expirado." });
 
   const accion = String(body.accion ?? "enviar");
