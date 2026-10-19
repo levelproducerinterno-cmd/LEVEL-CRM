@@ -570,6 +570,22 @@
   .vp-btn-secundario{display:inline-block;background:#2a2723;color:#f0ede6;border:1px solid #666;padding:10px 18px;font-size:0.82rem;font-weight:600;text-decoration:none;border-radius:3px;font-family:inherit;}
   .vp-btn-secundario:hover{background:#3a3733;border-color:#888;color:#fff;}
 
+  /* Guionista (chat) */
+  .vp-gn-wrap{background:#f6f3ec;border-radius:8px;color:#1c1c1c;display:flex;flex-direction:column;height:min(72vh,720px);overflow:hidden;}
+  .vp-gn-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #e4e0d6;background:#fff;}
+  .vp-gn-head b{font-size:0.95rem;}
+  .vp-gn-head span{font-size:0.78rem;color:#8a8578;}
+  .vp-gn-log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .vp-gn-msg{max-width:85%;padding:12px 14px;border-radius:10px;font-size:0.9rem;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;}
+  .vp-gn-msg.user{align-self:flex-end;background:#1c1a17;color:#f0ede6;border-bottom-right-radius:3px;}
+  .vp-gn-msg.assistant{align-self:flex-start;background:#fff;border:1px solid #e4e0d6;border-bottom-left-radius:3px;}
+  .vp-gn-msg.aviso{align-self:center;background:#e6f4e6;border:1px solid #a4d0a4;color:#2e7d2e;font-size:0.82rem;font-weight:600;}
+  .vp-gn-msg.error{align-self:center;background:#fdecea;border:1px solid #f5c9c1;color:#c72a09;font-size:0.82rem;}
+  .vp-gn-form{display:flex;gap:10px;padding:12px;border-top:1px solid #e4e0d6;background:#fff;}
+  .vp-gn-form textarea{flex:1;resize:none;min-height:46px;max-height:160px;padding:11px 12px;border:1px solid #d8d3c9;border-radius:6px;font-family:inherit;font-size:0.9rem;}
+  .vp-gn-form button{align-self:flex-end;}
+  .vp-gn-copiar{margin-top:8px;background:none;border:1px solid #d8d3c9;border-radius:4px;padding:4px 10px;font-size:0.72rem;cursor:pointer;color:#555;}
+
   /* Guiones */
   .vp-guion{border-radius:6px;margin-bottom:14px;overflow:hidden;color:#1c1c1c;}
   .vp-head{padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:0.95rem;gap:10px;}
@@ -11954,6 +11970,7 @@ async function arrancarVistaPublicaCliente(token){
 
     <div class="vp-tabs" id="vp-tabs">
       <button class="vp-tab active" data-vp-tab="guiones">📄 Guiones</button>
+      <button class="vp-tab" data-vp-tab="guionista">✍️ Guionista</button>
       <button class="vp-tab" data-vp-tab="conectar" id="vp-tab-conectar" style="display:none;">🔗 Conecta tus cuentas</button>
       <button class="vp-tab" data-vp-tab="calendario">📆 Calendario de publicaciones</button>
       <button class="vp-tab" data-vp-tab="videos" id="vp-tab-videos" style="display:none;">🎬 Tus videos</button>
@@ -11970,6 +11987,20 @@ async function arrancarVistaPublicaCliente(token){
           <button id="vp-nuevo" class="vp-btn-primario">+ Nuevo guion</button>
           <button id="vp-guardar-todos" class="vp-btn-secundario" style="display:none;">💾 Guardar todos los cambios</button>
           <span id="vp-guardar-todos-msg" class="vp-msg"></span>
+        </div>
+      </div>
+      <div class="vp-seccion" id="vp-seccion-guionista" style="display:none;">
+        <div class="vp-gn-wrap">
+          <div class="vp-gn-head">
+            <div><b>Guionista Level</b><br><span>Convierte tus ideas en guiones y guárdalos en tu sistema.</span></div>
+            <button id="vp-gn-nueva" class="vp-btn-secundario" type="button">Nueva conversación</button>
+          </div>
+          <div class="vp-gn-log" id="vp-gn-log"></div>
+          <form class="vp-gn-form" id="vp-gn-form">
+            <label for="vp-gn-input" style="position:absolute;left:-9999px;">Mensaje</label>
+            <textarea id="vp-gn-input" rows="1" placeholder="Pega tus ideas o escribe aquí…"></textarea>
+            <button class="vp-btn-primario" type="submit" id="vp-gn-enviar">Enviar</button>
+          </form>
         </div>
       </div>
       <div class="vp-seccion" id="vp-seccion-evaluacion" style="display:none;">
@@ -12690,6 +12721,97 @@ async function arrancarVistaPublicaCliente(token){
       if(seccion) seccion.style.display = 'block';
     });
   });
+
+  // ============ GUIONISTA (chat con IA) ============
+  const GN_URL = SUPABASE_URL + '/functions/v1/guionista-chat';
+  let GN_CARGADO = false, GN_ENVIANDO = false;
+  function _gnEsc(t){ return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function _gnFormato(t){ return _gnEsc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+  function _gnAgregar(role, texto){
+    const log = document.getElementById('vp-gn-log');
+    const div = document.createElement('div');
+    div.className = 'vp-gn-msg ' + role;
+    div.innerHTML = _gnFormato(texto);
+    if(role === 'assistant' && /\n\s*GUION\s*\n/.test(texto)){
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'vp-gn-copiar'; b.textContent = 'Copiar';
+      b.addEventListener('click', async () => {
+        try{ await navigator.clipboard.writeText(texto); b.textContent = '✓ Copiado'; }
+        catch(e){ b.textContent = 'Selecciona y copia'; }
+        setTimeout(() => { b.textContent = 'Copiar'; }, 1800);
+      });
+      div.appendChild(document.createElement('br'));
+      div.appendChild(b);
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+  async function _gnLlamar(payload){
+    const r = await fetch(GN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+      body: JSON.stringify(Object.assign({ token }, payload))
+    });
+    const data = await r.json().catch(() => ({ ok:false, error:'Respuesta inválida.' }));
+    if(!r.ok || !data.ok) throw new Error(data.error || 'No se pudo conectar.');
+    return data;
+  }
+  async function _gnCargarHistorial(){
+    if(GN_CARGADO) return;
+    GN_CARGADO = true;
+    const log = document.getElementById('vp-gn-log');
+    log.innerHTML = '';
+    try{
+      const data = await _gnLlamar({ accion: 'historial' });
+      if(!data.mensajes.length){
+        _gnAgregar('assistant', '¡Hola! Soy tu Guionista Level. Pégame las ideas de tu grupo de WhatsApp o pídeme que te proponga 12 ideas para este mes.');
+      } else {
+        data.mensajes.forEach(m => _gnAgregar(m.role, m.content));
+      }
+    } catch(e){
+      _gnAgregar('error', e.message);
+      GN_CARGADO = false;
+    }
+  }
+  async function _gnEnviar(){
+    const input = document.getElementById('vp-gn-input');
+    const texto = input.value.trim();
+    if(!texto || GN_ENVIANDO) return;
+    GN_ENVIANDO = true;
+    document.getElementById('vp-gn-enviar').disabled = true;
+    input.value = '';
+    _gnAgregar('user', texto);
+    const pensando = _gnAgregar('assistant', 'Escribiendo…');
+    try{
+      const data = await _gnLlamar({ accion: 'enviar', mensaje: texto });
+      pensando.remove();
+      _gnAgregar('assistant', data.respuesta);
+      if(data.guardados && data.guardados.length){
+        _gnAgregar('aviso', '✓ Guardado en tu pestaña de Guiones: ' + data.guardados.join(', '));
+        cargarVista();
+      }
+    } catch(e){
+      pensando.remove();
+      _gnAgregar('error', e.message);
+      input.value = texto;
+    } finally {
+      GN_ENVIANDO = false;
+      document.getElementById('vp-gn-enviar').disabled = false;
+      input.focus();
+    }
+  }
+  document.getElementById('vp-gn-form').addEventListener('submit', (e) => { e.preventDefault(); _gnEnviar(); });
+  document.getElementById('vp-gn-input').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey && window.matchMedia('(min-width: 700px)').matches){ e.preventDefault(); _gnEnviar(); }
+  });
+  document.getElementById('vp-gn-nueva').addEventListener('click', async () => {
+    if(GN_ENVIANDO) return;
+    try{ await _gnLlamar({ accion: 'reiniciar' }); } catch(e){}
+    GN_CARGADO = false;
+    _gnCargarHistorial();
+  });
+  document.querySelector('.vp-tab[data-vp-tab="guionista"]').addEventListener('click', _gnCargarHistorial);
 
   // Nuevo guion
   document.getElementById('vp-nuevo').addEventListener('click', () => {
