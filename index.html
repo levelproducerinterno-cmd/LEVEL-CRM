@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <title>Level Producción</title>
+<!-- App en el celular: se instala con "Agregar a pantalla de inicio".
+     El manifest no lleva start_url a propósito: así la app abre el mismo link
+     con el que se instaló (incluido el ?guiones=TOKEN de cada cliente). -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0a0908">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Level">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -615,6 +626,33 @@
   .vp-eval-campo label{display:block;font-size:0.82rem;font-weight:700;color:#1c1c1c;margin-bottom:8px;line-height:1.4;}
   .vp-eval-campo textarea, .vp-eval-campo select{width:100%;padding:9px 11px;border:1px solid #d8d3c9;border-radius:2px;font-family:inherit;font-size:0.88rem;background:#fff;color:#1c1c1c;min-height:70px;}
   .vp-eval-campo select{min-height:auto;}
+
+  /* Portal del cliente en celular */
+  @media (max-width: 640px){
+    .vp-hero{padding:34px 18px 26px;}
+    .vp-emoji-big{font-size:2.4rem;}
+    .vp-saludo{gap:8px;}
+    .vp-saludo h1{font-size:1.8rem;}
+    .vp-intro{font-size:0.84rem;margin-top:14px;line-height:1.55;}
+    .vp-tabs{padding:0 10px;gap:2px;}
+    .vp-tab{padding:14px 11px;font-size:0.8rem;}
+    .vp-contenido{padding:16px 12px 60px;}
+    .vp-gn-wrap{height:calc(100dvh - 120px);min-height:420px;}
+    .vp-gn-head{padding:12px 14px;flex-wrap:wrap;}
+    .vp-gn-log{padding:14px 12px;}
+    .vp-gn-msg{max-width:92%;font-size:0.92rem;}
+    .vp-gn-form{gap:8px;padding:10px;}
+    .vp-gn-form textarea{font-size:16px;}
+    .vp-gn-form .vp-btn-primario{padding:12px 14px;}
+    .vp-body input, .vp-body textarea{font-size:16px;}
+    .vp-body textarea.vp-texto{min-height:320px;}
+    .vp-head{padding:14px;font-size:0.9rem;}
+    .vp-body{padding:0 14px 16px;}
+    .vp-cal-mes-actual{min-width:0;font-size:1.15rem;padding:0 8px;}
+    .vp-cal-leyenda{flex-wrap:wrap;gap:12px;}
+    .vp-cal-celda{min-height:64px;padding:4px;}
+    .vp-cal-diahead{font-size:0.6rem;letter-spacing:0.06em;padding:8px 2px;}
+  }
 
   /* ============ CM LAYOUT + PANEL LISTOS PARA PUBLICAR ============ */
   /* CM: calendario a la izquierda (con SU barra de filtros dentro, para que compartan ancho)
@@ -11747,7 +11785,18 @@ if(_tokenPublico){
       setTimeout(() => autoAbrirMisGuionesParaCliente(_misGuionesClienteId), 400);
     }
   } else {
-    mostrarLogin();
+    // Si este celular ya abrió el portal de un cliente, la app regresa a ese portal.
+    // Solo dentro de la app instalada: en el navegador normal todo sigue igual (login del equipo).
+    const _esAppInstalada = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    let _tokenGuardado = null;
+    if(_esAppInstalada){
+      try { _tokenGuardado = localStorage.getItem('level_cliente_token'); } catch(e) {}
+    }
+    if(_tokenGuardado){
+      arrancarVistaPublicaCliente(_tokenGuardado);
+    } else {
+      mostrarLogin();
+    }
   }
 }
 
@@ -11957,6 +12006,16 @@ async function arrancarVistaConexionSocial(token){
 }
 
 async function arrancarVistaPublicaCliente(token){
+  // En celular, el portal del cliente se ajusta al ancho de la pantalla
+  // (solo aquí: el CRM del equipo sigue con su vista de escritorio).
+  if(!document.querySelector('meta[name="viewport"]')){
+    const mv = document.createElement('meta');
+    mv.name = 'viewport';
+    mv.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+    document.head.appendChild(mv);
+  }
+  // Recordamos el link del cliente para que la app instalada siempre abra su portal.
+  try { localStorage.setItem('level_cliente_token', token); } catch(e) {}
   // Oculta el login overlay explícitamente por si acaso
   const overlay = document.getElementById('login-overlay');
   if(overlay){ overlay.classList.add('hidden'); overlay.style.display = 'none'; }
