@@ -74,38 +74,7 @@
   .sidebar-floating-toggle:hover{background:#232120;}
 
   .app-content{flex:1;min-width:0;}
-
-  /* ============ CRM DEL EQUIPO EN CELULAR ============ */
   html{overflow-x:hidden;}
-  @media (max-width: 860px){
-    .topbar{padding:14px 16px;}
-    .topbar h1{font-size:1.15rem;}
-
-    /* El sidebar de líneas de negocio se convierte en un panel flotante
-       (arranca colapsado en celular) en vez de empujar el contenido. */
-    .app-shell:not(.sidebar-collapsed) .sidebar-lineas{
-      position:fixed;top:0;left:0;height:100vh;z-index:60;width:230px;
-      box-shadow:6px 0 24px rgba(0,0,0,0.45);
-    }
-
-    /* Filas de pestañas horizontales: que se deslicen en vez de desbordar la pantalla */
-    .tabs-switch, .pros-tabs-switch, .admin-tabs-switch, .cd-subtabs, .recl-tabs-switch{
-      overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;
-    }
-    .tab-btn, .pros-tab-btn, .admin-tab-btn, .cd-subtab-btn, .recl-tab-btn{
-      flex-shrink:0;padding:12px 16px;font-size:0.8rem;
-    }
-
-    /* Tablas: se desplazan horizontalmente en vez de aplastar columnas */
-    .team-tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px;}
-    .team-tabla{min-width:640px;}
-
-    /* Evita que iOS haga zoom automático al tocar un campo de texto */
-    input, select, textarea{font-size:16px;}
-
-    .recl-wrap, .clientes-grid-wrap{padding:16px;max-width:100%;}
-    .modal{padding:20px 18px;}
-  }
   .linea-panel{display:none;}
   .linea-panel.active{display:block;}
   .linea-vacia{padding:120px 40px;text-align:center;color:#8a8578;}
@@ -1351,6 +1320,50 @@
   .contrato-page .firma-block img{height:70px;margin-bottom:2px;}
   .contrato-page .firma-nombre{font-weight:700;font-size:15px;margin-top:4px;}
   .contrato-page .firma-datos{font-size:12.5px;color:#4a4a4a;line-height:1.5;}
+
+  /* ============ CRM DEL EQUIPO EN CELULAR ============
+     Al final de la hoja de estilos a propósito: así estas reglas siempre
+     ganan sobre las de escritorio con la misma especificidad, sin pelear
+     el orden de declaración de cada clase en el resto del archivo. */
+  @media (max-width: 860px){
+    .topbar{padding:14px 16px;}
+    .topbar h1{font-size:1.15rem;}
+    .zoom-controls{display:none;}
+
+    /* El sidebar de líneas de negocio se convierte en un panel flotante
+       (arranca colapsado en celular) en vez de empujar el contenido. */
+    .app-shell:not(.sidebar-collapsed) .sidebar-lineas{
+      position:fixed;top:0;left:0;height:100vh;z-index:60;width:230px;
+      box-shadow:6px 0 24px rgba(0,0,0,0.45);
+    }
+
+    /* Filas de pestañas horizontales: que se deslicen en vez de desbordar la pantalla */
+    .tabs-switch, .pros-tabs-switch, .admin-tabs-switch, .cd-subtabs, .recl-tabs-switch{
+      display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;
+    }
+    .tab-btn, .pros-tab-btn, .admin-tab-btn, .cd-subtab-btn, .recl-tab-btn{
+      flex-shrink:0;padding:12px 16px;font-size:0.8rem;
+    }
+
+    /* Tablas: se desplazan horizontalmente en vez de aplastar columnas */
+    .team-tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px;}
+    .team-tabla{min-width:640px;}
+
+    /* Calendarios (Edición / CM): las columnas de los 7 días ya no se aplastan
+       a un ancho ilegible (eso hacía que el texto de las tarjetas se viera
+       "extendido", partido letra por letra). Ahora cada día mantiene un ancho
+       mínimo cómodo y todo el calendario se desliza horizontal como bloque. */
+    .calendar-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px 10px 40px;}
+    .cal-dow-row, .cal-semana-numeros, .cal-semana-dias, .md-carriles{
+      grid-template-columns:repeat(7,minmax(108px,1fr));
+    }
+
+    /* Evita que iOS haga zoom automático al tocar un campo de texto */
+    input, select, textarea{font-size:16px;}
+
+    .recl-wrap, .clientes-grid-wrap{padding:16px;max-width:100%;}
+    .modal{padding:20px 18px;}
+  }
 </style>
 </head>
 <body>
@@ -3164,7 +3177,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-25-crm-equipo-mobile-fase1';
+const APP_BUILD = '2026-10-25-crm-equipo-mobile-calendarios';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -10024,6 +10037,10 @@ function aplicarZoom(nivel){
   if(nivelEl) nivelEl.textContent = nivel + '%';
 }
 function leerZoom(){
+  // En celular el zoom manual no aplica (ahí los calendarios ya se adaptan con
+  // scroll horizontal): siempre se ve a 100%, sin importar la preferencia guardada
+  // de la computadora, para no encimar dos "achicamientos" distintos.
+  if(window.innerWidth <= 860) return 100;
   try {
     const v = parseInt(localStorage.getItem('level_zoom'), 10);
     return ZOOM_NIVELES.includes(v) ? v : 80;
@@ -11443,6 +11460,12 @@ function cambiarLinea(lineaKey){
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
     if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarInventario(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
+  }
+  // En celular, el sidebar es un panel flotante: una vez elegida la línea,
+  // se cierra solo para no quedar tapando el contenido de abajo.
+  if(window.innerWidth <= 860){
+    aplicarEstadoSidebar(true);
+    guardarPreferenciaSidebar(true);
   }
 }
 
