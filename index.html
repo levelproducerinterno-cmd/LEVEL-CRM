@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Level Producción</title>
 <!-- App en el celular: se instala con "Agregar a pantalla de inicio".
      El manifest no lleva start_url a propósito: así la app abre el mismo link
@@ -73,6 +74,38 @@
   .sidebar-floating-toggle:hover{background:#232120;}
 
   .app-content{flex:1;min-width:0;}
+
+  /* ============ CRM DEL EQUIPO EN CELULAR ============ */
+  html{overflow-x:hidden;}
+  @media (max-width: 860px){
+    .topbar{padding:14px 16px;}
+    .topbar h1{font-size:1.15rem;}
+
+    /* El sidebar de líneas de negocio se convierte en un panel flotante
+       (arranca colapsado en celular) en vez de empujar el contenido. */
+    .app-shell:not(.sidebar-collapsed) .sidebar-lineas{
+      position:fixed;top:0;left:0;height:100vh;z-index:60;width:230px;
+      box-shadow:6px 0 24px rgba(0,0,0,0.45);
+    }
+
+    /* Filas de pestañas horizontales: que se deslicen en vez de desbordar la pantalla */
+    .tabs-switch, .pros-tabs-switch, .admin-tabs-switch, .cd-subtabs, .recl-tabs-switch{
+      overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;
+    }
+    .tab-btn, .pros-tab-btn, .admin-tab-btn, .cd-subtab-btn, .recl-tab-btn{
+      flex-shrink:0;padding:12px 16px;font-size:0.8rem;
+    }
+
+    /* Tablas: se desplazan horizontalmente en vez de aplastar columnas */
+    .team-tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px;}
+    .team-tabla{min-width:640px;}
+
+    /* Evita que iOS haga zoom automático al tocar un campo de texto */
+    input, select, textarea{font-size:16px;}
+
+    .recl-wrap, .clientes-grid-wrap{padding:16px;max-width:100%;}
+    .modal{padding:20px 18px;}
+  }
   .linea-panel{display:none;}
   .linea-panel.active{display:block;}
   .linea-vacia{padding:120px 40px;text-align:center;color:#8a8578;}
@@ -1391,7 +1424,7 @@
 
   <button class="sidebar-floating-toggle" id="sidebar-floating-toggle" title="Mostrar menú">▶</button>
 
-  <div class="app-content">
+  <div class="app-content" id="app-content">
     <div class="linea-panel active" id="linea-panel-operacion">
 
 <div class="tabs-switch">
@@ -3131,7 +3164,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-25-app-celular-y-guionista';
+const APP_BUILD = '2026-10-25-crm-equipo-mobile-fase1';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -11343,8 +11376,13 @@ async function cancelarGrabacionAgendada(id){
 
 // ============ SIDEBAR DE LÍNEAS DE NEGOCIO ============
 function leerPreferenciaSidebar(){
-  try { return localStorage.getItem('level_sidebar_collapsed') === '1'; }
-  catch(e){ return false; }
+  try {
+    const guardado = localStorage.getItem('level_sidebar_collapsed');
+    if(guardado !== null) return guardado === '1';
+  } catch(e){}
+  // Sin preferencia guardada: en celular arranca colapsado (es un panel flotante ahí),
+  // en computadora arranca abierto, como siempre.
+  return window.innerWidth <= 860;
 }
 function guardarPreferenciaSidebar(colapsado){
   try { localStorage.setItem('level_sidebar_collapsed', colapsado ? '1' : '0'); }
@@ -11372,6 +11410,16 @@ function aplicarEstadoSidebar(colapsado){
     btnMostrar.addEventListener('click', () => {
       aplicarEstadoSidebar(false);
       guardarPreferenciaSidebar(false);
+    });
+  }
+  // En celular el sidebar es un panel flotante: tocar el contenido de atrás lo cierra.
+  const contenido = document.getElementById('app-content');
+  if(contenido){
+    contenido.addEventListener('click', () => {
+      if(window.innerWidth <= 860 && !shell.classList.contains('sidebar-collapsed')){
+        aplicarEstadoSidebar(true);
+        guardarPreferenciaSidebar(true);
+      }
     });
   }
 })();
