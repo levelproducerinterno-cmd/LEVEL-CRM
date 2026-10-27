@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mis proyectos">
+<meta name="theme-color" content="#f7f5f2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Organiza tus proyectos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --negro:#0a0908;
+    --hueso:#f7f5f2;
+    --hueso2:#efece6;
+    --linea:#e4dfd6;
+    --texto:#2b2b2b;
+    --gris:#8a8578;
+    --rojo:#c72a09;
+    --verde:#1a8f4c;
+    --amarillo:#d9a916;
+    --azul:#2f6fbf;
+    --morado:#7a4fb5;
+    --ventas:#d9a916;
+    --produccion:#2f6fbf;
+    --cobranza:#1a8f4c;
+  }
+  *{box-sizing:border-box;}
+  html{overflow-x:hidden;}
+  body{margin:0;font-family:'Montserrat',sans-serif;background:var(--hueso);color:var(--texto);-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 120px;}
+  .oculto{display:none !important;}
+
+  /* ---------- Encabezado ---------- */
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .hero-marca{font-size:0.7rem;letter-spacing:0.22em;font-weight:700;color:var(--gris);text-transform:uppercase;}
+  .hero h1{font-size:2rem;font-weight:800;margin:6px 0 4px;letter-spacing:-0.02em;}
+  .hero p{margin:0;color:#5b574f;font-size:0.95rem;max-width:620px;line-height:1.5;}
+  .btn{background:var(--negro);color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:600;font-size:0.92rem;}
+  .btn:hover{background:#2a2725;}
+  .btn.ghost{background:transparent;color:var(--texto);border:1px solid var(--linea);}
+  .btn.ghost:hover{background:var(--hueso2);}
+  .btn.peligro{background:transparent;color:var(--rojo);border:1px solid #f0cfc6;}
+
+  /* ---------- Resumen / recorrido ---------- */
+  .recorrido{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 10px;position:sticky;top:0;z-index:20;background:var(--hueso);padding:10px 0;}
+  .paso{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:14px 16px;text-align:left;border-top:4px solid var(--c);transition:transform .15s;}
+  .paso:hover{transform:translateY(-2px);}
+  .paso-num{font-size:0.72rem;font-weight:700;color:var(--c);letter-spacing:0.08em;text-transform:uppercase;}
+  .paso-valor{font-size:1.35rem;font-weight:800;margin-top:4px;color:var(--texto);}
+  .paso-desc{font-size:0.78rem;color:var(--gris);margin-top:2px;}
+  .consejo{font-size:0.85rem;color:#5b574f;margin:0 0 6px;}
+
+  .aviso-ejemplos{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff8e0;border:1px solid #f0e2a8;border-radius:12px;padding:12px 16px;font-size:0.88rem;margin:14px 0;}
+
+  /* ---------- Secciones y columnas ---------- */
+  .seccion{margin-top:34px;scroll-margin-top:110px;}
+  .seccion-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  .seccion-head h2{margin:0;font-size:1.45rem;font-weight:800;letter-spacing:-0.01em;}
+  .seccion-head .chip-num{background:var(--c);color:#fff;border-radius:8px;padding:2px 9px;font-size:0.85rem;font-weight:700;}
+  .seccion-intro{color:#5b574f;font-size:0.9rem;margin:2px 0 14px;line-height:1.5;max-width:760px;}
+  .columnas{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;}
+  .columnas.una{grid-auto-columns:minmax(250px,420px);}
+  .col{background:var(--hueso2);border-radius:14px;padding:10px;min-height:120px;scroll-snap-align:start;transition:background .15s, box-shadow .15s;}
+  .col.drop{background:#e6e1d6;box-shadow:inset 0 0 0 2px var(--c);}
+  .col-head{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 10px;gap:8px;}
+  .col-titulo{font-size:0.82rem;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--tag);color:var(--tagt);}
+  .col-total{font-size:0.75rem;color:var(--gris);font-weight:600;text-align:right;}
+  .col-vacia{font-size:0.8rem;color:#aaa49a;text-align:center;padding:18px 6px;border:1.5px dashed #d8d2c6;border-radius:10px;}
+  .col-agregar{width:100%;background:transparent;border:1.5px dashed #d0c9bb;border-radius:10px;padding:10px;color:var(--gris);font-weight:600;font-size:0.85rem;margin-top:4px;}
+  .col-agregar:hover{background:#fff;color:var(--texto);}
+
+  /* ---------- Tarjetas ---------- */
+  .card{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 13px;margin-bottom:9px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04);transition:box-shadow .15s, transform .15s;}
+  .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+  .card.arrastrando{opacity:.45;}
+  .card.destello{animation:destello 1.6s ease;}
+  @keyframes destello{0%{box-shadow:0 0 0 0 rgba(217,169,22,.9);transform:scale(1.03);}100%{box-shadow:0 0 0 14px rgba(217,169,22,0);transform:scale(1);}}
+  .card-nombre{font-weight:700;font-size:0.95rem;line-height:1.3;}
+  .card-cliente{font-size:0.82rem;color:#5b574f;margin-top:2px;}
+  .card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:0.78rem;}
+  .tag{background:#e8eef8;color:#2f5a95;border-radius:5px;padding:2px 7px;font-weight:600;}
+  .tag.ejemplo{background:#f3efe6;color:#8a8578;}
+  .monto{font-weight:700;}
+  .fecha{color:var(--gris);}
+  .fecha.tarde{color:var(--rojo);font-weight:600;}
+  .barra{height:7px;background:#eee9df;border-radius:5px;overflow:hidden;margin-top:9px;}
+  .barra > div{height:100%;background:var(--c, var(--produccion));border-radius:5px;transition:width .4s;}
+  .barra-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--gris);margin-top:4px;}
+  .debe{margin-top:8px;font-size:0.82rem;}
+  .debe strong{font-size:1.05rem;color:var(--cobranza);}
+  .card-acciones{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .accion{flex:1;background:var(--negro);color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:0.8rem;font-weight:600;white-space:nowrap;}
+  .accion:hover{background:#2a2725;}
+  .accion.sec{flex:0 0 auto;background:transparent;color:var(--gris);border:1px solid var(--linea);}
+  .accion.sec:hover{color:var(--rojo);border-color:#f0cfc6;}
+
+  /* Avance de edición (slider con nombre en cada porcentaje) */
+  .edicion-box{margin-top:10px;background:#f6f2fb;border-radius:10px;padding:9px 10px;}
+  .edicion-paso{font-size:0.78rem;font-weight:700;color:var(--morado);display:flex;justify-content:space-between;}
+  input[type=range]{width:100%;accent-color:var(--morado);margin:8px 0 2px;}
+  .marcas{position:relative;height:14px;}
+  .marcas span{position:absolute;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#cbb9e3;top:2px;cursor:pointer;}
+  .marcas span.ok{background:var(--morado);}
+
+  .cobrados{margin-top:14px;background:#fff;border:1px solid var(--linea);border-radius:12px;}
+  .cobrados summary{padding:12px 16px;cursor:pointer;font-weight:600;font-size:0.9rem;}
+  .cobrado-fila{display:flex;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--hueso2);font-size:0.85rem;cursor:pointer;}
+  .cobrado-fila:hover{background:var(--hueso);}
+
+  .como{margin-top:40px;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:6px 18px;}
+  .como summary{cursor:pointer;font-weight:700;padding:10px 0;}
+  .como ol{padding-left:20px;line-height:1.7;font-size:0.9rem;margin:4px 0 14px;}
+
+  /* ---------- Modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(10,9,8,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:22px;}
+  .modal h3{margin:0 0 14px;font-size:1.2rem;}
+  .campo{margin-bottom:14px;}
+  .campo label{display:block;font-size:0.78rem;font-weight:700;color:#5b574f;margin-bottom:5px;}
+  .campo input, .campo select{width:100%;border:1px solid var(--linea);border-radius:9px;padding:11px 12px;font-size:16px;background:#fff;color:var(--texto);}
+  .campo input:focus, .campo select:focus{outline:2px solid #d9cfbd;}
+  .fila2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{border:1px solid var(--linea);background:#fff;border-radius:20px;padding:6px 12px;font-size:0.82rem;font-weight:600;color:#5b574f;}
+  .chip.on{background:var(--negro);color:#fff;border-color:var(--negro);}
+  .ayuda{font-size:0.75rem;color:var(--gris);margin-top:5px;}
+  .modal-pie{display:flex;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .modal-pie .der{display:flex;gap:8px;margin-left:auto;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--negro);color:#fff;padding:11px 18px;border-radius:10px;font-size:0.88rem;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+  .cargando{text-align:center;color:var(--gris);padding:60px 20px;}
+
+  /* ---------- Panel del CRM (alumnos) ---------- */
+  .alta{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:16px;display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end;margin:18px 0;}
+  .alta .campo{margin:0;}
+  .buscar{width:100%;max-width:320px;border:1px solid var(--linea);border-radius:9px;padding:10px 12px;font-size:0.9rem;margin-bottom:12px;}
+  .alumnos{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;}
+  .alumno{background:#fff;border:1px solid var(--linea);border-radius:40px;padding:8px 10px 8px 8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:box-shadow .15s;}
+  .alumno:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+  .avatar{width:40px;height:40px;border-radius:50%;background:var(--negro);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex:0 0 auto;}
+  .alumno-info{flex:1;min-width:0;}
+  .alumno-nombre{font-weight:700;font-size:0.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .alumno-sub{font-size:0.74rem;color:var(--gris);}
+  .icono{background:var(--hueso2);border:none;border-radius:50%;width:32px;height:32px;font-size:0.9rem;flex:0 0 auto;}
+  .icono:hover{background:#e3ddd1;}
+  .banda-admin{background:var(--negro);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:22px;font-size:0.88rem;}
+  .banda-admin .btn{padding:8px 12px;font-size:0.82rem;background:#2a2725;}
+  .banda-admin .btn:hover{background:#3a3633;}
+
+  @media (max-width:700px){
+    .wrap{padding:20px 16px 110px;}
+    .hero h1{font-size:1.6rem;}
+    .recorrido{gap:7px;}
+    .paso{padding:10px;}
+    .paso-valor{font-size:1rem;}
+    .paso-desc{display:none;}
+    .paso-num{font-size:0.62rem;letter-spacing:0.04em;}
+    .columnas.una{grid-auto-columns:82%;}
+    .alumnos{grid-template-columns:1fr;}
+    .columnas{grid-auto-columns:82%;}
+    .alta{grid-template-columns:1fr;}
+    .fila2{grid-template-columns:1fr;}
+    .hero .btn-nuevo{position:fixed;right:16px;bottom:18px;z-index:50;border-radius:30px;padding:15px 20px;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="cargando">Cargando…</div></div>
+
+<script>
+const SUPABASE_URL = 'https://jqjlxtnvjokdlhtmjnne.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impxamx4dG52am9rZGxodG1qbm5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNjYwMTgsImV4cCI6MjA5OTc0MjAxOH0.7HDembCXnDK8dpcZaq7h0R6VX7UUfPOIqNHgS4kVdXM';
+const DOMINIO_PUBLICO = 'https://level-crm.vercel.app';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const app = document.getElementById('app');
+
+// ============ Etapas del recorrido ============
+const SECCIONES = [
+  { key:'ventas', num:1, titulo:'Ventas', color:'var(--ventas)',
+    intro:'Tus prospectos y cotizaciones. Si no cierras, aquí ves cuánto dinero se quedó en la mesa. Si no cerraste, márcalo como <em>Perdido</em>: no lo borres, ese número te enseña.',
+    etapas:['prospecto','cotizacion','perdido'] },
+  { key:'produccion', num:2, titulo:'Producción', color:'var(--produccion)',
+    intro:'Tus proyectos activos y qué tan avanzado va cada uno. Preproducción → Producción (grabando) → Edición. Ya en edición, mueve la barra para marcar en qué paso vas.',
+    etapas:['anticipo','preproduccion','produccion','edicion'] },
+  { key:'cobranza', num:3, titulo:'Cobranza', color:'var(--cobranza)',
+    intro:'Proyectos entregados y cuánto te debe cada cliente. Revisa esta sección cada lunes: lo que no se cobra, no existe.',
+    etapas:['entregado'] }
+];
+const ETAPAS = {
+  prospecto:     { nombre:'Prospecto',          seccion:'ventas',     tag:'#f3efe6', tagt:'#6b665c' },
+  cotizacion:    { nombre:'Cotización enviada', seccion:'ventas',     tag:'#fbefc9', tagt:'#7a5c00' },
+  perdido:       { nombre:'Perdido',            seccion:'ventas',     tag:'#f7dcd5', tagt:'#9c2a10' },
+  anticipo:      { nombre:'Anticipo recibido',  seccion:'produccion', tag:'#f8e3d2', tagt:'#8a4a17' },
+  preproduccion: { nombre:'Preproducción',      seccion:'produccion', tag:'#f7eccb', tagt:'#7a5c00' },
+  produccion:    { nombre:'Producción (grabando)', seccion:'produccion', tag:'#dce8f7', tagt:'#24528c' },
+  edicion:       { nombre:'Edición',            seccion:'produccion', tag:'#ebe0f6', tagt:'#5c3590' },
+  entregado:     { nombre:'Entregado',          seccion:'cobranza',   tag:'#d8efe1', tagt:'#146b3a' },
+  pagado:        { nombre:'Pagado',             seccion:'cobranza',   tag:'#d8efe1', tagt:'#146b3a' }
+};
+// Botón principal de cada tarjeta: el siguiente paso natural del proyecto
+const SIGUIENTE = {
+  prospecto:     { a:'cotizacion',    txt:'Envié la cotización →' },
+  cotizacion:    { a:'anticipo',      txt:'Me pagó el anticipo →' },
+  perdido:       { a:'cotizacion',    txt:'Lo retomé ↺' },
+  anticipo:      { a:'preproduccion', txt:'Empezar preproducción →' },
+  preproduccion: { a:'produccion',    txt:'A grabar →' },
+  produccion:    { a:'edicion',       txt:'Ya grabé → Edición' },
+  edicion:       { a:'entregado',     txt:'Entregado →' },
+  entregado:     { a:'pagado',        txt:'Me liquidaron ✓' }
+};
+const PASOS_EDICION = [
+  [0,'Sin empezar'], [10,'Organizando material'], [30,'Primer armado'], [50,'Primer corte enviado'],
+  [70,'Ronda de cambios 1'], [85,'Ronda de cambios 2'], [100,'Corte final']
+];
+const TIPOS = ['Redes','Evento','Video musical','Comercial','Institucional','Boda','Otro'];
+
+// ============ Utilidades ============
+const fmt = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', maximumFractionDigits:0 });
+const dinero = n => fmt.format(Number(n) || 0);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function pasoEdicion(v){ let r = PASOS_EDICION[0]; PASOS_EDICION.forEach(p => { if(v >= p[0]) r = p; }); return r[1]; }
+function avanceProyecto(p){
+  switch(p.etapa){
+    case 'anticipo': return 10;
+    case 'preproduccion': return 20;
+    case 'produccion': return 40;
+    case 'edicion': return 40 + Math.round((p.avance_edicion || 0) * 0.6);
+    case 'entregado': case 'pagado': return 100;
+    default: return 0;
+  }
+}
+const saldo = p => Math.max(0, (Number(p.monto_total) || 0) - (Number(p.anticipo) || 0));
+function fechaBonita(f){
+  if(!f) return '';
+  const d = new Date(f + 'T12:00:00');
+  return d.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+}
+function fechaVencida(f){ return f && new Date(f + 'T23:59:59') < new Date(); }
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+function iniciales(nombre){
+  return String(nombre || '?').trim().split(/\s+/).slice(0,2).map(p => p[0]).join('').toUpperCase();
+}
+function linkAlumno(token){ return DOMINIO_PUBLICO + '/taller.html?t=' + token; }
+
+// ============================================================
+// ============ TABLERO (lo que ve cada alumno) ================
+// ============================================================
+let T = { token:null, alumno:null, proyectos:[], adminVolver:null };
+
+async function abrirTablero(token, adminVolver){
+  T = { token, alumno:null, proyectos:[], adminVolver: adminVolver || null };
+  app.innerHTML = '<div class="cargando">Cargando tu tablero…</div>';
+  const { data, error } = await sb.rpc('taller_tablero', { p_token: token });
+  if(error || !data){
+    app.innerHTML = '<div class="cargando">Este link no es válido. Pídele a quien te lo mandó que te lo comparta de nuevo.</div>';
+    return;
+  }
+  T.alumno = data.alumno;
+  T.proyectos = data.proyectos || [];
+  renderTablero();
+}
+
+function renderTablero(destacarId){
+  const P = T.proyectos;
+  const suma = (lista, f) => lista.reduce((a, p) => a + f(p), 0);
+  const enVentas = P.filter(p => p.etapa === 'prospecto' || p.etapa === 'cotizacion');
+  const enProd = P.filter(p => ETAPAS[p.etapa].seccion === 'produccion');
+  const porCobrar = P.filter(p => p.etapa === 'entregado');
+  const hayEjemplos = P.some(p => p.ejemplo);
+  const primerNombre = String(T.alumno.nombre || '').split(' ')[0];
+
+  app.innerHTML = `
+    ${T.adminVolver ? `
+      <div class="banda-admin">
+        <span>👀 Estás viendo el tablero de <strong>${esc(T.alumno.nombre)}</strong>. Lo que cambies aquí, lo verá en su link.</span>
+        <span style="display:flex;gap:8px;">
+          <button class="btn" id="b-copiar-link">🔗 Copiar su link</button>
+          <button class="btn" id="b-volver">← Alumnos</button>
+        </span>
+      </div>` : ''}
+    <div class="hero">
+      <div>
+        <div class="hero-marca">Organiza tus proyectos</div>
+        <h1>Hola, ${esc(primerNombre)} 👋</h1>
+        <p>Tu negocio en tres pasos. Cada proyecto entra por <strong>Ventas</strong>, pasa por <strong>Producción</strong> y termina en <strong>Cobranza</strong>. Tú solo das clic en el siguiente paso.</p>
+      </div>
+      <button class="btn btn-nuevo" id="b-nuevo">+ Nuevo proyecto</button>
+    </div>
+
+    <nav class="recorrido">
+      <button class="paso" style="--c:var(--ventas)" data-ir="ventas">
+        <div class="paso-num">1 · Ventas</div>
+        <div class="paso-valor">${dinero(suma(enVentas, p => +p.monto_total))}</div>
+        <div class="paso-desc">${enVentas.length} por cerrar</div>
+      </button>
+      <button class="paso" style="--c:var(--produccion)" data-ir="produccion">
+        <div class="paso-num">2 · Producción</div>
+        <div class="paso-valor">${enProd.length} ${enProd.length === 1 ? 'activo' : 'activos'}</div>
+        <div class="paso-desc">proyectos en marcha</div>
+      </button>
+      <button class="paso" style="--c:var(--cobranza)" data-ir="cobranza">
+        <div class="paso-num">3 · Cobranza</div>
+        <div class="paso-valor">${dinero(suma(porCobrar, saldo))}</div>
+        <div class="paso-desc">te deben</div>
+      </button>
+    </nav>
+
+    ${hayEjemplos ? `
+      <div class="aviso-ejemplos">
+        <span>Los proyectos con la etiqueta <span class="tag ejemplo">Ejemplo</span> son para que veas cómo funciona. Bórralos cuando agregues los tuyos.</span>
+        <button class="btn ghost" id="b-borrar-ejemplos" style="padding:8px 12px;font-size:0.82rem;">Borrar ejemplos</button>
+      </div>` : ''}
+
+    ${SECCIONES.map(renderSeccion).join('')}
+
+    <details class="como">
+      <summary>📖 Cómo usarlo</summary>
+      <ol>
+        <li><strong>Te piden una cotización:</strong> da clic en <em>+ Nuevo proyecto</em>. Aparece en Ventas como Prospecto.</li>
+        <li><strong>Mandas la cotización:</strong> clic en <em>Envié la cotización</em>.</li>
+        <li><strong>Te pagan el anticipo:</strong> clic en <em>Me pagó el anticipo</em> y escribe cuánto te dieron. Baja a Producción.</li>
+        <li><strong>Avanzas:</strong> Preproducción → Producción → Edición. En edición, mueve la barra según el paso en el que vas. El avance se calcula solo.</li>
+        <li><strong>Entregas:</strong> clic en <em>Entregado</em>. Baja a Cobranza y ves cuánto te deben.</li>
+        <li><strong>Te liquidan:</strong> clic en <em>Me liquidaron</em>. Listo, pasa a tus cobrados.</li>
+      </ol>
+      <p class="ayuda" style="margin-bottom:14px;">Tip: en computadora también puedes arrastrar las tarjetas de una columna a otra.</p>
+    </details>
+  `;
+
+  app.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => {
+    document.getElementById('sec-' + b.dataset.ir).scrollIntoView({ behavior:'smooth' });
+  }));
+  document.getElementById('b-nuevo').addEventListener('click', () => abrirEditor(null));
+  const bEj = document.getElementById('b-borrar-ejemplos');
+  if(bEj) bEj.addEventListener('click', borrarEjemplos);
+  if(T.adminVolver){
+    document.getElementById('b-volver').addEventListener('click', T.adminVolver);
+    document.getElementById('b-copiar-link').addEventListener('click', () => copiar(linkAlumno(T.token)));
+  }
+  conectarTarjetas();
+
+  if(destacarId){
+    const el = app.querySelector(`.card[data-id="${destacarId}"]`);
+    if(el){
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      el.classList.add('destello');
+    }
+  }
+}
+
+function renderSeccion(s){
+  const P = T.proyectos;
+  const perdidos = P.filter(p => p.etapa === 'perdido');
+  const pagados = P.filter(p => p.etapa === 'pagado');
+  const col = etapa => {
+    const lista = P.filter(p => p.etapa === etapa);
+    const e = ETAPAS[etapa];
+    let total = '';
+    if(etapa === 'perdido' && lista.length) total = `Se quedó en la mesa:<br><strong>${dinero(lista.reduce((a,p) => a + (+p.monto_total || 0), 0))}</strong>`;
+    else if(etapa === 'entregado' && lista.length) total = `Te deben:<br><strong>${dinero(lista.reduce((a,p) => a + saldo(p), 0))}</strong>`;
+    else if(lista.length) total = lista.length + (lista.length === 1 ? ' proyecto' : ' proyectos');
+    return `
+      <div class="col" data-etapa="${etapa}" style="--c:${s.color}">
+        <div class="col-head">
+          <span class="col-titulo" style="--tag:${e.tag};--tagt:${e.tagt}">${e.nombre}</span>
+          <span class="col-total">${total}</span>
+        </div>
+        ${lista.length ? lista.map(p => renderCard(p, s)).join('') : `<div class="col-vacia">${vacio(etapa)}</div>`}
+        ${etapa === 'prospecto' ? '<button class="col-agregar" data-nuevo="1">+ Agregar prospecto</button>' : ''}
+      </div>`;
+  };
+  return `
+    <section class="seccion" id="sec-${s.key}" style="--c:${s.color}">
+      <div class="seccion-head"><span class="chip-num">${s.num}</span><h2>${s.titulo}</h2></div>
+      <p class="seccion-intro">${s.intro}</p>
+      <div class="columnas ${s.etapas.length === 1 ? 'una' : ''}">${s.etapas.map(col).join('')}</div>
+      ${s.key === 'cobranza' && pagados.length ? `
+        <details class="cobrados">
+          <summary>✅ Ya cobrados · ${pagados.length} ${pagados.length === 1 ? 'proyecto' : 'proyectos'} · ${dinero(pagados.reduce((a,p) => a + (+p.monto_total || 0), 0))}</summary>
+          ${pagados.map(p => `<div class="cobrado-fila" data-abrir="${p.id}"><span><strong>${esc(p.nombre)}</strong> · ${esc(p.cliente)}</span><span>${dinero(p.monto_total)}</span></div>`).join('')}
+        </details>` : ''}
+    </section>`;
+}
+
+function vacio(etapa){
+  return {
+    prospecto:'¿Te pidieron una cotización? Agrégala aquí.',
+    cotizacion:'Nada esperando respuesta.',
+    perdido:'Ningún proyecto perdido. 🙌',
+    anticipo:'Aquí llegan los proyectos cuando te pagan el anticipo.',
+    preproduccion:'—', produccion:'—', edicion:'—',
+    entregado:'Nadie te debe nada. 🎉'
+  }[etapa] || '—';
+}
+
+function renderCard(p, s){
+  const sig = SIGUIENTE[p.etapa];
+  const avance = avanceProyecto(p);
+  const enProd = s.key === 'produccion';
+  const vencida = enProd && fechaVencida(p.fecha_entrega);
+  return `
+    <div class="card" draggable="true" data-id="${p.id}">
+      <div class="card-nombre">${esc(p.nombre) || '<span style="color:#aaa">Sin nombre</span>'}</div>
+      ${p.cliente ? `<div class="card-cliente">${esc(p.cliente)}</div>` : ''}
+      <div class="card-meta">
+        ${p.tipo ? `<span class="tag">${esc(p.tipo)}</span>` : ''}
+        ${p.ejemplo ? '<span class="tag ejemplo">Ejemplo</span>' : ''}
+        ${s.key === 'ventas' && +p.monto_total ? `<span class="monto">${dinero(p.monto_total)}</span>` : ''}
+        ${p.fecha_entrega && s.key !== 'ventas' ? `<span class="fecha ${vencida ? 'tarde' : ''}">📅 ${fechaBonita(p.fecha_entrega)}${vencida ? ' · atrasado' : ''}</span>` : ''}
+      </div>
+      ${enProd ? `
+        <div class="barra" style="--c:var(--produccion)"><div style="width:${avance}%"></div></div>
+        <div class="barra-label"><span>Avance del proyecto</span><strong>${avance}%</strong></div>` : ''}
+      ${p.etapa === 'edicion' ? `
+        <div class="edicion-box" data-stop>
+          <div class="edicion-paso"><span data-paso-txt>${pasoEdicion(p.avance_edicion)}</span><span data-paso-num>${p.avance_edicion}%</span></div>
+          <input type="range" min="0" max="100" step="1" value="${p.avance_edicion}" data-slider="${p.id}">
+          <div class="marcas">${PASOS_EDICION.slice(1).map(([v,n]) => `<span title="${n}" data-marca="${v}" class="${p.avance_edicion >= v ? 'ok' : ''}" style="left:${v}%"></span>`).join('')}</div>
+        </div>` : ''}
+      ${p.etapa === 'entregado' ? `<div class="debe">Te debe <strong>${dinero(saldo(p))}</strong> de ${dinero(p.monto_total)}</div>` : ''}
+      ${sig ? `
+        <div class="card-acciones" data-stop>
+          <button class="accion" data-mover="${sig.a}">${sig.txt}</button>
+          ${p.etapa === 'cotizacion' || p.etapa === 'prospecto' ? '<button class="accion sec" data-mover="perdido" title="No se cerró">Lo perdí</button>' : ''}
+        </div>` : ''}
+    </div>`;
+}
+
+function conectarTarjetas(){
+  app.querySelectorAll('[data-nuevo]').forEach(b => b.addEventListener('click', () => abrirEditor(null)));
+  app.querySelectorAll('[data-abrir]').forEach(f => f.addEventListener('click', () => abrirEditor(buscar(f.dataset.abrir))));
+  app.querySelectorAll('.card').forEach(card => {
+    const p = buscar(card.dataset.id);
+    card.addEventListener('click', e => { if(!e.target.closest('[data-stop]')) abrirEditor(p); });
+    card.querySelectorAll('[data-mover]').forEach(b => b.addEventListener('click', () => moverA(p, b.dataset.mover)));
+
+    // Arrastrar entre columnas (computadora)
+    card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', p.id); card.classList.add('arrastrando'); });
+    card.addEventListener('dragend', () => card.classList.remove('arrastrando'));
+
+    // Barra de avance de edición: cada porcentaje lleva el nombre de su paso
+    const slider = card.querySelector('[data-slider]');
+    if(slider){
+      const pinta = v => {
+        card.querySelector('[data-paso-txt]').textContent = pasoEdicion(v);
+        card.querySelector('[data-paso-num]').textContent = v + '%';
+        card.querySelectorAll('[data-marca]').forEach(m => m.classList.toggle('ok', v >= +m.dataset.marca));
+        const prog = 40 + Math.round(v * 0.6);
+        card.querySelector('.barra > div').style.width = prog + '%';
+        card.querySelector('.barra-label strong').textContent = prog + '%';
+      };
+      slider.addEventListener('input', () => pinta(+slider.value));
+      slider.addEventListener('change', () => guardar({ id:p.id, avance_edicion:+slider.value }, { sinRender:true }));
+      card.querySelectorAll('[data-marca]').forEach(m => m.addEventListener('click', () => {
+        slider.value = m.dataset.marca; pinta(+slider.value);
+        guardar({ id:p.id, avance_edicion:+slider.value }, { sinRender:true });
+      }));
+    }
+  });
+  app.querySelectorAll('.col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drop'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drop'));
+    col.addEventListener('drop', e => {
+      e.preventDefault(); col.classList.remove('drop');
+      const p = buscar(e.dataTransfer.getData('text/plain'));
+      if(p && p.etapa !== col.dataset.etapa) moverA(p, col.dataset.etapa);
+    });
+  });
+}
+
+const buscar = id => T.proyectos.find(p => p.id === id);
+
+// Cambia la etapa. Al recibir anticipo pregunta cuánto, para que Cobranza sepa cuánto falta.
+function moverA(p, etapa){
+  if(etapa === 'anticipo' && ETAPAS[p.etapa].seccion === 'ventas'){
+    preguntarAnticipo(p);
+    return;
+  }
+  const cambios = { id:p.id, etapa };
+  if(etapa === 'edicion' && p.avance_edicion >= 100) cambios.avance_edicion = 0;
+  if(etapa === 'entregado' || etapa === 'pagado') cambios.avance_edicion = 100;
+  guardar(cambios, { destacar:true, msg: mensajeEtapa(etapa) });
+}
+
+function mensajeEtapa(etapa){
+  return {
+    cotizacion:'Cotización enviada. ¡Dale seguimiento!',
+    perdido:'Marcado como perdido. Ese número también enseña.',
+    anticipo:'¡Anticipo recibido! Bajó a Producción 🎬',
+    preproduccion:'En preproducción', produccion:'¡A grabar! 🎥', edicion:'A editar ✂️',
+    entregado:'¡Entregado! Bajó a Cobranza 💰',
+    pagado:'¡Cobrado! 🎉'
+  }[etapa];
+}
+
+function preguntarAnticipo(p){
+  const total = +p.monto_total || 0;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal" style="max-width:420px;">
+      <h3>💵 ¿Cuánto te pagaron de anticipo?</h3>
+      <p class="ayuda" style="margin:-6px 0 14px;font-size:0.85rem;">${esc(p.nombre)} · Total ${dinero(total)}. Así Cobranza sabe cuánto te falta cobrar.</p>
+      <div class="chips" style="margin-bottom:12px;">
+        <button class="chip" data-pct="50">50% · ${dinero(total * 0.5)}</button>
+        <button class="chip" data-pct="100">Todo · ${dinero(total)}</button>
+        <button class="chip" data-pct="0">Nada, paga al entregar</button>
+      </div>
+      <div class="campo"><label>Otro monto</label><input type="number" inputmode="decimal" id="ant-monto" placeholder="0" value="${+p.anticipo || ''}"></div>
+      <div class="modal-pie"><div class="der"><button class="btn ghost" data-cerrar>Cancelar</button><button class="btn" id="ant-ok">Guardar</button></div></div>
+    </div>`;
+  document.body.appendChild(bg);
+  const cerrar = () => bg.remove();
+  const ok = monto => { cerrar(); guardar({ id:p.id, etapa:'anticipo', anticipo:monto }, { destacar:true, msg:mensajeEtapa('anticipo') }); };
+  bg.addEventListener('click', e => { if(e.target === bg || e.target.closest('[data-cerrar]')) cerrar(); });
+  bg.querySelectorAll('[data-pct]').forEach(c => c.addEventListener('click', () => ok(Math.round(total * (+c.dataset.pct) / 100))));
+  bg.querySelector('#ant-ok').addEventListener('click', () => ok(+bg.querySelector('#ant-monto').value || 0));
+}
+
+async function guardar(cambios, opts = {}){
+  // Actualizamos en pantalla de inmediato y guardamos detrás
+  const previo = cambios.id ? { ...buscar(cambios.id) } : null;
+  if(previo) Object.assign(buscar(cambios.id), cambios);
+  if(previo && !opts.sinRender) renderTablero(opts.destacar ? cambios.id : null);
+  const { data, error } = await sb.rpc('taller_guardar_proyecto', { p_token: T.token, p: cambios });
+  if(error){
+    console.error(error);
+    if(previo) Object.assign(buscar(cambios.id), previo);
+    renderTablero();
+    toast('No se pudo guardar. Revisa tu conexión.');
+    return null;
+  }
+  if(!previo){
+    T.proyectos.push(data);
+    renderTablero(data.id);
+  } else {
+    Object.assign(buscar(data.id), data);
+  }
+  if(opts.msg) toast(opts.msg);
+  return data;
+}
+
+function abrirEditor(p){
+  const nuevo = !p;
+  const d = p ? { ...p } : { nombre:'', cliente:'', tipo:'', monto_total:'', anticipo:'', etapa:'prospecto', avance_edicion:0, fecha_entrega:'' };
+  const opciones = SECCIONES.map(s => `<optgroup label="${s.num} · ${s.titulo}">${[...s.etapas, ...(s.key === 'cobranza' ? ['pagado'] : [])].map(e => `<option value="${e}" ${d.etapa === e ? 'selected' : ''}>${ETAPAS[e].nombre}</option>`).join('')}</optgroup>`).join('');
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>${nuevo ? 'Nuevo proyecto' : 'Editar proyecto'}</h3>
+      <div class="campo"><label>Proyecto</label><input id="e-nombre" value="${esc(d.nombre)}" placeholder="Ej. Video de lanzamiento"></div>
+      <div class="campo"><label>Cliente</label><input id="e-cliente" value="${esc(d.cliente)}" placeholder="Ej. Cafetería Aroma"></div>
+      <div class="campo"><label>Tipo de contenido</label>
+        <div class="chips" id="e-tipos">${TIPOS.map(t => `<button type="button" class="chip ${d.tipo === t ? 'on' : ''}" data-tipo="${t}">${t}</button>`).join('')}</div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Monto total</label><input id="e-monto" type="number" inputmode="decimal" value="${d.monto_total === '' ? '' : +d.monto_total}" placeholder="0"></div>
+        <div class="campo"><label>Anticipo recibido</label><input id="e-anticipo" type="number" inputmode="decimal" value="${d.anticipo === '' || +d.anticipo === 0 ? '' : +d.anticipo}" placeholder="0">
+          <div class="ayuda"><a href="#" id="e-50" style="color:inherit;">Poner 50%</a></div></div>
+      </div>
+      <div class="fila2">
+        <div class="campo"><label>Fecha de entrega</label><input id="e-fecha" type="date" value="${d.fecha_entrega || ''}"></div>
+        <div class="campo"><label>Etapa</label><select id="e-etapa">${opciones}</select></div>
+      </div>
+      <div class="campo" id="e-edicion-campo">
+        <label>Avance de edición · <span id="e-edicion-txt">${pasoEdicion(d.avance_edicion)} (${d.avance_edicion}%)</span></label>
+        <input type="range" id="e-edicion" min="0" max="100" step="1" value="${d.avance_edicion}">
+        <div class="chips">${PASOS_EDICION.slice(1).map(([v,n]) => `<button type="button" class="chip" data-ae="${v}">${n} · ${v}%</button>`).join('')}</div>
+      </div>
+      <div class="modal-pie">
+        ${nuevo ? '' : '<button class="btn peligro" id="e-borrar">Borrar</button>'}
+        <div class="der"><button class="btn ghost" data-cerrar>Cancelar</button><button class="btn" id="e-guardar">Guardar</button></div>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const $ = id => bg.querySelector('#' + id);
+  const cerrar = () => bg.remove();
+  bg.addEventListener('click', e => { if(e.target === bg || e.target.closest('[data-cerrar]')) cerrar(); });
+
+  let tipo = d.tipo;
+  bg.querySelectorAll('[data-tipo]').forEach(c => c.addEventListener('click', () => {
+    tipo = tipo === c.dataset.tipo ? '' : c.dataset.tipo;
+    bg.querySelectorAll('[data-tipo]').forEach(x => x.classList.toggle('on', x.dataset.tipo === tipo));
+  }));
+  $('e-50').addEventListener('click', e => { e.preventDefault(); $('e-anticipo').value = Math.round((+$('e-monto').value || 0) / 2) || ''; });
+  const syncEdicion = () => {
+    $('e-edicion-campo').classList.toggle('oculto', $('e-etapa').value !== 'edicion');
+    $('e-edicion-txt').textContent = `${pasoEdicion(+$('e-edicion').value)} (${$('e-edicion').value}%)`;
+  };
+  $('e-etapa').addEventListener('change', syncEdicion);
+  $('e-edicion').addEventListener('input', syncEdicion);
+  bg.querySelectorAll('[data-ae]').forEach(c => c.addEventListener('click', () => { $('e-edicion').value = c.dataset.ae; syncEdicion(); }));
+  syncEdicion();
+  if(nuevo) setTimeout(() => $('e-nombre').focus(), 50);
+
+  $('e-guardar').addEventListener('click', async () => {
+    const nombre = $('e-nombre').value.trim();
+    if(!nombre){ $('e-nombre').focus(); toast('Ponle nombre al proyecto'); return; }
+    const etapa = $('e-etapa').value;
+    const datos = {
+      nombre, cliente: $('e-cliente').value.trim(), tipo,
+      monto_total: +$('e-monto').value || 0, anticipo: +$('e-anticipo').value || 0,
+      fecha_entrega: $('e-fecha').value || '', etapa,
+      avance_edicion: etapa === 'entregado' || etapa === 'pagado' ? 100 : +$('e-edicion').value
+    };
+    cerrar();
+    if(nuevo) await guardar(datos, { msg:'Proyecto agregado' });
+    else await guardar({ id:p.id, ...datos }, { destacar: etapa !== p.etapa, msg: etapa !== p.etapa ? mensajeEtapa(etapa) : 'Guardado' });
+  });
+  if(!nuevo) $('e-borrar').addEventListener('click', async () => {
+    if(!confirm('¿Borrar "' + p.nombre + '"? Si no se cerró, mejor márcalo como Perdido.')) return;
+    cerrar();
+    const { error } = await sb.rpc('taller_borrar_proyecto', { p_token: T.token, p_id: p.id });
+    if(error){ toast('No se pudo borrar.'); return; }
+    T.proyectos = T.proyectos.filter(x => x.id !== p.id);
+    renderTablero();
+  });
+}
+
+async function borrarEjemplos(){
+  if(!confirm('¿Borrar los proyectos de ejemplo? Tus proyectos no se tocan.')) return;
+  const { error } = await sb.rpc('taller_borrar_ejemplos', { p_token: T.token });
+  if(error){ toast('No se pudo borrar.'); return; }
+  T.proyectos = T.proyectos.filter(p => !p.ejemplo);
+  renderTablero();
+  toast('Listo, ahora el tablero es todo tuyo');
+}
+
+function copiar(texto){
+  navigator.clipboard.writeText(texto).then(() => toast('Link copiado'), () => prompt('Copia el link:', texto));
+}
+
+// ============================================================
+// ============ PANEL DEL CRM: alumnos del taller ==============
+// ============================================================
+let ALUMNOS = [];
+let FILTRO = '';
+
+function esDireccion(){
+  try {
+    const s = JSON.parse(localStorage.getItem('level_crm_session_v1') || 'null');
+    return !!(s && s.Puesto === 'Direccion');
+  } catch(e){ return false; }
+}
+
+async function abrirAdmin(){
+  app.innerHTML = '<div class="cargando">Cargando alumnos…</div>';
+  const { data, error } = await sb.rpc('taller_admin_listar');
+  if(error){ app.innerHTML = '<div class="cargando">No se pudo cargar. Recarga en unos segundos.</div>'; return; }
+  ALUMNOS = data || [];
+  renderAdmin();
+}
+
+function haceCuanto(f){
+  if(!f) return 'no ha entrado';
+  const dias = Math.floor((Date.now() - new Date(f)) / 86400000);
+  if(dias <= 0) return 'entró hoy';
+  if(dias === 1) return 'entró ayer';
+  return 'entró hace ' + dias + ' días';
+}
+
+function renderAdmin(){
+  const lista = ALUMNOS.filter(a => !FILTRO || (a.nombre + ' ' + (a.contacto || '')).toLowerCase().includes(FILTRO));
+  app.innerHTML = `
+    <div class="hero">
+      <div>
+        <div class="hero-marca">Taller</div>
+        <h1>Organiza tus proyectos</h1>
+        <p>Da de alta a cada persona que se registre. Cada quien recibe su propio link con su tablero de proyectos. Da clic en su pastilla para ver lo mismo que ve.</p>
+      </div>
+    </div>
+    <div class="alta">
+      <div class="campo"><label>Nombre</label><input id="a-nombre" placeholder="Ej. Mariana López"></div>
+      <div class="campo"><label>WhatsApp o correo (opcional)</label><input id="a-contacto" placeholder="Ej. 5512345678"></div>
+      <button class="btn" id="a-agregar">+ Dar de alta</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <input class="buscar" id="a-buscar" placeholder="Buscar alumno…" value="${esc(FILTRO)}">
+      <span class="ayuda" style="margin-bottom:12px;">${ALUMNOS.length} ${ALUMNOS.length === 1 ? 'alumno' : 'alumnos'}</span>
+    </div>
+    <div class="alumnos">
+      ${lista.length ? lista.map(a => `
+        <div class="alumno" data-alumno="${a.id}">
+          <div class="avatar">${esc(iniciales(a.nombre))}</div>
+          <div class="alumno-info">
+            <div class="alumno-nombre">${esc(a.nombre)}</div>
+            <div class="alumno-sub">${a.proyectos_propios} ${a.proyectos_propios == 1 ? 'proyecto' : 'proyectos'} · ${haceCuanto(a.ultimo_acceso)}</div>
+          </div>
+          <button class="icono" data-copiar="${a.id}" title="Copiar link">🔗</button>
+          <button class="icono" data-wa="${a.id}" title="Mandar por WhatsApp">💬</button>
+          <button class="icono" data-borrar="${a.id}" title="Borrar">🗑</button>
+        </div>`).join('') : `<div class="col-vacia" style="grid-column:1/-1;">${ALUMNOS.length ? 'Nadie coincide con la búsqueda.' : 'Todavía no hay alumnos. Da de alta al primero arriba.'}</div>`}
+    </div>`;
+
+  const nombre = document.getElementById('a-nombre');
+  const agregar = async () => {
+    if(!nombre.value.trim()){ nombre.focus(); return; }
+    const btn = document.getElementById('a-agregar');
+    btn.disabled = true; btn.textContent = 'Creando…';
+    const { data, error } = await sb.rpc('taller_admin_crear_alumno', { p_nombre: nombre.value, p_contacto: document.getElementById('a-contacto').value });
+    if(error){ btn.disabled = false; btn.textContent = '+ Dar de alta'; toast('No se pudo crear.'); return; }
+    ALUMNOS.unshift({ ...data, proyectos_propios: 0 });
+    renderAdmin();
+    copiar(linkAlumno(data.token));
+    toast('Alumno creado. Su link ya está copiado.');
+  };
+  document.getElementById('a-agregar').addEventListener('click', agregar);
+  [nombre, document.getElementById('a-contacto')].forEach(i => i.addEventListener('keydown', e => { if(e.key === 'Enter') agregar(); }));
+  const buscador = document.getElementById('a-buscar');
+  buscador.addEventListener('input', () => {
+    FILTRO = buscador.value.trim().toLowerCase();
+    renderAdmin();
+    const b = document.getElementById('a-buscar'); b.focus(); b.setSelectionRange(b.value.length, b.value.length);
+  });
+
+  const porId = id => ALUMNOS.find(a => a.id === id);
+  app.querySelectorAll('[data-alumno]').forEach(el => el.addEventListener('click', e => {
+    if(e.target.closest('.icono')) return;
+    abrirTablero(porId(el.dataset.alumno).token, abrirAdmin);
+  }));
+  app.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => copiar(linkAlumno(porId(b.dataset.copiar).token))));
+  app.querySelectorAll('[data-wa]').forEach(b => b.addEventListener('click', () => {
+    const a = porId(b.dataset.wa);
+    const msg = `¡Hola ${String(a.nombre).split(' ')[0]}! 👋 Este es tu tablero de *Organiza tus proyectos*:\n${linkAlumno(a.token)}\n\nEs tuyo: guárdalo en tu celular y úsalo con todos tus proyectos.`;
+    const tel = String(a.contacto || '').replace(/\D/g, '');
+    const numero = tel.length === 10 ? '52' + tel : tel;
+    window.open('https://wa.me/' + (numero.length >= 10 ? numero : '') + '?text=' + encodeURIComponent(msg), '_blank');
+  }));
+  app.querySelectorAll('[data-borrar]').forEach(b => b.addEventListener('click', async () => {
+    const a = porId(b.dataset.borrar);
+    if(!confirm('¿Borrar a ' + a.nombre + ' y todo su tablero? Su link dejará de funcionar.')) return;
+    const { error } = await sb.rpc('taller_admin_borrar_alumno', { p_id: a.id });
+    if(error){ toast('No se pudo borrar.'); return; }
+    ALUMNOS = ALUMNOS.filter(x => x.id !== a.id);
+    renderAdmin();
+  }));
+}
+
+// ============ Arranque ============
+// ?t=TOKEN → tablero del alumno. ?admin=1 → panel de alumnos (solo con sesión de Dirección en el CRM).
+const params = new URLSearchParams(location.search);
+if(params.get('t')){
+  abrirTablero(params.get('t'));
+} else if(params.get('admin') && esDireccion()){
+  abrirAdmin();
+} else {
+  app.innerHTML = '<div class="cargando">Para ver tu tablero, abre el link personal que te compartieron.</div>';
+}
+</script>
+</body>
+</html>
