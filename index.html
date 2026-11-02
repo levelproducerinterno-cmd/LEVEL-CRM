@@ -265,6 +265,8 @@
   .card .c-copiar-icon{flex-shrink:0;background:none;border:none;padding:0 2px;font-size:0.72rem;cursor:pointer;opacity:0.45;line-height:1;transition:opacity 0.15s;}
   .card .c-copiar-icon:hover{opacity:1;}
   .card .c-copiar-icon.copiado{opacity:1;color:var(--verde);}
+  .card .c-eliminar-icon{flex-shrink:0;background:none;border:none;padding:0 2px;font-size:0.72rem;cursor:pointer;opacity:0.4;line-height:1;transition:opacity 0.15s;}
+  .card .c-eliminar-icon:hover{opacity:1;color:var(--rojo);}
   .card .c-copy{font-size:0.7rem;color:#666;margin-top:2px;line-height:1.35;max-height:2.7em;overflow:hidden;}
   .card .c-resp{font-size:0.72rem;color:#555;margin-top:2px;display:flex;align-items:center;gap:4px;}
   .resp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -1220,6 +1222,8 @@
   body.dark .card .c-resp{color:#b7b2a9;}
   body.dark .card .c-copiar-icon{opacity:0.5;}
   body.dark .card .c-copiar-icon:hover{opacity:1;}
+  body.dark .card .c-eliminar-icon{opacity:0.5;}
+  body.dark .card .c-eliminar-icon:hover{opacity:1;color:var(--rojo);}
   body.dark .card .c-progreso-wrap{background:#3a3a3e;}
   body.dark .card .c-progreso-txt{color:#f0ede6;}
 
@@ -3177,7 +3181,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-10-25-crm-equipo-mobile-calendarios';
+const APP_BUILD = '2026-11-02-calendario-orden-y-eliminar';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -3887,6 +3891,10 @@ async function sbCrearModo(modoKey, id, payload){
   const row = Object.assign({ id }, _sbFilaModoDesdePayload(payload));
   const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).insert(row);
   if(error){ console.error('Supabase crear ' + modoKey + ':', error); throw error; }
+}
+async function sbEliminarModo(modoKey, id){
+  const { error } = await sb.from(MODOS_TABLA_SB[modoKey]).delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar ' + modoKey + ':', error); throw error; }
 }
 
 // ============================================================
@@ -6230,6 +6238,21 @@ function render(modoKey){
     }
   });
 
+  // Dentro de cada día, agrupar las tarjetas por responsable (editor/CM) para que
+  // no se vean "desordenadas": primero todas las de una persona, luego las de la
+  // siguiente, etc. Sin responsable asignado va al final.
+  if(modo.tieneResponsable){
+    Object.keys(porFecha).forEach(key => {
+      porFecha[key].sort((a, b) => {
+        const respA = (a.Responsable || '').toString();
+        const respB = (b.Responsable || '').toString();
+        if(!respA && respB) return 1;
+        if(respA && !respB) return -1;
+        return respA.localeCompare(respB);
+      });
+    });
+  }
+
   const totalCeldas = Math.ceil((inicioOffset + diasEnMes) / 7) * 7;
   const numSemanas = totalCeldas / 7;
   const grid = document.getElementById(p + '-cal-grid');
@@ -6284,9 +6307,10 @@ function render(modoKey){
     const tiradorHtml = modoKey === 'edicion'
       ? `<span class="c-resize" data-resize-id="${r.ID}" data-resize-lado="der" title="Arrastra para que el video tome varios días"></span>`
       : '';
+    const eliminarBtn = `<button class="c-eliminar-icon" data-eliminar-id="${r.ID}" data-eliminar-modo="${modoKey}" title="Eliminar esta tarjeta">🗑</button>`;
     return `
       <div class="card${listo ? ' card-lista' : ''}" draggable="true" data-id="${r.ID}" data-modo="${modoKey}" data-fecha="${(r.Fecha || '').toString().slice(0,10)}">
-        <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}</div>
+        <div class="c-top"><span class="c-top-txt">${emoji}${folioLimpio ? folioLimpio + ' — ' : ''}${r.Cliente || ''}</span>${copiarBtn}${eliminarBtn}</div>
         ${copyHtml}
         ${respHtml}
         <span class="c-status ${listo ? 'listo' : 'pendiente'}" data-toggle-listo="${r.ID}" data-toggle-modo="${modoKey}" data-listo="${listo ? 'SI' : 'NO'}">${listo ? '✓ Listo' : 'Pendiente'}</span>
@@ -6469,6 +6493,28 @@ function render(modoKey){
         if(item) item.Listo = anterior;
         renderKPIs(mk);
         alert('⚠️ No se pudo actualizar el estatus de esta tarjeta. Revisa tu conexión e intenta de nuevo.');
+      }
+    });
+  });
+
+  // Botón de eliminar directo en la tarjeta (sin tener que vaciar sus campos a mano)
+  grid.querySelectorAll('[data-eliminar-id]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.eliminarId;
+      const mk = btn.dataset.eliminarModo;
+      if(!confirm('¿Eliminar esta tarjeta? No se puede deshacer.')) return;
+      const cardEl = btn.closest('.card');
+      btn.disabled = true;
+      try{
+        await sbEliminarModo(mk, id);
+        estado[mk].TODAS = estado[mk].TODAS.filter(r => String(r.ID) !== String(id));
+        if(cardEl) cardEl.remove();
+        renderKPIs(mk);
+      } catch(err){
+        console.error('No se pudo eliminar la tarjeta', err);
+        btn.disabled = false;
+        alert('⚠️ No se pudo eliminar la tarjeta. Revisa tu conexión e intenta de nuevo.');
       }
     });
   });
