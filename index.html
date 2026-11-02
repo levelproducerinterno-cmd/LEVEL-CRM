@@ -3181,7 +3181,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-02-calendario-orden-y-eliminar';
+const APP_BUILD = '2026-11-02-mensaje-cliente-no-se-borra';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -7962,7 +7962,16 @@ if(modalMensajeClienteBg){
   });
 
   document.getElementById('btn-cerrar-mensaje-cliente').addEventListener('click', () => modalMensajeClienteBg.classList.remove('open'));
-  modalMensajeClienteBg.addEventListener('click', (e) => { if(e.target === modalMensajeClienteBg) modalMensajeClienteBg.classList.remove('open'); });
+  // Cerrar tocando fuera del modal — pero solo si el clic EMPEZÓ y TERMINÓ fuera.
+  // Si no, seleccionar texto arrastrando el mouse (que a veces termina fuera del
+  // recuadro) cerraba el modal de golpe y borraba lo que ya había escrito.
+  let mcMousedownEnFondo = false;
+  modalMensajeClienteBg.addEventListener('mousedown', (e) => {
+    mcMousedownEnFondo = (e.target === modalMensajeClienteBg);
+  });
+  modalMensajeClienteBg.addEventListener('click', (e) => {
+    if(e.target === modalMensajeClienteBg && mcMousedownEnFondo) modalMensajeClienteBg.classList.remove('open');
+  });
 
   document.getElementById('btn-copiar-mensaje-cliente').addEventListener('click', async () => {
     const txt = document.getElementById('mc-preview');
