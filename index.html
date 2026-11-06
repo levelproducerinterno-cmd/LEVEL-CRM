@@ -1081,11 +1081,13 @@
   .exp-pdf-card .pdf-del:hover{color:var(--rojo);}
   .exp-pdfs-vacio{padding:24px;text-align:center;color:#8a8578;font-size:0.85rem;background:#fbfaf7;border:1px dashed #d8d3c9;border-radius:2px;}
 
-  /* Filas de subida de imagen (redes en Expediente, Top y Honor en Informe) — preview chiquito */
+  /* Filas de subida de captura de red social (Expediente). El preview tiene la MISMA
+     proporción que el teléfono del PDF final (object-fit:cover recorta sin estirar),
+     así ves aquí mismo qué parte de tu captura va a quedar visible antes de generar el PDF. */
   .net-upload-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:#fff;border:1px solid #e4e0d6;border-radius:2px;margin-bottom:8px;}
   .net-upload-row .net-upload-label{font-size:0.82rem;font-weight:700;min-width:90px;color:var(--negro);}
   .net-upload-row input[type=file]{font-size:0.78rem;flex:1;color:#555;min-width:0;}
-  .net-upload-row .thumb-preview{width:44px !important;height:44px !important;max-width:44px !important;max-height:44px !important;object-fit:cover;border-radius:4px;border:1px solid #d8d3c9;display:none;flex-shrink:0;}
+  .net-upload-row .thumb-preview{width:70px !important;height:144px !important;max-width:70px !important;max-height:144px !important;object-fit:cover;object-position:top;border-radius:10px;border:1px solid #d8d3c9;display:none;flex-shrink:0;}
 
   /* ============ INFORME — tablas mensuales, toggle, chips (formulario) ============ */
   .inf-toggle-row{display:flex;gap:10px;}
@@ -3248,7 +3250,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-06-finanzas-fase1';
+const APP_BUILD = '2026-11-06-expediente-preview-telefono';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
