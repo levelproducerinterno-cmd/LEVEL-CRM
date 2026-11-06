@@ -1789,6 +1789,7 @@
           <button class="admin-tab-btn" data-admin="redes">🔗 Redes sociales</button>
           <button class="admin-tab-btn" data-admin="cobranza">💵 Cobranza</button>
           <button class="admin-tab-btn" data-admin="nomina">💰 Nómina</button>
+          <button class="admin-tab-btn" data-admin="finanzas">📈 Finanzas</button>
         </div>
 
         <div class="admin-subpanel active" id="admin-panel-recibos">
@@ -1970,6 +1971,72 @@
                 <tr><th>Nombre</th><th>Puesto</th><th>Tarjeta</th><th>Banco</th><th>Video de la semana</th><th></th></tr>
               </thead>
               <tbody id="nomina-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-subpanel" id="admin-panel-finanzas">
+          <div class="hint" style="margin-bottom:14px;">
+            Captura aquí cada ingreso y gasto del negocio, el mismo día que pasa — así nunca te enteras hasta
+            fin de mes de que gastaste de más. La categoría se escribe libre; el sistema recuerda las que ya usaste.
+          </div>
+          <div class="month-nav" style="margin-bottom:16px;">
+            <button id="fin-mes-prev">←</button>
+            <div class="month-label" id="fin-mes-label">—</div>
+            <button id="fin-mes-next">→</button>
+            <button id="fin-mes-hoy">Hoy</button>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            <div class="admin-stat-card">
+              <div class="asc-label">Ingresos del mes</div>
+              <div class="asc-valor" id="fin-stat-ingresos">$0</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-label">Gastos del mes</div>
+              <div class="asc-valor" id="fin-stat-gastos">$0</div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-label">Utilidad del mes</div>
+              <div class="asc-valor" id="fin-stat-utilidad">$0</div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e4e0d6;border-radius:6px;padding:16px 18px;margin-bottom:20px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 2fr auto;gap:10px;align-items:end;">
+              <div class="field" style="margin:0;">
+                <label>Fecha</label>
+                <input type="date" id="fin-fecha">
+              </div>
+              <div class="field" style="margin:0;">
+                <label>Tipo</label>
+                <select id="fin-tipo">
+                  <option value="Ingreso">Ingreso</option>
+                  <option value="Gasto" selected>Gasto</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;grid-column:span 2;">
+                <label>Categoría</label>
+                <input type="text" id="fin-categoria" list="fin-categorias-lista" placeholder="Ej. Sueldos, Equipo, Cobro cliente...">
+                <datalist id="fin-categorias-lista"></datalist>
+              </div>
+              <div class="field" style="margin:0;">
+                <label>Monto</label>
+                <input type="number" id="fin-monto" min="0" step="0.01" placeholder="0">
+              </div>
+              <button class="btn" id="btn-agregar-movimiento" style="height:38px;">+ Agregar</button>
+            </div>
+            <div class="field" style="margin:10px 0 0;">
+              <label>Descripción (opcional)</label>
+              <input type="text" id="fin-descripcion" placeholder="Ej. Pablo Galván — mensualidad de noviembre">
+            </div>
+            <div id="fin-error" style="color:#c72a09;font-size:0.8rem;margin-top:8px;"></div>
+          </div>
+          <div class="status-msg" id="fin-status" style="margin:10px 0;"></div>
+          <div class="team-tabla-wrap" style="padding:0;">
+            <table class="team-tabla">
+              <thead>
+                <tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th></th></tr>
+              </thead>
+              <tbody id="fin-movimientos-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -3181,7 +3248,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-02-mensaje-cliente-no-se-borra';
+const APP_BUILD = '2026-11-06-finanzas-fase1';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -5118,6 +5185,26 @@ async function sbEliminarInventarioItem(id){
   if(error){ console.error('Supabase eliminar inventario:', error); throw error; }
 }
 
+function _sbFilaMovimientoFinanzas(r){
+  return { ID: r.id, Fecha: r.fecha || '', Tipo: r.tipo || 'Gasto', Categoria: r.categoria || '', Descripcion: r.descripcion || '', Monto: r.monto || 0 };
+}
+async function sbCargarMovimientosFinanzas(){
+  const { data, error } = await sb.from('finanzas_movimientos').select('*');
+  if(error){ console.error('Supabase finanzas_movimientos:', error); return []; }
+  return data.map(_sbFilaMovimientoFinanzas);
+}
+async function sbCrearMovimientoFinanzas(datos){
+  const { error } = await sb.from('finanzas_movimientos').insert({
+    id: datos.id, fecha: datos.fecha, tipo: datos.tipo, categoria: datos.categoria,
+    descripcion: datos.descripcion || '', monto: datos.monto
+  });
+  if(error){ console.error('Supabase crear movimiento finanzas:', error); throw error; }
+}
+async function sbEliminarMovimientoFinanzas(id){
+  const { error } = await sb.from('finanzas_movimientos').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar movimiento finanzas:', error); throw error; }
+}
+
 function generarContratoRentaPDF(data){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'letter' });
@@ -5650,6 +5737,144 @@ if(modalInventarioBg){
     btn.disabled = false;
   });
 }
+
+// ============================================================
+// ============ FINANZAS (bitácora diaria de ingresos/gastos) ====
+// ============================================================
+let FIN_MOVIMIENTOS = [];
+const FIN_MESES_NOMBRE = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let FIN_VISTA = (() => {
+  const hoy = new Date();
+  return { year: hoy.getFullYear(), month: hoy.getMonth() };
+})();
+
+function _finFmtMoney(n){
+  return '$' + Math.round(n || 0).toLocaleString('es-MX');
+}
+
+async function cargarFinanzas(){
+  const status = document.getElementById('fin-status');
+  if(status) status.textContent = 'Cargando...';
+  try{
+    FIN_MOVIMIENTOS = await sbCargarMovimientosFinanzas();
+    if(status) status.textContent = '';
+  } catch(err){
+    console.error(err);
+    if(status) status.textContent = 'No se pudieron cargar los movimientos.';
+  }
+  renderFinanzas();
+}
+
+function renderFinanzas(){
+  const tbody = document.getElementById('fin-movimientos-tbody');
+  if(!tbody) return;
+
+  document.getElementById('fin-mes-label').textContent = FIN_MESES_NOMBRE[FIN_VISTA.month] + ' ' + FIN_VISTA.year;
+
+  const delMes = FIN_MOVIMIENTOS.filter(m => {
+    const f = (m.Fecha || '').toString();
+    const y = parseInt(f.slice(0, 4), 10), mo = parseInt(f.slice(5, 7), 10) - 1;
+    return y === FIN_VISTA.year && mo === FIN_VISTA.month;
+  }).sort((a, b) => (b.Fecha || '').localeCompare(a.Fecha || ''));
+
+  let ingresos = 0, gastos = 0;
+  delMes.forEach(m => { if(m.Tipo === 'Ingreso') ingresos += (m.Monto || 0); else gastos += (m.Monto || 0); });
+  const utilidad = ingresos - gastos;
+  document.getElementById('fin-stat-ingresos').textContent = _finFmtMoney(ingresos);
+  document.getElementById('fin-stat-gastos').textContent = _finFmtMoney(gastos);
+  const elUtilidad = document.getElementById('fin-stat-utilidad');
+  elUtilidad.textContent = _finFmtMoney(utilidad);
+  elUtilidad.style.color = utilidad < 0 ? 'var(--rojo)' : 'var(--verde)';
+
+  if(delMes.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:24px;">Sin movimientos este mes todavía.</td></tr>';
+  } else {
+    tbody.innerHTML = delMes.map(m => `
+      <tr>
+        <td>${m.Fecha}</td>
+        <td>${m.Tipo === 'Ingreso' ? '🟢 Ingreso' : '🔴 Gasto'}</td>
+        <td>${m.Categoria}</td>
+        <td>${m.Descripcion || ''}</td>
+        <td>${m.Tipo === 'Gasto' ? '-' : ''}${_finFmtMoney(m.Monto)}</td>
+        <td><button class="team-btn-mini danger" data-fin-eliminar="${m.ID}">×</button></td>
+      </tr>`).join('');
+    tbody.querySelectorAll('[data-fin-eliminar]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('¿Eliminar este movimiento?')) return;
+        const id = btn.dataset.finEliminar;
+        const respaldo = FIN_MOVIMIENTOS.slice();
+        FIN_MOVIMIENTOS = FIN_MOVIMIENTOS.filter(x => x.ID !== id);
+        renderFinanzas();
+        try{
+          await sbEliminarMovimientoFinanzas(id);
+        } catch(err){
+          console.error(err);
+          FIN_MOVIMIENTOS = respaldo;
+          renderFinanzas();
+          alert('⚠️ No se pudo eliminar. Revisa tu conexión e intenta de nuevo.');
+        }
+      });
+    });
+  }
+
+  // Autocompletar categorías ya usadas (todas, no solo las del mes en vista)
+  const categorias = Array.from(new Set(FIN_MOVIMIENTOS.map(m => m.Categoria).filter(Boolean))).sort();
+  const datalist = document.getElementById('fin-categorias-lista');
+  if(datalist) datalist.innerHTML = categorias.map(c => `<option value="${c}">`).join('');
+}
+
+(function(){
+  const inputFecha = document.getElementById('fin-fecha');
+  if(!inputFecha) return;
+  inputFecha.value = new Date().toISOString().slice(0, 10);
+
+  document.getElementById('fin-mes-prev').addEventListener('click', () => {
+    FIN_VISTA.month--;
+    if(FIN_VISTA.month < 0){ FIN_VISTA.month = 11; FIN_VISTA.year--; }
+    renderFinanzas();
+  });
+  document.getElementById('fin-mes-next').addEventListener('click', () => {
+    FIN_VISTA.month++;
+    if(FIN_VISTA.month > 11){ FIN_VISTA.month = 0; FIN_VISTA.year++; }
+    renderFinanzas();
+  });
+  document.getElementById('fin-mes-hoy').addEventListener('click', () => {
+    const hoy = new Date();
+    FIN_VISTA = { year: hoy.getFullYear(), month: hoy.getMonth() };
+    renderFinanzas();
+  });
+
+  document.getElementById('btn-agregar-movimiento').addEventListener('click', async () => {
+    const errEl = document.getElementById('fin-error');
+    errEl.textContent = '';
+    const fecha = document.getElementById('fin-fecha').value;
+    const tipo = document.getElementById('fin-tipo').value;
+    const categoria = document.getElementById('fin-categoria').value.trim();
+    const montoVal = parseFloat(document.getElementById('fin-monto').value);
+    const descripcion = document.getElementById('fin-descripcion').value.trim();
+    if(!fecha || !categoria || !montoVal || montoVal <= 0){
+      errEl.textContent = 'Completa fecha, categoría y un monto mayor a 0.';
+      return;
+    }
+    const datos = { id: uuid(), fecha, tipo, categoria, descripcion, monto: montoVal };
+    const btn = document.getElementById('btn-agregar-movimiento');
+    btn.disabled = true;
+    try{
+      await sbCrearMovimientoFinanzas(datos);
+      FIN_MOVIMIENTOS.push({ ID: datos.id, Fecha: fecha, Tipo: tipo, Categoria: categoria, Descripcion: descripcion, Monto: montoVal });
+      FIN_VISTA.year = parseInt(fecha.slice(0, 4), 10);
+      FIN_VISTA.month = parseInt(fecha.slice(5, 7), 10) - 1;
+      document.getElementById('fin-categoria').value = '';
+      document.getElementById('fin-monto').value = '';
+      document.getElementById('fin-descripcion').value = '';
+      renderFinanzas();
+    } catch(err){
+      console.error(err);
+      errEl.textContent = '⚠️ No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+    }
+    btn.disabled = false;
+  });
+})();
 
 // ============================================================
 // ============ KPI's semanales — respuestas de texto libre del check-in ====
@@ -11514,7 +11739,7 @@ function cambiarLinea(lineaKey){
     panel.classList.add('active');
     cargarIframesPerezosos(panel);
     if(lineaKey === 'reclutamiento') inicializarReclutamiento();
-    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarInventario(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
+    if(lineaKey === 'administracion'){ cargarRecibos(); cargarRentas(); cargarInventario(); cargarFinanzas(); cargarKpisSemanales(); cargarEvaluacionesClientesAdmin(); cargarConfigAgencia(); cargarCobranza(); cargarNomina(); }
   }
   // En celular, el sidebar es un panel flotante: una vez elegida la línea,
   // se cierra solo para no quedar tapando el contenido de abajo.
