@@ -1454,6 +1454,7 @@
   <div class="panel-header">
     <div class="titulo-panel">Clientes</div>
     <div style="display:flex;gap:10px;">
+      <button class="btn ghost" id="btn-ver-inactivos" style="display:none;" title="Los clientes inactivos no se muestran aquí por default">👁 Ver inactivos</button>
       <button class="btn ghost" id="btn-limpiar-duplicados" title="Elimina clientes duplicados conservando el más completo">🧹 Limpiar duplicados</button>
       <button class="btn" id="btn-nuevo-cliente">+ Nuevo cliente</button>
     </div>
@@ -3158,7 +3159,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-09-quita-conectar-redes-sociales';
+const APP_BUILD = '2026-11-11-ocultar-clientes-inactivos';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -7614,6 +7615,14 @@ const PLANTILLA_JUNTA = [
 ];
 
 let CLIENTES = [];
+function cargarPreferenciaVerInactivos(){
+  try { return localStorage.getItem('level_ver_inactivos') === '1'; }
+  catch(e){ return false; }
+}
+function guardarPreferenciaVerInactivos(v){
+  try { localStorage.setItem('level_ver_inactivos', v ? '1' : '0'); } catch(e){}
+}
+let MOSTRAR_INACTIVOS = cargarPreferenciaVerInactivos();
 let TEAM = [];
 let clienteActual = null;
 let RESPUESTAS_ACTUAL = {};
@@ -7945,11 +7954,22 @@ async function cargarClientes(){
 
 function renderClientesGrid(){
   const grid = document.getElementById('clientes-grid');
-  if(CLIENTES.length === 0){
-    grid.innerHTML = '<div style="color:#999;">Aún no has dado de alta ningún cliente.</div>';
+  const btnVerInactivos = document.getElementById('btn-ver-inactivos');
+  const totalInactivos = CLIENTES.filter(c => String(c.Estado || 'Activo') === 'Inactivo').length;
+  if(btnVerInactivos){
+    btnVerInactivos.style.display = totalInactivos > 0 ? '' : 'none';
+    btnVerInactivos.textContent = MOSTRAR_INACTIVOS
+      ? `🙈 Ocultar inactivos (${totalInactivos})`
+      : `👁 Ver inactivos (${totalInactivos})`;
+  }
+  const visibles = MOSTRAR_INACTIVOS ? CLIENTES : CLIENTES.filter(c => String(c.Estado || 'Activo') !== 'Inactivo');
+  if(visibles.length === 0){
+    grid.innerHTML = CLIENTES.length === 0
+      ? '<div style="color:#999;">Aún no has dado de alta ningún cliente.</div>'
+      : '<div style="color:#999;">Todos tus clientes están archivados como inactivos. Da clic en "Ver inactivos" para verlos.</div>';
     return;
   }
-  grid.innerHTML = CLIENTES.map(c => {
+  grid.innerHTML = visibles.map(c => {
     const inactivo = String(c.Estado || 'Activo') === 'Inactivo';
     const tipoBadge = String(c.Tipo || 'Recurrente') === 'OneTime'
       ? '<span style="position:absolute;top:8px;left:8px;background:#5a1ca6;color:#fff;padding:3px 8px;border-radius:10px;font-size:0.65rem;font-weight:700;">1×</span>'
@@ -8213,6 +8233,12 @@ function aplicarVisibilidadNumeracion(){
 document.getElementById('nc-numeracion-modo').addEventListener('change', aplicarVisibilidadNumeracion);
 
 document.getElementById('btn-nuevo-cliente').addEventListener('click', abrirModalClienteVacio);
+
+document.getElementById('btn-ver-inactivos').addEventListener('click', () => {
+  MOSTRAR_INACTIVOS = !MOSTRAR_INACTIVOS;
+  guardarPreferenciaVerInactivos(MOSTRAR_INACTIVOS);
+  renderClientesGrid();
+});
 
 // Botón limpiar duplicados de clientes
 document.getElementById('btn-limpiar-duplicados').addEventListener('click', async () => {
