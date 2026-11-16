@@ -185,8 +185,11 @@
   .calendar-wrap{padding:20px 28px 60px;}
   /* El dow-row sigue siendo grid de 7 columnas (encabezados de días) */
   #ed-cal-dow-row, #cm-cal-dow-row{display:none;}
-  /* Encabezado de días: mismo grid y padding que las semanas → siempre alineado */
-  .cal-dow-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:0 4px;}
+  /* Encabezado de días: mismo grid y padding que las semanas → siempre alineado.
+     Sticky para que no se pierda de vista al bajar por el mes (top se fija por JS,
+     justo debajo de .panel-sticky-top, cuya altura es variable). */
+  .cal-dow-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:6px 4px;position:sticky;z-index:35;background:#fff;}
+  body.dark .cal-dow-row{background:#1a1a1d;}
   /* El grid principal ahora apila SEMANAS verticalmente */
   #ed-cal-grid, #cm-cal-grid{display:flex;flex-direction:column;gap:4px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
@@ -3198,7 +3201,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-16-area-direccion-operacion';
+const APP_BUILD = '2026-11-16-calendario-dow-row-sticky';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -6320,6 +6323,19 @@ document.addEventListener('mouseup', () => {
   if(r.destino) aplicarResize(r, r.destino);
 });
 
+// El encabezado de días (DOM/LUN/MAR...) es sticky y se pega justo debajo de la barra
+// de filtros + objetivo de la semana (.panel-sticky-top), cuya altura varía según el
+// número de editores/responsables mostrados — por eso se mide en vivo en vez de fijarla.
+function _fijarTopDowRow(modoKey){
+  const panelTop = document.querySelector('#panel-' + modoKey + ' .panel-sticky-top');
+  const dowRow = document.querySelector('#panel-' + modoKey + ' .cal-dow-row');
+  if(panelTop && dowRow) dowRow.style.top = panelTop.offsetHeight + 'px';
+}
+window.addEventListener('resize', () => {
+  _fijarTopDowRow('edicion');
+  _fijarTopDowRow('cm');
+});
+
 // ============ Render calendario ============
 function render(modoKey){
   const modo = MODOS[modoKey];
@@ -6726,6 +6742,7 @@ function render(modoKey){
   });
 
   renderKPIs(modoKey);
+  _fijarTopDowRow(modoKey);
 }
 
 // Popup que pide el link del video editado antes de marcar como Listo (solo Edición).
@@ -7370,6 +7387,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const modo = btn.dataset.modo;
     document.querySelectorAll('.modo-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + modo).classList.add('active');
+    // El panel estaba oculto (display:none) cuando se calculó la primera vez, así que
+    // su altura real (para el top del encabezado de días pegajoso) no se pudo medir.
+    if(modo === 'edicion' || modo === 'cm') _fijarTopDowRow(modo);
     const notifBox = document.getElementById('notif-clientes-box');
     if(notifBox){
       if(modo === 'clientes' && usuarioTieneRol('Direccion,CM')){
