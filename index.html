@@ -806,6 +806,12 @@
   .todolist-completado .todolist-input-texto{text-decoration:line-through;color:#999;}
   .todolist-completado{opacity:0.55;}
   body.dark .todolist-input-texto:hover, body.dark .todolist-input-texto:focus{background:#232326;border-color:#3a3a3e;}
+  .area-filtro{display:flex;gap:8px;margin-bottom:14px;}
+  .area-filtro-btn{background:#f2efe9;border:1px solid #d8d3c9;color:#4a463d;border-radius:14px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Montserrat',sans-serif;}
+  .area-filtro-btn:hover{background:#e4e0d6;}
+  .area-filtro-btn.active{background:var(--negro);color:#fff;border-color:var(--negro);}
+  body.dark .area-filtro-btn{background:#232326;border-color:#3a3a3e;color:#e4e2dd;}
+  body.dark .area-filtro-btn.active{background:#e4e2dd;color:#1c1a17;}
 
   .recl-detalle-row td{background:#faf8f4;padding:18px 20px;}
   .recl-detalle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px 24px;}
@@ -1432,6 +1438,11 @@
     <div class="titulo-panel">✅ To do list</div>
     <button class="btn" id="btn-nueva-tarea-todolist">+ Nueva tarea</button>
   </div>
+  <div class="area-filtro" id="todolist-filtro-area">
+    <button class="area-filtro-btn active" data-area="">Todas</button>
+    <button class="area-filtro-btn" data-area="Dirección">🧭 Dirección</button>
+    <button class="area-filtro-btn" data-area="Operación">🎬 Operación</button>
+  </div>
   <div class="team-tabla-wrap">
     <table class="team-tabla todolist-tabla">
       <thead>
@@ -1441,6 +1452,7 @@
           <th style="width:190px;">Tiempo</th>
           <th style="width:170px;">Necesitaré</th>
           <th style="width:150px;">Tipo</th>
+          <th style="width:140px;">Área</th>
           <th style="width:150px;">Persona</th>
           <th style="width:44px;"></th>
         </tr>
@@ -1456,6 +1468,11 @@
   <div class="hint" style="padding:0 0 14px;">
     Notas sueltas que no son tareas: temas para platicar en junta, observaciones de clientes, cosas para checar después. Al marcar el check se da por hablado/resuelto y se quita de la lista.
   </div>
+  <div class="area-filtro" id="notas-filtro-area">
+    <button class="area-filtro-btn active" data-area="">Todas</button>
+    <button class="area-filtro-btn" data-area="Dirección">🧭 Dirección</button>
+    <button class="area-filtro-btn" data-area="Operación">🎬 Operación</button>
+  </div>
   <div class="team-tabla-wrap">
     <table class="team-tabla todolist-tabla">
       <thead>
@@ -1463,6 +1480,7 @@
           <th style="width:34px;"></th>
           <th>Nota</th>
           <th style="width:190px;">Categoría</th>
+          <th style="width:140px;">Área</th>
           <th style="width:44px;"></th>
         </tr>
       </thead>
@@ -3180,7 +3198,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-16-notas-dentro-de-todolist';
+const APP_BUILD = '2026-11-16-area-direccion-operacion';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4015,7 +4033,7 @@ function _sbFilaTodo(r){
   return {
     ID: r.id, Texto: r.texto || '', Completado: !!r.completado,
     Tiempo: r.tiempo || '', Necesitare: r.necesitare || '', Tipo: r.tipo || '',
-    PersonaID: r.persona_id || '', Orden: r.orden || 0
+    PersonaID: r.persona_id || '', Orden: r.orden || 0, Area: r.area || ''
   };
 }
 async function sbCargarTodoList(){
@@ -4025,7 +4043,7 @@ async function sbCargarTodoList(){
 }
 async function sbCrearTareaTodoList(orden){
   const id = 'todo_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-  const row = { id, texto: '', completado: false, tiempo: '', necesitare: '', tipo: '', persona_id: null, orden };
+  const row = { id, texto: '', completado: false, tiempo: '', necesitare: '', tipo: '', persona_id: null, orden, area: '' };
   const { error } = await sb.from('todos_direccion').insert(row);
   if(error){ console.error('Supabase crear tarea:', error); throw error; }
   return id;
@@ -4045,7 +4063,7 @@ async function sbEliminarTareaTodoList(id){
 // ============ SUPABASE — Notas de Dirección ==========
 // ============================================================
 function _sbFilaNota(r){
-  return { ID: r.id, Texto: r.texto || '', Categoria: r.categoria || '', Orden: r.orden || 0 };
+  return { ID: r.id, Texto: r.texto || '', Categoria: r.categoria || '', Orden: r.orden || 0, Area: r.area || '' };
 }
 async function sbCargarNotas(){
   const { data, error } = await sb.from('notas_direccion').select('*').order('orden', { ascending: true });
@@ -4054,7 +4072,7 @@ async function sbCargarNotas(){
 }
 async function sbCrearNota(orden){
   const id = 'nota_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-  const row = { id, texto: '', categoria: '', resuelta: false, orden };
+  const row = { id, texto: '', categoria: '', resuelta: false, orden, area: '' };
   const { error } = await sb.from('notas_direccion').insert(row);
   if(error){ console.error('Supabase crear nota:', error); throw error; }
   return id;
@@ -7376,6 +7394,10 @@ const TODOLIST_COLORES_TIEMPO = {
 };
 const TODOLIST_COLORES_NECESITARE = { 'Computadora': '#3f7a5c', 'Teléfono': '#3f6fb0', 'Carro': '#a5652f', 'Cámara': '#a5453f' };
 const TODOLIST_COLORES_TIPO = { 'Delegar': '#8a6a4a', 'Urgente': '#a5453f', 'Pendiente': '#3f7a5c', 'No urge': '#7a6a4a' };
+const AREA_OPCIONES = ['Dirección', 'Operación'];
+const AREA_COLORES = { 'Dirección': '#5a1ca6', 'Operación': '#3f6fb0' };
+let TODOLIST_FILTRO_AREA = '';
+let NOTAS_FILTRO_AREA = '';
 
 // Entre más bajo el número, más arriba se ordena. Tipo manda (Urgente primero); Tiempo
 // desempata dentro del mismo Tipo (las tareas rápidas de "HAZLO YA" suben primero).
@@ -7452,12 +7474,17 @@ function _celdaSelectTodoList(t, campoObj, campoDb, opciones, colores, reordenar
 
 function renderTodoList(){
   const tbody = document.getElementById('todolist-tbody');
+  const visibles = TODOLIST_FILTRO_AREA ? TODOLIST_TAREAS.filter(t => t.Area === TODOLIST_FILTRO_AREA) : TODOLIST_TAREAS;
   if(TODOLIST_TAREAS.length === 0){
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px;">No hay tareas todavía. Agrega la primera con "+ Nueva tarea".</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:24px;">No hay tareas todavía. Agrega la primera con "+ Nueva tarea".</td></tr>';
+    return;
+  }
+  if(visibles.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:24px;">No hay tareas de esta área todavía.</td></tr>';
     return;
   }
   tbody.innerHTML = '';
-  TODOLIST_TAREAS.forEach(t => {
+  visibles.forEach(t => {
     const tr = document.createElement('tr');
     if(t.Completado) tr.classList.add('todolist-completado');
 
@@ -7499,6 +7526,7 @@ function renderTodoList(){
     tr.appendChild(_celdaSelectTodoList(t, 'Tiempo', 'tiempo', TODOLIST_TIEMPO_OPCIONES, TODOLIST_COLORES_TIEMPO, true));
     tr.appendChild(_celdaSelectTodoList(t, 'Necesitare', 'necesitare', TODOLIST_NECESITARE_OPCIONES, TODOLIST_COLORES_NECESITARE, false));
     tr.appendChild(_celdaSelectTodoList(t, 'Tipo', 'tipo', TODOLIST_TIPO_OPCIONES, TODOLIST_COLORES_TIPO, true));
+    tr.appendChild(_celdaSelectTodoList(t, 'Area', 'area', AREA_OPCIONES, AREA_COLORES, false));
 
     const tdPersona = document.createElement('td');
     const selPersona = document.createElement('select');
@@ -7546,7 +7574,7 @@ document.getElementById('btn-nueva-tarea-todolist').addEventListener('click', as
   try{
     const orden = TODOLIST_TAREAS.length > 0 ? Math.max.apply(null, TODOLIST_TAREAS.map(t => t.Orden || 0)) + 1 : 0;
     const id = await sbCrearTareaTodoList(orden);
-    TODOLIST_TAREAS.push({ ID: id, Texto: '', Completado: false, Tiempo: '', Necesitare: '', Tipo: '', PersonaID: '', Orden: orden });
+    TODOLIST_TAREAS.push({ ID: id, Texto: '', Completado: false, Tiempo: '', Necesitare: '', Tipo: '', PersonaID: '', Orden: orden, Area: '' });
     renderTodoList();
     const filas = document.querySelectorAll('#todolist-tbody tr');
     const ultimaFila = filas[filas.length - 1];
@@ -7557,6 +7585,15 @@ document.getElementById('btn-nueva-tarea-todolist').addEventListener('click', as
   } finally {
     btn.disabled = false;
   }
+});
+
+document.querySelectorAll('#todolist-filtro-area .area-filtro-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#todolist-filtro-area .area-filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    TODOLIST_FILTRO_AREA = btn.dataset.area;
+    renderTodoList();
+  });
 });
 
 document.querySelectorAll('.tab-btn[data-modo="todolist"]').forEach(btn => {
@@ -7585,12 +7622,17 @@ async function cargarNotas(){
 
 function renderNotas(){
   const tbody = document.getElementById('notas-tbody');
+  const visibles = NOTAS_FILTRO_AREA ? NOTAS_DIRECCION.filter(n => n.Area === NOTAS_FILTRO_AREA) : NOTAS_DIRECCION;
   if(NOTAS_DIRECCION.length === 0){
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">No hay notas todavía. Agrega la primera con "+ Nueva nota".</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:24px;">No hay notas todavía. Agrega la primera con "+ Nueva nota".</td></tr>';
+    return;
+  }
+  if(visibles.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:24px;">No hay notas de esta área todavía.</td></tr>';
     return;
   }
   tbody.innerHTML = '';
-  NOTAS_DIRECCION.forEach(n => {
+  visibles.forEach(n => {
     const tr = document.createElement('tr');
 
     const tdCheck = document.createElement('td');
@@ -7649,6 +7691,26 @@ function renderNotas(){
     tdCategoria.appendChild(selCategoria);
     tr.appendChild(tdCategoria);
 
+    const tdArea = document.createElement('td');
+    const selArea = document.createElement('select');
+    selArea.className = 'todolist-select';
+    selArea.innerHTML = '<option value="">—</option>' + AREA_OPCIONES.map(o => `<option value="${o}">${o}</option>`).join('');
+    selArea.value = n.Area || '';
+    const aplicarColorArea = () => {
+      const c = AREA_COLORES[selArea.value];
+      selArea.style.background = c || '';
+      selArea.style.color = c ? '#fff' : '';
+    };
+    aplicarColorArea();
+    selArea.addEventListener('change', async () => {
+      n.Area = selArea.value;
+      aplicarColorArea();
+      try{ await sbActualizarNota(n.ID, 'area', n.Area); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdArea.appendChild(selArea);
+    tr.appendChild(tdArea);
+
     const tdBorrar = document.createElement('td');
     const btnBorrar = document.createElement('button');
     btnBorrar.className = 'todolist-btn-borrar';
@@ -7675,7 +7737,7 @@ document.getElementById('btn-nueva-nota').addEventListener('click', async () => 
   try{
     const orden = NOTAS_DIRECCION.length > 0 ? Math.max.apply(null, NOTAS_DIRECCION.map(n => n.Orden || 0)) + 1 : 0;
     const id = await sbCrearNota(orden);
-    NOTAS_DIRECCION.push({ ID: id, Texto: '', Categoria: '', Orden: orden });
+    NOTAS_DIRECCION.push({ ID: id, Texto: '', Categoria: '', Orden: orden, Area: '' });
     renderNotas();
     const filas = document.querySelectorAll('#notas-tbody tr');
     const ultimaFila = filas[filas.length - 1];
@@ -7686,6 +7748,15 @@ document.getElementById('btn-nueva-nota').addEventListener('click', async () => 
   } finally {
     btn.disabled = false;
   }
+});
+
+document.querySelectorAll('#notas-filtro-area .area-filtro-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#notas-filtro-area .area-filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    NOTAS_FILTRO_AREA = btn.dataset.area;
+    renderNotas();
+  });
 });
 
 
