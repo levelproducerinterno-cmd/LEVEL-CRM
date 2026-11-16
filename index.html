@@ -1387,6 +1387,7 @@
 <div class="tabs-switch">
   <button class="tab-btn" data-modo="team" data-rol="Direccion">🧑‍🎨 Team</button>
   <button class="tab-btn" data-modo="todolist" data-rol="Direccion">✅ To do list</button>
+  <button class="tab-btn" data-modo="notas" data-rol="Direccion">🗒️ Notas</button>
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion" data-rol="Direccion,Edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
@@ -1446,6 +1447,30 @@
         </tr>
       </thead>
       <tbody id="todolist-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ PANEL: NOTAS (solo Dirección) ============ -->
+<div class="modo-panel" id="panel-notas">
+  <div class="panel-header">
+    <div class="titulo-panel">🗒️ Notas</div>
+    <button class="btn" id="btn-nueva-nota">+ Nueva nota</button>
+  </div>
+  <div class="hint" style="padding:0 0 14px;">
+    Notas sueltas que no son tareas: temas para platicar en junta, observaciones de clientes, cosas para checar después. Al marcar el check se da por hablado/resuelto y se quita de la lista.
+  </div>
+  <div class="team-tabla-wrap">
+    <table class="team-tabla todolist-tabla">
+      <thead>
+        <tr>
+          <th style="width:34px;"></th>
+          <th>Nota</th>
+          <th style="width:190px;">Categoría</th>
+          <th style="width:44px;"></th>
+        </tr>
+      </thead>
+      <tbody id="notas-tbody"></tbody>
     </table>
   </div>
 </div>
@@ -3159,7 +3184,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-11-ocultar-clientes-inactivos';
+const APP_BUILD = '2026-11-16-panel-notas-direccion';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -4019,6 +4044,36 @@ async function sbEliminarTareaTodoList(id){
   const { error } = await sb.from('todos_direccion').delete().eq('id', id);
   if(error){ console.error('Supabase eliminar tarea:', error); throw error; }
 }
+
+// ============================================================
+// ============ SUPABASE — Notas de Dirección ==========
+// ============================================================
+function _sbFilaNota(r){
+  return { ID: r.id, Texto: r.texto || '', Categoria: r.categoria || '', Orden: r.orden || 0 };
+}
+async function sbCargarNotas(){
+  const { data, error } = await sb.from('notas_direccion').select('*').order('orden', { ascending: true });
+  if(error){ console.error('Supabase notas_direccion:', error); return []; }
+  return data.map(_sbFilaNota);
+}
+async function sbCrearNota(orden){
+  const id = 'nota_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  const row = { id, texto: '', categoria: '', resuelta: false, orden };
+  const { error } = await sb.from('notas_direccion').insert(row);
+  if(error){ console.error('Supabase crear nota:', error); throw error; }
+  return id;
+}
+async function sbActualizarNota(id, campo, valor){
+  const patch = {};
+  patch[campo] = valor;
+  const { error } = await sb.from('notas_direccion').update(patch).eq('id', id);
+  if(error){ console.error('Supabase actualizar nota:', error); throw error; }
+}
+async function sbEliminarNota(id){
+  const { error } = await sb.from('notas_direccion').delete().eq('id', id);
+  if(error){ console.error('Supabase eliminar nota:', error); throw error; }
+}
+
 async function sbEliminarTeam(id){
   const { error } = await sb.from('team').delete().eq('id', id);
   if(error){ console.error('Supabase eliminar team:', error); throw error; }
@@ -7510,6 +7565,135 @@ document.getElementById('btn-nueva-tarea-todolist').addEventListener('click', as
 
 document.querySelectorAll('.tab-btn[data-modo="todolist"]').forEach(btn => {
   btn.addEventListener('click', () => cargarTodoList());
+});
+
+// ============================================================
+// ============ NOTAS DE DIRECCIÓN ==========
+// ============================================================
+const NOTAS_CATEGORIA_OPCIONES = ['Para junta', 'Cliente', 'General'];
+const NOTAS_COLORES_CATEGORIA = { 'Para junta': '#7a5fa0', 'Cliente': '#3f6fb0', 'General': '#4a4a4a' };
+
+let NOTAS_DIRECCION = [];
+
+async function cargarNotas(){
+  const tbody = document.getElementById('notas-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">Cargando...</td></tr>';
+  try{
+    NOTAS_DIRECCION = await sbCargarNotas();
+    renderNotas();
+  } catch(err){
+    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">Error al cargar. Revisa tu conexión.</td></tr>';
+  }
+}
+
+function renderNotas(){
+  const tbody = document.getElementById('notas-tbody');
+  if(NOTAS_DIRECCION.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">No hay notas todavía. Agrega la primera con "+ Nueva nota".</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  NOTAS_DIRECCION.forEach(n => {
+    const tr = document.createElement('tr');
+
+    const tdCheck = document.createElement('td');
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.title = 'Ya se habló / resuelto';
+    check.addEventListener('change', async () => {
+      if(!check.checked) return;
+      check.disabled = true;
+      try{
+        await sbEliminarNota(n.ID);
+        NOTAS_DIRECCION = NOTAS_DIRECCION.filter(x => x.ID !== n.ID);
+        renderNotas();
+      } catch(err){
+        console.error(err);
+        check.checked = false;
+        check.disabled = false;
+        alert('No se pudo eliminar la nota. Revisa tu conexión.');
+      }
+    });
+    tdCheck.appendChild(check);
+    tr.appendChild(tdCheck);
+
+    const tdTexto = document.createElement('td');
+    const inputTexto = document.createElement('textarea');
+    inputTexto.value = n.Texto;
+    inputTexto.placeholder = 'Escribe la nota...';
+    inputTexto.rows = 2;
+    inputTexto.className = 'todolist-input-texto';
+    inputTexto.style.resize = 'vertical';
+    inputTexto.addEventListener('change', async () => {
+      n.Texto = inputTexto.value.trim();
+      try{ await sbActualizarNota(n.ID, 'texto', n.Texto); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdTexto.appendChild(inputTexto);
+    tr.appendChild(tdTexto);
+
+    const tdCategoria = document.createElement('td');
+    const selCategoria = document.createElement('select');
+    selCategoria.className = 'todolist-select';
+    selCategoria.innerHTML = '<option value="">—</option>' + NOTAS_CATEGORIA_OPCIONES.map(o => `<option value="${o}">${o}</option>`).join('');
+    selCategoria.value = n.Categoria || '';
+    const aplicarColorCategoria = () => {
+      const c = NOTAS_COLORES_CATEGORIA[selCategoria.value];
+      selCategoria.style.background = c || '';
+      selCategoria.style.color = c ? '#fff' : '';
+    };
+    aplicarColorCategoria();
+    selCategoria.addEventListener('change', async () => {
+      n.Categoria = selCategoria.value;
+      aplicarColorCategoria();
+      try{ await sbActualizarNota(n.ID, 'categoria', n.Categoria); }
+      catch(err){ console.error(err); alert('No se pudo guardar. Revisa tu conexión.'); }
+    });
+    tdCategoria.appendChild(selCategoria);
+    tr.appendChild(tdCategoria);
+
+    const tdBorrar = document.createElement('td');
+    const btnBorrar = document.createElement('button');
+    btnBorrar.className = 'todolist-btn-borrar';
+    btnBorrar.textContent = '🗑';
+    btnBorrar.title = 'Eliminar nota';
+    btnBorrar.addEventListener('click', async () => {
+      if(!confirm('¿Eliminar esta nota?')) return;
+      try{
+        await sbEliminarNota(n.ID);
+        NOTAS_DIRECCION = NOTAS_DIRECCION.filter(x => x.ID !== n.ID);
+        renderNotas();
+      } catch(err){ console.error(err); alert('No se pudo eliminar. Revisa tu conexión.'); }
+    });
+    tdBorrar.appendChild(btnBorrar);
+    tr.appendChild(tdBorrar);
+
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-nueva-nota').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-nueva-nota');
+  btn.disabled = true;
+  try{
+    const orden = NOTAS_DIRECCION.length > 0 ? Math.max.apply(null, NOTAS_DIRECCION.map(n => n.Orden || 0)) + 1 : 0;
+    const id = await sbCrearNota(orden);
+    NOTAS_DIRECCION.push({ ID: id, Texto: '', Categoria: '', Orden: orden });
+    renderNotas();
+    const filas = document.querySelectorAll('#notas-tbody tr');
+    const ultimaFila = filas[filas.length - 1];
+    if(ultimaFila) ultimaFila.querySelector('.todolist-input-texto').focus();
+  } catch(err){
+    console.error(err);
+    alert('No se pudo crear la nota. Revisa tu conexión e intenta de nuevo.');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.querySelectorAll('.tab-btn[data-modo="notas"]').forEach(btn => {
+  btn.addEventListener('click', () => cargarNotas());
 });
 
 document.getElementById('notif-clientes-header').addEventListener('click', () => {
