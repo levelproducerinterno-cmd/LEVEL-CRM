@@ -1387,7 +1387,6 @@
 <div class="tabs-switch">
   <button class="tab-btn" data-modo="team" data-rol="Direccion">🧑‍🎨 Team</button>
   <button class="tab-btn" data-modo="todolist" data-rol="Direccion">✅ To do list</button>
-  <button class="tab-btn" data-modo="notas" data-rol="Direccion">🗒️ Notas</button>
   <button class="tab-btn active" data-modo="clientes" data-rol="Direccion,CM">👤 Clientes</button>
   <button class="tab-btn" data-modo="edicion" data-rol="Direccion,Edicion">🎬 Edición</button>
   <button class="tab-btn" data-modo="cm" data-rol="Direccion,CM">📱 Community Manager</button>
@@ -1449,11 +1448,8 @@
       <tbody id="todolist-tbody"></tbody>
     </table>
   </div>
-</div>
 
-<!-- ============ PANEL: NOTAS (solo Dirección) ============ -->
-<div class="modo-panel" id="panel-notas">
-  <div class="panel-header">
+  <div class="panel-header" style="margin-top:36px;padding-top:22px;border-top:1px solid #e4e0d6;">
     <div class="titulo-panel">🗒️ Notas</div>
     <button class="btn" id="btn-nueva-nota">+ Nueva nota</button>
   </div>
@@ -3184,7 +3180,7 @@ Nombre cliente:
 // Cambia este valor cada vez que se entrega un index.html nuevo. Sirve para avisarle a
 // quien tenga una pestaña vieja abierta que hay una versión más nueva (evita que edite
 // "a ciegas" sobre código desactualizado y pierda cambios sin darse cuenta).
-const APP_BUILD = '2026-11-16-panel-notas-direccion';
+const APP_BUILD = '2026-11-16-notas-dentro-de-todolist';
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyEwyX5U5LVpIwKXgHYyrePyIbiUkpMFWRo6fFEt3fzxpgR_IFwhE7kwWDWQdO1K2T3/exec';
 // Dominio fijo de producción. Todos los links que se comparten con clientes/candidatos deben
@@ -7564,7 +7560,7 @@ document.getElementById('btn-nueva-tarea-todolist').addEventListener('click', as
 });
 
 document.querySelectorAll('.tab-btn[data-modo="todolist"]').forEach(btn => {
-  btn.addEventListener('click', () => cargarTodoList());
+  btn.addEventListener('click', () => { cargarTodoList(); cargarNotas(); });
 });
 
 // ============================================================
@@ -7692,9 +7688,6 @@ document.getElementById('btn-nueva-nota').addEventListener('click', async () => 
   }
 });
 
-document.querySelectorAll('.tab-btn[data-modo="notas"]').forEach(btn => {
-  btn.addEventListener('click', () => cargarNotas());
-});
 
 document.getElementById('notif-clientes-header').addEventListener('click', () => {
   document.getElementById('notif-clientes-box').classList.toggle('colapsado');
